@@ -48,12 +48,12 @@ class SettingsRepository @Inject constructor(
         AppSettings(
             language = Language.values().find { 
                 it.code == preferences[PreferencesKeys.LANGUAGE] 
-            } ?: Language.ENGLISH,
+            } ?: Language.TAMIL,
             city = preferences[PreferencesKeys.CITY] ?: "Colombo",
             country = preferences[PreferencesKeys.COUNTRY] ?: "Sri Lanka",
             latitude = preferences[PreferencesKeys.LATITUDE] ?: 6.9271,
             longitude = preferences[PreferencesKeys.LONGITUDE] ?: 79.8612,
-            mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: "",
+            mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: "ஜமிஅத் அல்-இஸ்லாம் பள்ளிவாசல்",
             clockType = ClockType.values().find { 
                 it.name == preferences[PreferencesKeys.CLOCK_TYPE] 
             } ?: ClockType.DIGITAL,

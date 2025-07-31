@@ -1,12 +1,12 @@
 package com.mosque.prayerclock.data.model
 
 data class AppSettings(
-    val language: Language = Language.ENGLISH,
+    val language: Language = Language.TAMIL,
     val city: String = "Colombo",
     val country: String = "Sri Lanka",
     val latitude: Double = 6.9271,
     val longitude: Double = 79.8612,
-    val mosqueName: String = "",
+    val mosqueName: String = "ஜமிஅத் அல்-இஸ்லாம் பள்ளிவாசல்",
     val clockType: ClockType = ClockType.DIGITAL,
     val theme: AppTheme = AppTheme.DEFAULT,
     val fontSize: FontSize = FontSize.MEDIUM,

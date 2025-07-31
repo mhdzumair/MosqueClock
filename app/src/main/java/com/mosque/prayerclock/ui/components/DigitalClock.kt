@@ -85,7 +85,10 @@ fun DigitalClock(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Time display with glow effect
-            Box {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
                 // Glow effect
                 Text(
                     text = formattedTime,
@@ -99,7 +102,9 @@ fun DigitalClock(
                         )
                     ),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 // Main text
                 Text(
@@ -109,7 +114,9 @@ fun DigitalClock(
                         fontWeight = FontWeight.Bold
                     ),
                     color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
             
