@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">பள்ளிவாசல் தொழுகை கடிகாரம்</string>
+    
+    <!-- Prayer Names -->
+    <string name="fajr">ஃபஜ்ர்</string>
+    <string name="dhuhr">லுஹர்</string>
+    <string name="asr">அஸர்</string>
+    <string name="maghrib">மஃரிப்</string>
+    <string name="isha">இஷா</string>
+    <string name="sunrise">சூரிய உதயம்</string>
+    
+    <!-- Time Labels -->
+    <string name="azan">அதான்</string>
+    <string name="iqamah">இகாமத்</string>
+    <string name="current_time">தற்போதைய நேரம்</string>
+    <string name="next_prayer">அடுத்த தொழுகை</string>
+    <string name="time_remaining">எஞ்சிய நேரம்</string>
+    
+    <!-- Days and Dates -->
+    <string name="today">இன்று</string>
+    <string name="islamic_date">இஸ்லாமிய தேதி</string>
+    <string name="gregorian_date">தேதி</string>
+    
+    <!-- Settings -->
+    <string name="settings">அமைப்புகள்</string>
+    <string name="language">மொழி</string>
+    <string name="region">பகுதி</string>
+    <string name="city">நகரம்</string>
+    <string name="mosque_name">பள்ளிவாசல் பெயர்</string>
+    <string name="clock_type">கடிகார வகை</string>
+    <string name="theme">தீம்</string>
+    <string name="font_size">எழுத்து அளவு</string>
+    <string name="show_seconds">விநாடிகளைக் காட்டு</string>
+    <string name="hour_format_24">24 மணி நேர வடிவம்</string>
+    
+    <!-- Clock Types -->
+    <string name="digital_clock">டிஜிட்டல்</string>
+    <string name="analog_clock">அனலாக்</string>
+    <string name="both_clocks">இரண்டும்</string>
+    
+    <!-- Themes -->
+    <string name="theme_default">இயல்புநிலை</string>
+    <string name="theme_dark">இருண்ட</string>
+    <string name="theme_light">வெளிச்சம்</string>
+    <string name="theme_mosque_green">பள்ளிவாசல் பச்சை</string>
+    <string name="theme_blue">நீலம்</string>
+    
+    <!-- Font Sizes -->
+    <string name="font_small">சிறிய</string>
+    <string name="font_medium">நடுத்தர</string>
+    <string name="font_large">பெரிய</string>
+    <string name="font_extra_large">மிக பெரிய</string>
+    
+    <!-- Languages -->
+    <string name="language_english">ஆங்கிலம்</string>
+    <string name="language_tamil">தமிழ்</string>
+    
+    <!-- Messages -->
+    <string name="loading">ஏற்றுகிறது...</string>
+    <string name="error_network">நெட்வொர்க் பிழை</string>
+    <string name="error_no_data">தொழுகை நேரங்கள் கிடைக்கவில்லை</string>
+    <string name="refresh">புதுப்பிக்க</string>
+    <string name="last_updated">கடைசியாக புதுப்பிக்கப்பட்டது</string>
+    
+    <!-- Navigation -->
+    <string name="back">திரும்பு</string>
+    <string name="save">சேமி</string>
+    <string name="cancel">ரத்து</string>
+    
+    <!-- Time Format -->
+    <string name="am">காலை</string>
+    <string name="pm">மாலை</string>
+    
+    <!-- Location -->
+    <string name="colombo">கொழும்பு</string>
+    <string name="western_province">மேற்கு மாகாணம்</string>
+</resources>

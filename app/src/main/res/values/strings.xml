@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mosque Prayer Clock</string>
+    
+    <!-- Prayer Names -->
+    <string name="fajr">Fajr</string>
+    <string name="dhuhr">Dhuhr</string>
+    <string name="asr">Asr</string>
+    <string name="maghrib">Maghrib</string>
+    <string name="isha">Isha</string>
+    <string name="sunrise">Sunrise</string>
+    
+    <!-- Time Labels -->
+    <string name="azan">Azan</string>
+    <string name="iqamah">Iqamah</string>
+    <string name="current_time">Current Time</string>
+    <string name="next_prayer">Next Prayer</string>
+    <string name="time_remaining">Time Remaining</string>
+    
+    <!-- Days and Dates -->
+    <string name="today">Today</string>
+    <string name="islamic_date">Islamic Date</string>
+    <string name="gregorian_date">Date</string>
+    
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="language">Language</string>
+    <string name="region">Region</string>
+    <string name="city">City</string>
+    <string name="mosque_name">Mosque Name</string>
+    <string name="clock_type">Clock Type</string>
+    <string name="theme">Theme</string>
+    <string name="font_size">Font Size</string>
+    <string name="show_seconds">Show Seconds</string>
+    <string name="hour_format_24">24 Hour Format</string>
+    
+    <!-- Clock Types -->
+    <string name="digital_clock">Digital</string>
+    <string name="analog_clock">Analog</string>
+    <string name="both_clocks">Both</string>
+    
+    <!-- Themes -->
+    <string name="theme_default">Default</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_mosque_green">Mosque Green</string>
+    <string name="theme_blue">Blue</string>
+    
+    <!-- Font Sizes -->
+    <string name="font_small">Small</string>
+    <string name="font_medium">Medium</string>
+    <string name="font_large">Large</string>
+    <string name="font_extra_large">Extra Large</string>
+    
+    <!-- Languages -->
+    <string name="language_english">English</string>
+    <string name="language_tamil">Tamil</string>
+    
+    <!-- Messages -->
+    <string name="loading">Loading...</string>
+    <string name="error_network">Network Error</string>
+    <string name="error_no_data">No prayer times available</string>
+    <string name="refresh">Refresh</string>
+    <string name="last_updated">Last Updated</string>
+    
+    <!-- Navigation -->
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    
+    <!-- Time Format -->
+    <string name="am">AM</string>
+    <string name="pm">PM</string>
+    
+    <!-- Location -->
+    <string name="colombo">Colombo</string>
+    <string name="western_province">Western Province</string>
+</resources>
