@@ -51,7 +51,7 @@ fun DigitalClock(
         // Get current Islamic/Arabic month (simplified - using Gregorian month for demo)
         val currentMonth = localDateTime.monthNumber - 1
         val arabicMonth = arabicMonthsTamil.getOrNull(currentMonth) ?: arabicMonthsTamil[0]
-        val dayNames = listOf("ஞாயிறு", "திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி")
+        val dayNames = listOf("திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி", "ஞாயிறு")
         val dayName = dayNames[(localDateTime.dayOfWeek.ordinal) % 7]
         "$dayName, $arabicMonth ${localDateTime.dayOfMonth}, ${localDateTime.year}"
     } else {

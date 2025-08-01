@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV specific dimensions for better focus navigation -->
+    <dimen name="focus_border_width">3dp</dimen>
+    <dimen name="focus_corner_radius">12dp</dimen>
+    <dimen name="settings_item_min_height">64dp</dimen>
+    <dimen name="button_min_width">200dp</dimen>
+    <dimen name="text_field_min_width">300dp</dimen>
+</resources>

@@ -31,6 +31,7 @@ import com.mosque.prayerclock.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onExitApp: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -126,6 +127,49 @@ fun SettingsScreen(
                         onShowSecondsChange = viewModel::updateShowSeconds,
                         onShow24HourChange = viewModel::updateShow24HourFormat
                     )
+                }
+                
+                // Exit App button
+                item {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
+                        ) {
+                            Text(
+                                text = "App Control",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Button(
+                                onClick = onExitApp,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text(
+                                    text = "Exit Prayer Clock",
+                                    color = MaterialTheme.colorScheme.onError,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -698,12 +742,16 @@ private fun ImprovedTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier
+            .defaultMinSize(minHeight = 56.dp)
+            .fillMaxWidth(),
         label = label?.let { { Text(it) } },
         placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder) } } else null,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
@@ -712,9 +760,13 @@ private fun ImprovedTextField(
         keyboardActions = KeyboardActions(
             onNext = {
                 focusManager.moveFocus(FocusDirection.Down)
+            },
+            onDone = {
+                focusManager.clearFocus()
             }
         ),
-        singleLine = true
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge
     )
 }
 

@@ -88,8 +88,8 @@ fun NewMainLayout(
     onRetry: () -> Unit
 ) {
     val isTV = isAndroidTV()
-    val paddingSize = if (isTV) 24.dp else 16.dp
-    val spacingSize = if (isTV) 16.dp else 12.dp
+    val paddingSize = if (isTV) 16.dp else 12.dp
+    val spacingSize = if (isTV) 12.dp else 8.dp
     
     Column(
         modifier = Modifier
@@ -107,7 +107,7 @@ fun NewMainLayout(
         
         // Clock and Next Prayer Timer side by side
         Row(
-            modifier = Modifier.weight(0.7f),
+            modifier = Modifier.weight(0.75f),
             horizontalArrangement = Arrangement.spacedBy(spacingSize),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -160,7 +160,7 @@ fun NewMainLayout(
             }
         }
         
-        Spacer(modifier = Modifier.height(spacingSize))
+        Spacer(modifier = Modifier.height(if (isTV) 8.dp else 6.dp))
         
         // Prayer times at bottom with animation
         when (uiState) {
@@ -187,7 +187,7 @@ private fun MosqueHeader(
 ) {
     if (mosqueName.isNotEmpty()) {
         val isTV = isAndroidTV()
-        val fontSize = if (isTV) 32.sp else 24.sp
+        val fontSize = if (isTV) 28.sp else 22.sp
         
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -240,7 +240,7 @@ fun ClockSection(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        val boxPadding = if (isTV) 16.dp else 24.dp
+        val boxPadding = if (isTV) 12.dp else 16.dp
         
         Box(
             modifier = Modifier
@@ -532,11 +532,11 @@ fun NextPrayerCountdownSection(
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
             shape = RoundedCornerShape(24.dp)
         ) {
-            val titleFontSize = if (isTV) 24.sp else 18.sp
-            val prayerNameFontSize = if (isTV) 42.sp else 32.sp
-            val timeFontSize = if (isTV) 56.sp else 42.sp
-            val paddingSize = if (isTV) 20.dp else 16.dp
-            val spacingSize = if (isTV) 12.dp else 8.dp
+            val titleFontSize = if (isTV) 20.sp else 16.sp
+            val prayerNameFontSize = if (isTV) 38.sp else 28.sp
+            val timeFontSize = if (isTV) 48.sp else 36.sp
+            val paddingSize = if (isTV) 16.dp else 12.dp
+            val spacingSize = if (isTV) 8.dp else 6.dp
             
             Column(
                 modifier = Modifier
@@ -622,7 +622,7 @@ fun NextPrayerCountdownSection(
                                 fontSize = if (isTV) 16.sp else 14.sp
                             ),
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(8.dp)
                         )
                     }
                 }
@@ -643,8 +643,8 @@ fun AnimatedPrayerTimesSection(
         createPrayerInfoList(prayerTimes, language)
     }
     
-    val horizontalPadding = if (isTV) 2.dp else 1.dp
-    val itemSpacing = if (isTV) 3.dp else 2.dp
+    val horizontalPadding = if (isTV) 1.dp else 1.dp
+    val itemSpacing = if (isTV) 2.dp else 2.dp
     
     LazyRow(
         modifier = Modifier
@@ -675,7 +675,7 @@ fun AnimatedPrayerTimesSection(
                     language = language,
                     show24Hour = show24Hour,
                     isTV = isTV,
-                    modifier = Modifier.width(if (isTV) 140.dp else 110.dp)
+                    modifier = Modifier.width(if (isTV) 150.dp else 120.dp)
                 )
             }
         }
@@ -692,7 +692,7 @@ fun CompactPrayerTimeCard(
     modifier: Modifier = Modifier
 ) {
     val cardPadding = if (isTV) 2.dp else 1.dp
-    val contentPadding = if (isTV) 8.dp else 6.dp
+    val contentPadding = if (isTV) 10.dp else 8.dp
     val cornerRadius = if (isTV) 8.dp else 6.dp
     val cardElevation = if (isNext) (if (isTV) 6.dp else 4.dp) else (if (isTV) 3.dp else 2.dp)
     
@@ -714,12 +714,12 @@ fun CompactPrayerTimeCard(
             .padding(cardPadding),
         colors = CardDefaults.cardColors(
             containerColor = if (isNext) 
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
             else 
                 MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = cardElevation
+            defaultElevation = if (isNext) (if (isTV) 8.dp else 6.dp) else (if (isTV) 4.dp else 3.dp)
         ),
         shape = RoundedCornerShape(cornerRadius)
     ) {
@@ -729,10 +729,10 @@ fun CompactPrayerTimeCard(
                 .padding(contentPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val prayerNameFontSize = if (isTV) 14.sp else 11.sp
-            val prayerTimeFontSize = if (isTV) 16.sp else 13.sp
-            val labelFontSize = if (isTV) 10.sp else 8.sp
-            val spacingSize = if (isTV) 4.dp else 3.dp
+            val prayerNameFontSize = if (isTV) 16.sp else 13.sp
+            val prayerTimeFontSize = if (isTV) 20.sp else 16.sp
+            val labelFontSize = if (isTV) 12.sp else 10.sp
+            val spacingSize = if (isTV) 3.dp else 2.dp
             
             Text(
                 text = if (language == Language.TAMIL) prayerInfo.nameTa else prayerInfo.nameEn,
@@ -820,7 +820,7 @@ private fun createPrayerInfoList(prayerTimes: PrayerTimes, @Suppress("UNUSED_PAR
             azanTime = prayerTimes.dhuhrAzan,
             iqamahTime = prayerTimes.dhuhrIqamah,
             nameEn = "Dhuhr",
-            nameTa = "ளுஹர்"
+            nameTa = "துஹர்"
         ),
         PrayerInfo(
             type = PrayerType.ASR,
