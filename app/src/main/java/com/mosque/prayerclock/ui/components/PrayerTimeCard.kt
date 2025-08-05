@@ -13,7 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.data.model.PrayerInfo
+import com.mosque.prayerclock.R
 
 @Composable
 fun PrayerTimeCard(
@@ -41,7 +44,7 @@ fun PrayerTimeCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = prayerInfo.nameEn,
+                text = prayerInfo.name,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontSize = when {
                         isNext && !isCompact -> 28.sp
@@ -83,7 +86,7 @@ fun PrayerTimeCard(
                 
                 if (isCompact) {
                     Text(
-                        text = "Iqamah: $iqamahTime",
+                        text = "${localizedStringResource(R.string.iqamah)}: $iqamahTime",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
@@ -100,7 +103,7 @@ fun PrayerTimeCard(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Iqamah: ",
+                            text = "${localizedStringResource(R.string.iqamah)}: ",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontSize = 16.sp
                             ),

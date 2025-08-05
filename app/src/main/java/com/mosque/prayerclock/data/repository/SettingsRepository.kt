@@ -42,6 +42,14 @@ class SettingsRepository @Inject constructor(
         val MAGHRIB_IQAMAH_GAP = intPreferencesKey("maghrib_iqamah_gap")
         val ISHA_IQAMAH_GAP = intPreferencesKey("isha_iqamah_gap")
         val REFRESH_INTERVAL = longPreferencesKey("refresh_interval")
+        val SHOW_WEATHER = booleanPreferencesKey("show_weather")
+        val WEATHER_CITY = stringPreferencesKey("weather_city")
+        val WEATHER_COUNTRY = stringPreferencesKey("weather_country")
+        val USE_API_FOR_HIJRI_DATE = booleanPreferencesKey("use_api_for_hijri_date")
+        val MANUAL_HIJRI_DAY = intPreferencesKey("manual_hijri_day")
+        val MANUAL_HIJRI_MONTH = intPreferencesKey("manual_hijri_month")
+        val MANUAL_HIJRI_YEAR = intPreferencesKey("manual_hijri_year")
+        val LAST_UPDATED_GREGORIAN_DATE = stringPreferencesKey("last_updated_gregorian_date")
     }
     
     fun getSettings(): Flow<AppSettings> = dataStore.data.map { preferences ->
@@ -82,7 +90,15 @@ class SettingsRepository @Inject constructor(
             maghribIqamahGap = preferences[PreferencesKeys.MAGHRIB_IQAMAH_GAP] ?: 5,
             ishaIqamahGap = preferences[PreferencesKeys.ISHA_IQAMAH_GAP] ?: 10,
             refreshInterval = preferences[PreferencesKeys.REFRESH_INTERVAL] 
-                ?: 24 * 60 * 60 * 1000L
+                ?: 24 * 60 * 60 * 1000L,
+            showWeather = preferences[PreferencesKeys.SHOW_WEATHER] ?: true,
+            weatherCity = preferences[PreferencesKeys.WEATHER_CITY] ?: "Colombo",
+            weatherCountry = preferences[PreferencesKeys.WEATHER_COUNTRY] ?: "Sri Lanka",
+            useApiForHijriDate = preferences[PreferencesKeys.USE_API_FOR_HIJRI_DATE] ?: false,
+            manualHijriDay = preferences[PreferencesKeys.MANUAL_HIJRI_DAY] ?: 7,
+            manualHijriMonth = preferences[PreferencesKeys.MANUAL_HIJRI_MONTH] ?: 2,
+            manualHijriYear = preferences[PreferencesKeys.MANUAL_HIJRI_YEAR] ?: 1447,
+            lastUpdatedGregorianDate = preferences[PreferencesKeys.LAST_UPDATED_GREGORIAN_DATE] ?: "2025-08-01"
         )
     }
     
@@ -179,6 +195,39 @@ class SettingsRepository @Inject constructor(
                 "maghrib" -> preferences[PreferencesKeys.MAGHRIB_IQAMAH_GAP] = gap
                 "isha" -> preferences[PreferencesKeys.ISHA_IQAMAH_GAP] = gap
             }
+        }
+    }
+    
+    suspend fun updateHijriDate(day: Int, month: Int, year: Int, gregorianDate: String) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.MANUAL_HIJRI_DAY] = day
+            preferences[PreferencesKeys.MANUAL_HIJRI_MONTH] = month
+            preferences[PreferencesKeys.MANUAL_HIJRI_YEAR] = year
+            preferences[PreferencesKeys.LAST_UPDATED_GREGORIAN_DATE] = gregorianDate
+        }
+    }
+    
+    suspend fun updateUseApiForHijriDate(useApi: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.USE_API_FOR_HIJRI_DATE] = useApi
+        }
+    }
+    
+    suspend fun updateShowWeather(showWeather: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SHOW_WEATHER] = showWeather
+        }
+    }
+    
+    suspend fun updateWeatherCity(city: String) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.WEATHER_CITY] = city
+        }
+    }
+    
+    suspend fun updateWeatherCountry(country: String) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.WEATHER_COUNTRY] = country
         }
     }
 }

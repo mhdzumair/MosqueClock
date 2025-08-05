@@ -67,6 +67,9 @@
     <string name="back">Back</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="exit_app">Exit App</string>
+    <string name="exit_confirmation">Are you sure you want to exit the Mosque Prayer Clock?</string>
+    <string name="exit">Exit</string>
     
     <!-- Time Format -->
     <string name="am">AM</string>
@@ -75,4 +78,78 @@
     <!-- Location -->
     <string name="colombo">Colombo</string>
     <string name="western_province">Western Province</string>
+    
+    <!-- Prayer Status -->
+    <string name="current_prayer">Current Prayer</string>
+    <string name="jummah">Jummah</string>
+    
+    <!-- Weather -->
+    <string name="weather_city">Weather City</string>
+    <string name="weather_city_description">City for weather information (separate from prayer times location)</string>
+    <string name="weather_placeholder">Enter city name for weather</string>
+    
+    <!-- Prayer Settings -->
+    <string name="manual_prayer_times">Manual Prayer Times</string>
+    <string name="manual_prayer_times_description">Use manual times instead of API</string>
+    <string name="prayer_times_setup">Prayer Times Setup</string>
+    <string name="iqamah_gaps">Iqamah Time Gaps (minutes after Azan)</string>
+    
+    <!-- App Control -->
+    <string name="app_control">App Control</string>
+    <string name="exit_prayer_clock">Exit Prayer Clock</string>
+    
+    <!-- Location Setting -->
+    <string name="location">Location</string>
+    <string name="select_city">Select City</string>
+    
+    <!-- Clock Format -->
+    <string name="clock_format">Clock Format</string>
+    
+    <!-- Weather Details -->
+    <string name="humidity_short">H</string>
+    <string name="feels_like_short">FL</string>
+    
+    <!-- Time Calculation -->
+    <string name="hours_short">hours</string>
+    <string name="minutes_short">minutes</string>
+    <string name="hour_short">hour</string>
+    <string name="minute_short">minute</string>
+    <string name="remaining">remaining</string>
+    <string name="time_format_hours_minutes">%1$dh %2$dm remaining</string>
+    <string name="time_format_minutes_seconds">%1$dm %2$ds remaining</string>
+    <string name="time_format_seconds">%1$ds remaining</string>
+    
+    <!-- Prayer Time Letters (for highlighting) -->
+    <string name="azan_letter">A</string>
+    <string name="iqamah_letter">I</string>
+    
+    <!-- Day Names -->
+    <string-array name="day_names">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+    
+    <!-- Hijri Month Names -->
+    <string-array name="hijri_months">
+        <item>Muharram</item>
+        <item>Safar</item>
+        <item>Rabi al-awwal</item>
+        <item>Rabi al-thani</item>
+        <item>Jumada al-awwal</item>
+        <item>Jumada al-thani</item>
+        <item>Rajab</item>
+        <item>Sha\'ban</item>
+        <item>Ramadan</item>
+        <item>Shawwal</item>
+        <item>Dhu al-Qi\'dah</item>
+        <item>Dhu al-Hijjah</item>
+    </string-array>
+    
+    <!-- Loading text -->
+    <string name="loading_hijri">Loading...</string>
 </resources>

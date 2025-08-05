@@ -1,0 +1,6 @@
+# Local configuration file (SDK path will be added automatically by Android Studio)
+# Copy this file to local.properties and add your actual API keys
+
+# WeatherAPI.com API Key
+# Get your free API key from: https://www.weatherapi.com/
+weather_api_key=your_actual_api_key_here

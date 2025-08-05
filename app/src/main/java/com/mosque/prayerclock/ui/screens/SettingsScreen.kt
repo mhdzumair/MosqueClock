@@ -84,6 +84,13 @@ fun SettingsScreen(
                 }
                 
                 item {
+                    WeatherCitySettings(
+                        weatherCity = settings.weatherCity,
+                        onWeatherCityChange = viewModel::updateWeatherCity
+                    )
+                }
+                
+                item {
                     ManualTimesToggle(
                         useManualTimes = settings.useManualTimes,
                         onToggle = viewModel::updateUseManualTimes
@@ -284,6 +291,48 @@ private fun LocationSettings(
     onCityChange: (String) -> Unit,
     onCountryChange: (String) -> Unit
 ) {
+    val cities = remember {
+        listOf(
+            "Colombo" to "Sri Lanka",
+            "Kandy" to "Sri Lanka",
+            "Galle" to "Sri Lanka",
+            "Jaffna" to "Sri Lanka",
+            "Kuala Lumpur" to "Malaysia",
+            "Penang" to "Malaysia",
+            "Johor Bahru" to "Malaysia",
+            "Singapore" to "Singapore",
+            "Jakarta" to "Indonesia",
+            "Bandung" to "Indonesia",
+            "Surabaya" to "Indonesia",
+            "Chennai" to "India",
+            "Mumbai" to "India",
+            "Delhi" to "India",
+            "Bangalore" to "India",
+            "Hyderabad" to "India",
+            "Dubai" to "UAE",
+            "Abu Dhabi" to "UAE",
+            "Riyadh" to "Saudi Arabia",
+            "Jeddah" to "Saudi Arabia",
+            "Mecca" to "Saudi Arabia",
+            "Medina" to "Saudi Arabia",
+            "Doha" to "Qatar",
+            "Kuwait City" to "Kuwait",
+            "London" to "UK",
+            "Manchester" to "UK",
+            "Birmingham" to "UK",
+            "Toronto" to "Canada",
+            "Vancouver" to "Canada",
+            "New York" to "USA",
+            "Los Angeles" to "USA",
+            "Chicago" to "USA",
+            "Sydney" to "Australia",
+            "Melbourne" to "Australia",
+            "Perth" to "Australia"
+        )
+    }
+    
+    var showCityDropdown by remember { mutableStateOf(false) }
+    
     SettingsCard {
         Column {
             Text(
@@ -294,21 +343,77 @@ private fun LocationSettings(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            ImprovedTextField(
-                value = city,
-                onValueChange = onCityChange,
-                label = stringResource(R.string.city),
-                modifier = Modifier.fillMaxWidth(),
-                keyboardType = KeyboardType.Text
+            // City Dropdown
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { showCityDropdown = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (city.isNotEmpty()) "$city, $country" else "Select City",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text("▼", color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+                
+                DropdownMenu(
+                    expanded = showCityDropdown,
+                    onDismissRequest = { showCityDropdown = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    cities.forEach { (cityName, countryName) ->
+                        DropdownMenuItem(
+                            text = {
+                                Text("$cityName, $countryName")
+                            },
+                            onClick = {
+                                onCityChange(cityName)
+                                onCountryChange(countryName)
+                                showCityDropdown = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherCitySettings(
+    weatherCity: String,
+    onWeatherCityChange: (String) -> Unit
+) {
+    SettingsCard {
+        Column {
+            Text(
+                text = "Weather City",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "City for weather information (separate from prayer times location)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             ImprovedTextField(
-                value = country,
-                onValueChange = onCountryChange,
-                label = "Country",
+                value = weatherCity,
+                onValueChange = onWeatherCityChange,
                 modifier = Modifier.fillMaxWidth(),
+                placeholder = "Enter city name for weather",
                 keyboardType = KeyboardType.Text
             )
         }
@@ -800,13 +905,15 @@ private fun TimePickerField(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Hours picker
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -815,47 +922,62 @@ private fun TimePickerField(
                         val currentHour = hours.toIntOrNull() ?: 0
                         val newHour = (currentHour + 1) % 24
                         hours = String.format("%02d", newHour)
-                    }
+                    },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(8.dp)
+                        )
                 ) {
                     Text(
                         text = "▲",
                         color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
                 
-                Text(
-                    text = hours.padStart(2, '0'),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .background(
-                            MaterialTheme.colorScheme.surface,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                )
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = hours.padStart(2, '0'),
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
                 
                 IconButton(
                     onClick = {
                         val currentHour = hours.toIntOrNull() ?: 0
                         val newHour = if (currentHour == 0) 23 else currentHour - 1
                         hours = String.format("%02d", newHour)
-                    }
+                    },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(8.dp)
+                        )
                 ) {
                     Text(
                         text = "▼",
                         color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
                 
                 Text(
                     text = "HH",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
             }
             
@@ -874,47 +996,62 @@ private fun TimePickerField(
                         val currentMin = minutes.toIntOrNull() ?: 0
                         val newMin = (currentMin + 1) % 60
                         minutes = String.format("%02d", newMin)
-                    }
+                    },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(8.dp)
+                        )
                 ) {
                     Text(
                         text = "▲",
                         color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
                 
-                Text(
-                    text = minutes.padStart(2, '0'),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .background(
-                            MaterialTheme.colorScheme.surface,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                )
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = minutes.padStart(2, '0'),
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
                 
                 IconButton(
                     onClick = {
                         val currentMin = minutes.toIntOrNull() ?: 0
                         val newMin = if (currentMin == 0) 59 else currentMin - 1
                         minutes = String.format("%02d", newMin)
-                    }
+                    },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(8.dp)
+                        )
                 ) {
                     Text(
                         text = "▼",
                         color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
                 
                 Text(
                     text = "MM",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
             }
         }

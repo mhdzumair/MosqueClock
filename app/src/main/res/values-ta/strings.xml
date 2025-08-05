@@ -4,7 +4,7 @@
     
     <!-- Prayer Names -->
     <string name="fajr">ஃபஜ்ர்</string>
-    <string name="dhuhr">துஹர்</string>
+    <string name="dhuhr">ளுஹர்</string>
     <string name="asr">அஸர்</string>
     <string name="maghrib">மஃரிப்</string>
     <string name="isha">இஷா</string>
@@ -67,12 +67,89 @@
     <string name="back">திரும்பு</string>
     <string name="save">சேமி</string>
     <string name="cancel">ரத்து</string>
+    <string name="exit_app">ஆப்பை மூடு</string>
+    <string name="exit_confirmation">நீங்கள் உண்மையில் பள்ளிவாசல் தொழுகை கடிகாரத்திலிருந்து வெளியேற விரும்புகிறீர்களா?</string>
+    <string name="exit">வெளியேறு</string>
     
     <!-- Time Format -->
-    <string name="am">காலை</string>
-    <string name="pm">மாலை</string>
-    
+    <string name="am">AM</string>
+    <string name="pm">PM</string>
+
     <!-- Location -->
     <string name="colombo">கொழும்பு</string>
     <string name="western_province">மேற்கு மாகாணம்</string>
+    
+    <!-- Prayer Status -->
+    <string name="current_prayer">தற்போதைய தொழுகை</string>
+    <string name="jummah">ஜும்ஆ</string>
+    
+    <!-- Weather -->
+    <string name="weather_city">காலநிலை நகரம்</string>
+    <string name="weather_city_description">காலநிலை தகவலுக்கான நகரம் (தொழுகை நேர இடத்திலிருந்து தனி)</string>
+    <string name="weather_placeholder">காலநிலைக்கான நகர பெயரை உள்ளிடவும்</string>
+    
+    <!-- Prayer Settings -->
+    <string name="manual_prayer_times">கைமுறை தொழுகை நேரங்கள்</string>
+    <string name="manual_prayer_times_description">API க்கு பதிலாக கைமுறை நேரங்களைப் பயன்படுத்தவும்</string>
+    <string name="prayer_times_setup">தொழுகை நேர அமைப்பு</string>
+    <string name="iqamah_gaps">இகாமத் நேர இடைவெளிகள் (அதானுக்குப் பிறகு நிமிடங்கள்)</string>
+    
+    <!-- App Control -->
+    <string name="app_control">ஆப் கட்டுப்பாடு</string>
+    <string name="exit_prayer_clock">தொழுகை கடிகாரத்திலிருந்து வெளியேறு</string>
+    
+    <!-- Location Setting -->
+    <string name="location">இடம்</string>
+    <string name="select_city">நகரத்தைத் தேர்ந்தெடுக்கவும்</string>
+    
+    <!-- Clock Format -->
+    <string name="clock_format">கடிகார வடிவம்</string>
+    
+    <!-- Weather Details -->
+    <string name="humidity_short">ஈரப்பதம்</string>
+    <string name="feels_like_short">உணர்வு</string>
+    
+    <!-- Time Calculation -->
+    <string name="hours_short">மணி நேரம்</string>
+    <string name="minutes_short">நிமிடங்கள்</string>
+    <string name="hour_short">மணி நேரம்</string>
+    <string name="minute_short">நிமிடம்</string>
+    <string name="remaining">எஞ்சியுள்ளது</string>
+    <string name="time_format_hours_minutes">%1$dம %2$dநி எஞ்சியுள்ளது</string>
+    <string name="time_format_minutes_seconds">%1$dநி %2$dவி எஞ்சியுள்ளது</string>
+    <string name="time_format_seconds">%1$dவி எஞ்சியுள்ளது</string>
+    
+    <!-- Prayer Time Letters (for highlighting) -->
+    <string name="azan_letter">அ</string>
+    <string name="iqamah_letter">இ</string>
+    
+    <!-- Day Names -->
+    <string-array name="day_names">
+        <item>திங்கள்</item>
+        <item>செவ்வாய்</item>
+        <item>புதன்</item>
+        <item>வியாழன்</item>
+        <item>வெள்ளி</item>
+        <item>சனி</item>
+        <item>ஞாயிறு</item>
+    </string-array>
+    
+    <!-- Hijri Month Names -->
+    <string-array name="hijri_months">
+        <item>முஹர்ரம்</item>
+        <item>ஸபர்</item>
+        <item>ரபீ அவ்வல்</item>
+        <item>ரபீ ஆகிர்</item>
+        <item>ஜுமாதா அவ்வல்</item>
+        <item>ஜுமாதா ஆகிர்</item>
+        <item>ரஜப்</item>
+        <item>ஷக்பான்</item>
+        <item>ரமலான்</item>
+        <item>ஷவ்வல்</item>
+        <item>துல் க்வித்தா</item>
+        <item>துல் ஹிஜ்ஜா</item>
+    </string-array>
+    
+    <!-- Loading text -->
+    <string name="loading_hijri">ஏற்றுகிறது...</string>
 </resources>

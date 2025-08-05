@@ -47,6 +47,5 @@ data class PrayerInfo(
     val type: PrayerType,
     val azanTime: String,
     val iqamahTime: String? = null,
-    val nameEn: String,
-    val nameTa: String
+    val name: String
 )

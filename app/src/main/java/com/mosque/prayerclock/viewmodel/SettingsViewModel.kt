@@ -87,4 +87,16 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.updateIqamahGap(prayerType, gap)
         }
     }
+    
+    fun updateWeatherCity(weatherCity: String) {
+        viewModelScope.launch {
+            settingsRepository.updateWeatherCity(weatherCity)
+        }
+    }
+    
+    fun updateWeatherCountry(weatherCountry: String) {
+        viewModelScope.launch {
+            settingsRepository.updateWeatherCountry(weatherCountry)
+        }
+    }
 }

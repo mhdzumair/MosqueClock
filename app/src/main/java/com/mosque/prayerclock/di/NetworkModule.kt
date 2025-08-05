@@ -1,6 +1,8 @@
 package com.mosque.prayerclock.di
 
 import com.mosque.prayerclock.data.network.PrayerTimesApi
+import com.mosque.prayerclock.data.network.WeatherApi
+import com.mosque.prayerclock.data.repository.WeatherRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,6 +13,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
+import javax.inject.Named
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -33,7 +36,8 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    @Named("prayer")
+    fun providePrayerRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://api.aladhan.com/")
             .client(okHttpClient)
@@ -43,7 +47,24 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun providePrayerTimesApi(retrofit: Retrofit): PrayerTimesApi {
+    @Named("weather")
+    fun provideWeatherRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.weatherapi.com/v1/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun providePrayerTimesApi(@Named("prayer") retrofit: Retrofit): PrayerTimesApi {
         return retrofit.create(PrayerTimesApi::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideWeatherApi(@Named("weather") retrofit: Retrofit): WeatherApi {
+        return retrofit.create(WeatherApi::class.java)
     }
 }

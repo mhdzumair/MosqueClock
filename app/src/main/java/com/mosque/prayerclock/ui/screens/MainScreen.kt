@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import android.app.UiModeManager
 import android.content.res.Configuration
 import androidx.compose.ui.res.stringResource
+import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.ui.localizedStringArrayResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,8 +37,11 @@ import com.mosque.prayerclock.data.model.*
 import com.mosque.prayerclock.ui.components.DigitalClock
 import com.mosque.prayerclock.ui.components.AnalogClock
 import com.mosque.prayerclock.ui.components.PrayerTimeCard
+import com.mosque.prayerclock.ui.components.WeatherCard
 import com.mosque.prayerclock.viewmodel.MainViewModel
 import com.mosque.prayerclock.viewmodel.MainUiState
+import com.mosque.prayerclock.viewmodel.WeatherUiState
+import com.mosque.prayerclock.data.repository.HijriDateRepository
 import kotlinx.datetime.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -53,6 +58,7 @@ fun MainScreen(
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val weatherState by viewModel.weatherState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     
     LaunchedEffect(Unit) {
@@ -73,7 +79,9 @@ fun MainScreen(
     ) {
         NewMainLayout(
             uiState = uiState,
+            weatherState = weatherState,
             settings = settings,
+            viewModel = viewModel,
             onOpenSettings = onOpenSettings,
             onRetry = { viewModel.loadPrayerTimes() }
         )
@@ -83,7 +91,9 @@ fun MainScreen(
 @Composable
 fun NewMainLayout(
     uiState: MainUiState,
+    weatherState: WeatherUiState,
     settings: AppSettings,
+    viewModel: MainViewModel,
     onOpenSettings: () -> Unit,
     onRetry: () -> Unit
 ) {
@@ -105,56 +115,104 @@ fun NewMainLayout(
             Spacer(modifier = Modifier.height(spacingSize))
         }
         
-        // Clock and Next Prayer Timer side by side
+        // Main content row with Clock and combined Next Prayer + Weather
         Row(
             modifier = Modifier.weight(0.75f),
             horizontalArrangement = Arrangement.spacedBy(spacingSize),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Clock section
+            // Clock section - Give more space to clock
             ClockSection(
                 settings = settings,
                 onClockClick = onOpenSettings,
-                isCompact = true,
+                isCompact = false, // Make clock larger
                 isTV = isTV,
-                modifier = Modifier.weight(1f)
+                hijriDateRepository = viewModel.hijriDateRepository,
+                modifier = Modifier.weight(1.4f) // Increased weight for bigger clock
             )
             
-            // Next prayer timer
-            when (uiState) {
-                is MainUiState.Loading -> {
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            color = MaterialTheme.colorScheme.primary
+            // Combined Next Prayer and Weather section - Reduce space
+            Column(
+                modifier = Modifier.weight(0.9f), // Reduced weight to give more space to clock
+                verticalArrangement = Arrangement.spacedBy(if (isTV) 8.dp else 6.dp)
+            ) {
+                // Next prayer timer - Takes most of the space
+                when (uiState) {
+                    is MainUiState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().weight(3f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    is MainUiState.Success -> {
+                        NextPrayerCountdownSection(
+                            prayerTimes = uiState.prayerTimes,
+                            nextPrayer = uiState.nextPrayer,
+                            language = settings.language,
+                            show24Hour = settings.show24HourFormat,
+                            isTV = isTV,
+                            modifier = Modifier.fillMaxWidth().weight(3f),
+                            onPrayerTransition = { viewModel.updateNextPrayer() }
                         )
+                    }
+                    
+                    is MainUiState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().weight(3f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = uiState.message,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
                 
-                is MainUiState.Success -> {
-                    NextPrayerCountdownSection(
-                        prayerTimes = uiState.prayerTimes,
-                        nextPrayer = uiState.nextPrayer,
-                        language = settings.language,
-                        show24Hour = settings.show24HourFormat,
-                        isTV = isTV,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                
-                is MainUiState.Error -> {
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = uiState.message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                // Weather section (if enabled) - Takes minimal space
+                if (settings.showWeather) {
+                    when (weatherState) {
+                        is WeatherUiState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(if (isTV) 60.dp else 50.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        
+                        is WeatherUiState.Success -> {
+                            WeatherCard(
+                                weatherInfo = weatherState.weatherInfo,
+                                language = settings.language,
+                                isTV = isTV,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        
+                        is WeatherUiState.Error -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(if (isTV) 60.dp else 50.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Weather unavailable",
+                                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -214,6 +272,7 @@ fun ClockSection(
     isLandscape: Boolean = false,
     isCompact: Boolean = false,
     isTV: Boolean = false,
+    hijriDateRepository: HijriDateRepository? = null,
     modifier: Modifier = Modifier
 ) {
     val clockSize = when {
@@ -224,12 +283,7 @@ fun ClockSection(
         else -> 300.dp
     }
     
-    val fontSize = when {
-        isTV && isCompact -> 100.sp
-        isTV -> 120.sp
-        isLandscape -> 88.sp
-        else -> 112.sp
-    }
+    val fontSize = 88.sp
     
     Card(
         modifier = modifier
@@ -240,7 +294,7 @@ fun ClockSection(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        val boxPadding = if (isTV) 12.dp else 16.dp
+        val boxPadding = if (isTV) 6.dp else 8.dp
         
         Box(
             modifier = Modifier
@@ -253,7 +307,7 @@ fun ClockSection(
                         show24Hour = settings.show24HourFormat,
                         showSeconds = settings.showSeconds,
                         fontSize = fontSize,
-                        language = settings.language
+                        hijriDateRepository = hijriDateRepository
                     )
                 }
                 ClockType.ANALOG -> {
@@ -274,9 +328,7 @@ fun NextPrayerSection(
     language: Language,
     modifier: Modifier = Modifier
 ) {
-    val prayerInfoList = remember(prayerTimes, language) {
-        createPrayerInfoList(prayerTimes, language)
-    }
+    val prayerInfoList = createPrayerInfoList(prayerTimes)
     
     val nextPrayerInfo = prayerInfoList.find { it.type == nextPrayer }
     var currentTime by remember { mutableStateOf(Clock.System.now()) }
@@ -314,7 +366,7 @@ fun NextPrayerSection(
             
             if (nextPrayerInfo != null) {
                 Text(
-                    text = if (language == Language.TAMIL) nextPrayerInfo.nameTa else nextPrayerInfo.nameEn,
+                    text = nextPrayerInfo.name,
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
@@ -340,8 +392,9 @@ fun NextPrayerSection(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                val timeUntilPrayer = calculateTimeUntilPrayer(nextPrayerInfo.azanTime, currentTime, language)
-                if (timeUntilPrayer.isNotEmpty()) {
+                val countdownData = calculateTimeUntilPrayerData(nextPrayerInfo.azanTime, currentTime)
+                if (countdownData != null) {
+                    val timeUntilPrayer = formatTimeRemaining(countdownData)
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
@@ -375,9 +428,7 @@ private fun PrayerTimesSection(
     language: Language,
     isLandscape: Boolean = false
 ) {
-    val prayerInfoList = remember(prayerTimes, language) {
-        createPrayerInfoList(prayerTimes, language)
-    }
+    val prayerInfoList = createPrayerInfoList(prayerTimes)
     
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
@@ -420,7 +471,7 @@ private fun ErrorMessage(
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Text(stringResource(R.string.refresh))
+            Text(localizedStringResource(R.string.refresh))
         }
     }
 }
@@ -445,7 +496,7 @@ private fun formatTimeBasedOnPreference(time: String, show24Hour: Boolean): Stri
     }
 }
 
-private fun calculateTimeUntilPrayer(prayerTime: String, currentTime: Instant, language: Language = Language.ENGLISH): String {
+private fun calculateTimeUntilPrayerData(prayerTime: String, currentTime: Instant): CountdownData? {
     try {
         val now = currentTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
         val parts = prayerTime.split(":")
@@ -461,28 +512,139 @@ private fun calculateTimeUntilPrayer(prayerTime: String, currentTime: Instant, l
         val duration = prayerInstant - currentTime
         
         if (duration.isNegative()) {
-            return ""
+            return null
         }
         
         val hours = duration.inWholeHours
         val minutes = (duration.inWholeMinutes % 60)
         val seconds = (duration.inWholeSeconds % 60)
         
-        return if (language == Language.TAMIL) {
-            when {
-                hours > 0 -> "${hours}ம ${minutes}நி எஞ்சியுள்ளது"
-                minutes > 0 -> "${minutes}நி ${seconds}வி எஞ்சியுள்ளது"
-                else -> "${seconds}வி எஞ்சியுள்ளது"
-            }
-        } else {
-            when {
-                hours > 0 -> "${hours}h ${minutes}m remaining"
-                minutes > 0 -> "${minutes}m ${seconds}s remaining"
-                else -> "${seconds}s remaining"
-            }
-        }
+        return CountdownData(hours, minutes, seconds, duration.inWholeMinutes)
     } catch (e: Exception) {
-        return ""
+        return null
+    }
+}
+
+@Composable
+private fun formatTimeRemaining(countdownData: CountdownData): String {
+    return when {
+        countdownData.hours > 0 -> localizedStringResource(R.string.time_format_hours_minutes, countdownData.hours, countdownData.minutes)
+        countdownData.minutes > 0 -> localizedStringResource(R.string.time_format_minutes_seconds, countdownData.minutes, countdownData.seconds)
+        else -> localizedStringResource(R.string.time_format_seconds, countdownData.seconds)
+    }
+}
+
+data class CountdownData(
+    val hours: Long,
+    val minutes: Long,
+    val seconds: Long,
+    val totalMinutes: Long
+)
+
+private fun getCountdownData(prayerTime: String, currentTime: Instant): CountdownData {
+    try {
+        val now = currentTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+        val parts = prayerTime.split(":")
+        val prayerHour = parts[0].toInt()
+        val prayerMinute = parts[1].toInt()
+        
+        val prayerDateTime = LocalDateTime(
+            now.date,
+            LocalTime(prayerHour, prayerMinute)
+        )
+        
+        val prayerInstant = prayerDateTime.toInstant(kotlinx.datetime.TimeZone.currentSystemDefault())
+        val duration = prayerInstant - currentTime
+        
+        if (duration.isNegative()) {
+            return CountdownData(0, 0, 0, 0)
+        }
+        
+        val hours = duration.inWholeHours
+        val minutes = (duration.inWholeMinutes % 60)
+        val seconds = (duration.inWholeSeconds % 60)
+        val totalMinutes = duration.inWholeMinutes
+        
+        return CountdownData(hours, minutes, seconds, totalMinutes)
+    } catch (e: Exception) {
+        return CountdownData(0, 0, 0, 0)
+    }
+}
+
+@Composable
+fun CountdownDisplay(
+    hours: Long,
+    minutes: Long,
+    seconds: Long,
+    isTV: Boolean = false
+) {
+    val digitSize = if (isTV) 48.sp else 36.sp  // Further increased size for better visibility
+    val labelSize = if (isTV) 16.sp else 14.sp
+    
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(if (isTV) 20.dp else 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (hours > 0) {
+            CountdownUnit(
+                value = hours,
+                label = "H",
+                digitSize = digitSize,
+                labelSize = labelSize
+            )
+        }
+        
+        CountdownUnit(
+            value = minutes,
+            label = "M",
+            digitSize = digitSize,
+            labelSize = labelSize
+        )
+        
+        CountdownUnit(
+            value = seconds,
+            label = "S",
+            digitSize = digitSize,
+            labelSize = labelSize
+        )
+    }
+}
+
+@Composable
+private fun CountdownUnit(
+    value: Long,
+    label: String,
+    digitSize: androidx.compose.ui.unit.TextUnit,
+    labelSize: androidx.compose.ui.unit.TextUnit
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = String.format("%02d", value),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontSize = digitSize,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = labelSize,
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            )
+        }
     }
 }
 
@@ -494,15 +656,13 @@ fun NextPrayerCountdownSection(
     language: Language,
     show24Hour: Boolean = false,
     isTV: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPrayerTransition: () -> Unit = {}
 ) {
-    val prayerInfoList = remember(prayerTimes, language) {
-        createPrayerInfoList(prayerTimes, language)
-    }
+    val prayerInfoList = createPrayerInfoList(prayerTimes)
     
     val nextPrayerInfo = prayerInfoList.find { it.type == nextPrayer }
     var currentTime by remember { mutableStateOf(Clock.System.now()) }
-    var showAzan by remember { mutableStateOf(true) }
     
     // Update time every second
     LaunchedEffect(Unit) {
@@ -512,31 +672,81 @@ fun NextPrayerCountdownSection(
         }
     }
     
-    // Alternate between Azan and Iqamah display every 5 seconds
-    LaunchedEffect(nextPrayerInfo) {
-        if (nextPrayerInfo?.iqamahTime != null) {
-            while (true) {
-                kotlinx.coroutines.delay(5000)
-                showAzan = !showAzan
-            }
+    // Determine if we should show Azan or Iqamah based on timing
+    val now = currentTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    val currentTimeString = "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
+    
+    // Check if we're past Azan time but before Iqamah time
+    val isAfterAzan = nextPrayerInfo?.let { prayer ->
+        compareTimeStrings(prayer.azanTime, currentTimeString) <= 0
+    } ?: false
+    
+    val isBeforeIqamah = nextPrayerInfo?.iqamahTime?.let { iqamahTime ->
+        compareTimeStrings(currentTimeString, iqamahTime) < 0
+    } ?: false
+    
+    val shouldShowIqamah = isAfterAzan && isBeforeIqamah && nextPrayerInfo?.iqamahTime != null
+    
+    // We now show only the relevant time instead of alternating
+    
+    // Determine if this is current prayer or next prayer
+    val isCurrentPrayer = nextPrayerInfo?.let { prayer ->
+        if (prayer.iqamahTime != null) {
+            // If there's an Iqamah time, check if we're between Azan and Iqamah+5min buffer
+            val bufferTime = addMinutesToTime(prayer.iqamahTime, 5)
+            isAfterAzan && compareTimeStrings(currentTimeString, bufferTime) < 0
+        } else {
+            // For prayers without Iqamah (like Friday Dhuhr), check for extended period
+            val extendedTime = addMinutesToTime(prayer.azanTime, 60) // 1 hour for Friday
+            isAfterAzan && compareTimeStrings(currentTimeString, extendedTime) < 0
+        }
+    } ?: false
+    
+    // Track prayer transition to trigger ViewModel update
+    val previousIsCurrentPrayer = remember { mutableStateOf(isCurrentPrayer) }
+    LaunchedEffect(isCurrentPrayer) {
+        if (previousIsCurrentPrayer.value != isCurrentPrayer) {
+            // Prayer status changed, trigger update
+            onPrayerTransition()
+            previousIsCurrentPrayer.value = isCurrentPrayer
         }
     }
     
+    // No longer need alternating display - we show only the relevant time
+    
     if (nextPrayerInfo != null) {
+        // Check if countdown will be visible to determine sizing
+        val targetTime = if (shouldShowIqamah) {
+            nextPrayerInfo.iqamahTime ?: nextPrayerInfo.azanTime
+        } else {
+            nextPrayerInfo.azanTime
+        }
+        val countdownData = getCountdownData(targetTime, currentTime)
+        val showCountdown = countdownData.totalMinutes <= 60
+        
         Card(
             modifier = modifier
                 .fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
             shape = RoundedCornerShape(24.dp)
         ) {
-            val titleFontSize = if (isTV) 20.sp else 16.sp
-            val prayerNameFontSize = if (isTV) 38.sp else 28.sp
-            val timeFontSize = if (isTV) 48.sp else 36.sp
-            val paddingSize = if (isTV) 16.dp else 12.dp
-            val spacingSize = if (isTV) 8.dp else 6.dp
+            val titleFontSize = if (isTV) 24.sp else 20.sp        // Increased title size
+            val prayerNameFontSize = if (isTV) 44.sp else 34.sp  // Increased prayer name size
+            val timeFontSize = if (isTV) 56.sp else 44.sp        // Increased time size
+            // Reduce padding when countdown is not visible to make component more compact
+            val paddingSize = if (showCountdown) {
+                if (isTV) 12.dp else 8.dp
+            } else {
+                if (isTV) 8.dp else 6.dp
+            }
+            val spacingSize = if (showCountdown) {
+                if (isTV) 8.dp else 6.dp
+            } else {
+                if (isTV) 6.dp else 4.dp
+            }
             
             Column(
                 modifier = Modifier
@@ -545,84 +755,66 @@ fun NextPrayerCountdownSection(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (language == Language.TAMIL) "அடுத்த தொழுகை" else "Next Prayer",
+                    text = if (isCurrentPrayer) {
+                        localizedStringResource(R.string.current_prayer)
+                    } else {
+                        localizedStringResource(R.string.next_prayer)
+                    },
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontSize = titleFontSize
                     ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     fontWeight = FontWeight.Medium
                 )
                 
                 Spacer(modifier = Modifier.height(spacingSize))
                 
                 Text(
-                    text = if (language == Language.TAMIL) nextPrayerInfo.nameTa else nextPrayerInfo.nameEn,
+                    text = nextPrayerInfo.name,
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontSize = prayerNameFontSize,
                         fontWeight = FontWeight.Bold
                     ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Spacer(modifier = Modifier.height(spacingSize))
                 
-                // Animated time display
-                AnimatedContent(
-                    targetState = showAzan,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(800)) togetherWith fadeOut(animationSpec = tween(800))
+                // Single time display - show only relevant time
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Determine which time to show based on current timing
+                    val timeToShow = if (shouldShowIqamah) {
+                        // Show Iqamah time if we're past Azan time
+                        nextPrayerInfo.iqamahTime ?: nextPrayerInfo.azanTime
+                    } else {
+                        // Show Azan time by default
+                        nextPrayerInfo.azanTime
                     }
-                ) { isShowingAzan ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        if (isShowingAzan) {
-                            Text(
-                                text = if (language == Language.TAMIL) "அதான்" else "Azan",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        } else {
-                            Text(
-                                text = if (language == Language.TAMIL) "இகாமத்" else "Iqamah",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                        
-                        Text(
-                            text = if (isShowingAzan) 
-                                formatTimeBasedOnPreference(nextPrayerInfo.azanTime, show24Hour) 
-                            else 
-                                formatTimeBasedOnPreference(nextPrayerInfo.iqamahTime ?: nextPrayerInfo.azanTime, show24Hour),
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontSize = timeFontSize,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+                    
+                    Text(
+                        text = formatTimeBasedOnPreference(timeToShow, show24Hour),
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontSize = timeFontSize,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(spacingSize))
                 
-                // Countdown timer
-                val timeUntilPrayer = calculateTimeUntilPrayer(nextPrayerInfo.azanTime, currentTime, language)
-                if (timeUntilPrayer.isNotEmpty()) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            text = timeUntilPrayer,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = if (isTV) 16.sp else 14.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(8.dp)
+                // Show countdown only if it was determined to be visible
+                if (showCountdown) {
+                    val countdownDataForDisplay = calculateTimeUntilPrayerData(targetTime, currentTime)
+                    if (countdownDataForDisplay != null) {
+                        val timeUntilPrayer = formatTimeRemaining(countdownDataForDisplay)
+                        CountdownDisplay(
+                            hours = countdownData.hours,
+                            minutes = countdownData.minutes,
+                            seconds = countdownData.seconds,
+                            isTV = isTV
                         )
                     }
                 }
@@ -639,9 +831,7 @@ fun AnimatedPrayerTimesSection(
     show24Hour: Boolean = false,
     isTV: Boolean = false
 ) {
-    val prayerInfoList = remember(prayerTimes, language) {
-        createPrayerInfoList(prayerTimes, language)
-    }
+    val prayerInfoList = createPrayerInfoList(prayerTimes)
     
     val horizontalPadding = if (isTV) 1.dp else 1.dp
     val itemSpacing = if (isTV) 2.dp else 2.dp
@@ -735,7 +925,7 @@ fun CompactPrayerTimeCard(
             val spacingSize = if (isTV) 3.dp else 2.dp
             
             Text(
-                text = if (language == Language.TAMIL) prayerInfo.nameTa else prayerInfo.nameEn,
+                text = prayerInfo.name,
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontSize = prayerNameFontSize,
                     fontWeight = FontWeight.Bold
@@ -764,9 +954,9 @@ fun CompactPrayerTimeCard(
                         // Show label only if there's Iqamah time
                         Text(
                             text = if (isShowingAzan) {
-                                if (language == Language.TAMIL) "அ" else "A"
+                                localizedStringResource(R.string.azan_letter)
                             } else {
-                                if (language == Language.TAMIL) "இ" else "I"
+                                localizedStringResource(R.string.iqamah_letter)
                             },
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = labelFontSize
@@ -799,49 +989,74 @@ fun CompactPrayerTimeCard(
     }
 }
 
-private fun createPrayerInfoList(prayerTimes: PrayerTimes, @Suppress("UNUSED_PARAMETER") language: Language): List<PrayerInfo> {
+private fun compareTimeStrings(time1: String, time2: String): Int {
+    val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return try {
+        val date1 = format.parse(time1)
+        val date2 = format.parse(time2)
+        date1?.compareTo(date2) ?: 0
+    } catch (e: Exception) {
+        0
+    }
+}
+
+private fun addMinutesToTime(timeString: String, minutesToAdd: Int): String {
+    try {
+        val parts = timeString.split(":")
+        val hours = parts[0].toInt()
+        val minutes = parts[1].toInt()
+        
+        val totalMinutes = (hours * 60) + minutes + minutesToAdd
+        val newHours = (totalMinutes / 60) % 24
+        val newMinutes = totalMinutes % 60
+        
+        return String.format("%02d:%02d", newHours, newMinutes)
+    } catch (e: Exception) {
+        return timeString
+    }
+}
+
+@Composable
+private fun createPrayerInfoList(prayerTimes: PrayerTimes): List<PrayerInfo> {
+    val currentDate = Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    val isFriday = currentDate.dayOfWeek == DayOfWeek.FRIDAY
+    
     return listOf(
         PrayerInfo(
             type = PrayerType.FAJR,
             azanTime = prayerTimes.fajrAzan,
             iqamahTime = prayerTimes.fajrIqamah,
-            nameEn = "Fajr",
-            nameTa = "ஃபஜ்ர்"
+            name = localizedStringResource(R.string.fajr)
         ),
         PrayerInfo(
             type = PrayerType.SUNRISE,
             azanTime = prayerTimes.sunrise,
             iqamahTime = null,
-            nameEn = "Sunrise",
-            nameTa = "சூரிய உதயம்"
+            name = localizedStringResource(R.string.sunrise)
         ),
         PrayerInfo(
             type = PrayerType.DHUHR,
             azanTime = prayerTimes.dhuhrAzan,
-            iqamahTime = prayerTimes.dhuhrIqamah,
-            nameEn = "Dhuhr",
-            nameTa = "துஹர்"
+            iqamahTime = if (isFriday) null else prayerTimes.dhuhrIqamah, // No Iqamah on Friday (Bayan instead)
+            name = if (isFriday) localizedStringResource(R.string.jummah) else localizedStringResource(R.string.dhuhr)
         ),
         PrayerInfo(
             type = PrayerType.ASR,
             azanTime = prayerTimes.asrAzan,
             iqamahTime = prayerTimes.asrIqamah,
-            nameEn = "Asr",
-            nameTa = "அஸர்"
+            name = localizedStringResource(R.string.asr)
         ),
         PrayerInfo(
             type = PrayerType.MAGHRIB,
             azanTime = prayerTimes.maghribAzan,
             iqamahTime = prayerTimes.maghribIqamah,
-            nameEn = "Maghrib",
-            nameTa = "மஃரிப்"
+            name = localizedStringResource(R.string.maghrib)
         ),
         PrayerInfo(
             type = PrayerType.ISHA,
             azanTime = prayerTimes.ishaAzan,
             iqamahTime = prayerTimes.ishaIqamah,
-            nameEn = "Isha",
-            nameTa = "இஷா"
+            name = localizedStringResource(R.string.isha)
         )
     )
 }

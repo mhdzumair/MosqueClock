@@ -6,7 +6,7 @@ data class AppSettings(
     val country: String = "Sri Lanka",
     val latitude: Double = 6.9271,
     val longitude: Double = 79.8612,
-    val mosqueName: String = "ஜமிஅத் அல்-இஸ்லாம் பள்ளிவாசல்",
+    val mosqueName: String = "Dickwella Jummah Mosque",
     val clockType: ClockType = ClockType.DIGITAL,
     val theme: AppTheme = AppTheme.DEFAULT,
     val fontSize: FontSize = FontSize.MEDIUM,
@@ -28,7 +28,15 @@ data class AppSettings(
     val asrIqamahGap: Int = 10,
     val maghribIqamahGap: Int = 5,
     val ishaIqamahGap: Int = 10,
-    val refreshInterval: Long = 24 * 60 * 60 * 1000L // 24 hours in milliseconds
+    val refreshInterval: Long = 24 * 60 * 60 * 1000L, // 24 hours in milliseconds
+    val showWeather: Boolean = true,
+    val weatherCity: String = "Colombo",
+    val weatherCountry: String = "Sri Lanka",
+    val useApiForHijriDate: Boolean = false,
+    val manualHijriDay: Int = 7,
+    val manualHijriMonth: Int = 2, // Safar
+    val manualHijriYear: Int = 1447,
+    val lastUpdatedGregorianDate: String = "2025-08-01" // Track when Hijri date was last set
 )
 
 enum class Language(val code: String, val displayName: String) {
@@ -53,4 +61,14 @@ data class LocationInfo(
     val city: String,
     val displayNameEn: String,
     val displayNameTa: String
+)
+
+data class WeatherInfo(
+    val temperature: Double,
+    val description: String,
+    val icon: String,
+    val humidity: Int,
+    val feelsLike: Double,
+    val visibility: Double? = null,
+    val uvIndex: Double? = null
 )

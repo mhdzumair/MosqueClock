@@ -13,10 +13,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.stringArrayResource
+import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.ui.localizedStringArrayResource
 import kotlinx.coroutines.delay
 import kotlinx.datetime.*
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.floor
+import com.mosque.prayerclock.R
 
 @Composable
 fun DigitalClock(
@@ -24,7 +30,7 @@ fun DigitalClock(
     showSeconds: Boolean = true,
     modifier: Modifier = Modifier,
     fontSize: androidx.compose.ui.unit.TextUnit = 96.sp,
-    language: com.mosque.prayerclock.data.model.Language = com.mosque.prayerclock.data.model.Language.ENGLISH
+    hijriDateRepository: com.mosque.prayerclock.data.repository.HijriDateRepository? = null
 ) {
     var currentTime by remember { mutableStateOf(Clock.System.now()) }
     
@@ -40,22 +46,30 @@ fun DigitalClock(
     val dateFormat = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault())
     val date = Date(currentTime.toEpochMilliseconds())
     
-    // Get Arabic month names in Tamil
-    val arabicMonthsTamil = listOf(
-        "முஹர்ரம்", "ஸபர்", "ரபீ அவ்வல்", "ரபீ ஆகிர்",
-        "ஜுமாதா அவ்வல்", "ஜுமாதா ஆகிர்", "ரஜப்", "ஷக்பான்",
-        "ரமலான்", "ஷவ்வல்", "துல் க்வித்தா", "துல் ஹிஜ்ஜா"
-    )
+    // Get Hijri date from repository or fallback
+    var hijriDate by remember { mutableStateOf<com.mosque.prayerclock.data.repository.HijriDateRepository.HijriDate?>(null) }
     
-    val formattedDate = if (language == com.mosque.prayerclock.data.model.Language.TAMIL) {
-        // Get current Islamic/Arabic month (simplified - using Gregorian month for demo)
-        val currentMonth = localDateTime.monthNumber - 1
-        val arabicMonth = arabicMonthsTamil.getOrNull(currentMonth) ?: arabicMonthsTamil[0]
-        val dayNames = listOf("திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி", "ஞாயிறு")
-        val dayName = dayNames[(localDateTime.dayOfWeek.ordinal) % 7]
-        "$dayName, $arabicMonth ${localDateTime.dayOfMonth}, ${localDateTime.year}"
-    } else {
-        dateFormat.format(date)
+    LaunchedEffect(localDateTime.date) {
+        hijriDate = hijriDateRepository?.getCurrentHijriDate() ?: 
+            com.mosque.prayerclock.data.repository.HijriDateRepository.HijriDate(7, 2, 1447) // Default fallback
+    }
+    
+    val dayNames = localizedStringArrayResource(R.array.day_names)
+    val hijriMonthNames = localizedStringArrayResource(R.array.hijri_months)
+    
+    val formattedDate = hijriDate?.let { hDate ->
+        val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
+        val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
+        val gregorianShort = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
+        val gregorianFull = dateFormat.format(date)
+        
+        // Use localized format - showing day name, Hijri date, and Gregorian date
+        "$dayName, $hijriMonth ${hDate.day}, ${hDate.year}\n$gregorianShort"
+    } ?: run {
+        // Fallback if hijriDate is not loaded yet
+        val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
+        val gregorianShort = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
+        "$dayName, ${localizedStringResource(R.string.loading_hijri)}\n$gregorianShort"
     }
     
     // Format time manually for better 12/24 hour control
@@ -64,7 +78,7 @@ fun DigitalClock(
         if (showSeconds) "$timeStr:${String.format("%02d", localDateTime.second)}" else timeStr
     } else {
         val hour12 = if (localDateTime.hour == 0) 12 else if (localDateTime.hour > 12) localDateTime.hour - 12 else localDateTime.hour
-        val ampm = if (localDateTime.hour < 12) "AM" else "PM"
+        val ampm = if (localDateTime.hour < 12) localizedStringResource(R.string.am) else localizedStringResource(R.string.pm)
         val timeStr = String.format("%d:%02d", hour12, localDateTime.minute)
         val timeWithSeconds = if (showSeconds) "$timeStr:${String.format("%02d", localDateTime.second)}" else timeStr
         "$timeWithSeconds $ampm"
@@ -72,16 +86,16 @@ fun DigitalClock(
     
     Card(
         modifier = modifier
-            .padding(16.dp),
+            .padding(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(20.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(24.dp),
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Time display with glow effect

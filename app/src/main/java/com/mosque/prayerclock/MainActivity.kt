@@ -1,5 +1,6 @@
 package com.mosque.prayerclock
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,16 +16,20 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mosque.prayerclock.ui.LocalizedApp
 import com.mosque.prayerclock.ui.components.AnalogClock
 import com.mosque.prayerclock.ui.components.DigitalClock
 import com.mosque.prayerclock.ui.screens.MainScreen
 import com.mosque.prayerclock.ui.screens.SettingsScreen
 import com.mosque.prayerclock.ui.theme.MosqueClockTheme
+import com.mosque.prayerclock.utils.LocaleManager
 import com.mosque.prayerclock.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.system.exitProcess
@@ -40,12 +45,14 @@ class MainActivity : ComponentActivity() {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             
             MosqueClockTheme(theme = settings.theme) {
-                MosqueClockApp(
-                    onExitApp = {
-                        finish()
-                        exitProcess(0)
-                    }
-                )
+                LocalizedApp(language = settings.language) {
+                    MosqueClockApp(
+                        onExitApp = {
+                            finish()
+                            exitProcess(0)
+                        }
+                    )
+                }
             }
         }
     }
@@ -130,12 +137,12 @@ fun MosqueClockApp(
                 onDismissRequest = { showExitDialog = false },
                 title = {
                     Text(
-                        text = "Exit App",
+                        text = localizedStringResource(R.string.exit_app),
                         style = MaterialTheme.typography.headlineSmall
                     )
                 },
                 text = {
-                    Text("Are you sure you want to exit the Mosque Prayer Clock?")
+                    Text(localizedStringResource(R.string.exit_confirmation))
                 },
                 confirmButton = {
                     TextButton(
@@ -144,14 +151,14 @@ fun MosqueClockApp(
                             onExitApp()
                         }
                     ) {
-                        Text("Exit")
+                        Text(localizedStringResource(R.string.exit))
                     }
                 },
                 dismissButton = {
                     TextButton(
                         onClick = { showExitDialog = false }
                     ) {
-                        Text("Cancel")
+                        Text(localizedStringResource(R.string.cancel))
                     }
                 }
             )

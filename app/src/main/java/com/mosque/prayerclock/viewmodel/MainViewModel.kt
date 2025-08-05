@@ -6,6 +6,8 @@ import com.mosque.prayerclock.data.model.*
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
+import com.mosque.prayerclock.data.repository.WeatherRepository
+import com.mosque.prayerclock.data.repository.HijriDateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +19,9 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val prayerTimesRepository: PrayerTimesRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val weatherRepository: WeatherRepository,
+    val hijriDateRepository: HijriDateRepository
 ) : ViewModel() {
     
     val settings = settingsRepository.getSettings()
@@ -29,6 +33,20 @@ class MainViewModel @Inject constructor(
     
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Loading)
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+    
+    private val _weatherState = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading())
+    val weatherState: StateFlow<WeatherUiState> = _weatherState.asStateFlow()
+    
+    // Function to recalculate next prayer - can be called from UI when needed
+    fun updateNextPrayer() {
+        val currentState = _uiState.value
+        if (currentState is MainUiState.Success) {
+            val newNextPrayer = calculateNextPrayer(currentState.prayerTimes)
+            if (newNextPrayer != currentState.nextPrayer) {
+                _uiState.value = currentState.copy(nextPrayer = newNextPrayer)
+            }
+        }
+    }
     
     fun loadPrayerTimes() {
         viewModelScope.launch {
@@ -64,23 +82,74 @@ class MainViewModel @Inject constructor(
                     }
                 }
             }
+            
+            // Load weather data if enabled
+            if (currentSettings.showWeather) {
+                loadWeatherData(currentSettings.weatherCity, currentSettings.weatherCountry)
+            }
+        }
+    }
+    
+    private fun loadWeatherData(city: String, country: String) {
+        viewModelScope.launch {
+            weatherRepository.getCurrentWeather(city, country).collect { result ->
+                when (result) {
+                    is NetworkResult.Loading -> {
+                        _weatherState.value = WeatherUiState.Loading()
+                    }
+                    is NetworkResult.Success -> {
+                        _weatherState.value = WeatherUiState.Success(result.data)
+                    }
+                    is NetworkResult.Error -> {
+                        _weatherState.value = WeatherUiState.Error(result.message)
+                    }
+                }
+            }
         }
     }
     
     private fun calculateNextPrayer(prayerTimes: PrayerTimes): PrayerType? {
         val now = Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
         val currentTime = "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
+        val isFriday = now.dayOfWeek == DayOfWeek.FRIDAY
         
+        // Check if we're in the 5-minute buffer after any Iqamah time
         val prayers = listOf(
-            PrayerType.FAJR to prayerTimes.fajrAzan,
-            PrayerType.DHUHR to prayerTimes.dhuhrAzan,
-            PrayerType.ASR to prayerTimes.asrAzan,
-            PrayerType.MAGHRIB to prayerTimes.maghribAzan,
-            PrayerType.ISHA to prayerTimes.ishaAzan
+            PrayerType.FAJR to Pair(prayerTimes.fajrAzan, prayerTimes.fajrIqamah),
+            PrayerType.DHUHR to Pair(prayerTimes.dhuhrAzan, if (isFriday) null else prayerTimes.dhuhrIqamah), // No Iqamah on Friday
+            PrayerType.ASR to Pair(prayerTimes.asrAzan, prayerTimes.asrIqamah),
+            PrayerType.MAGHRIB to Pair(prayerTimes.maghribAzan, prayerTimes.maghribIqamah),
+            PrayerType.ISHA to Pair(prayerTimes.ishaAzan, prayerTimes.ishaIqamah)
         )
         
-        return prayers.firstOrNull { (_, time) ->
-            compareTimeStrings(currentTime, time) < 0
+        // First check if we're between Azan and Iqamah time OR within 5 minutes after Iqamah
+        for ((prayerType, times) in prayers) {
+            val azanTime = times.first
+            val iqamahTime = times.second
+            
+            if (iqamahTime != null) { // Only check if Iqamah time exists
+                val bufferTime = addMinutesToTime(iqamahTime, 5)
+                
+                // Check if we're between Azan and Iqamah + 5min buffer
+                if (compareTimeStrings(azanTime, currentTime) <= 0 && 
+                    compareTimeStrings(currentTime, bufferTime) < 0) {
+                    // We're in the current prayer period (from Azan to Iqamah + 5min)
+                    return prayerType
+                }
+            } else if (prayerType == PrayerType.DHUHR && isFriday) {
+                // For Friday, give 1 hour after Azan for Bayan
+                val bayanEndTime = addMinutesToTime(times.first, 60)
+                if (compareTimeStrings(times.first, currentTime) <= 0 && 
+                    compareTimeStrings(currentTime, bayanEndTime) < 0) {
+                    return prayerType
+                }
+            }
+        }
+        
+        // Regular logic: find next prayer that hasn't started yet
+        // Skip prayers that have already started (past their Azan time)
+        return prayers.firstOrNull { (_, times) ->
+            compareTimeStrings(currentTime, times.first) < 0
         }?.first
     }
     
@@ -141,6 +210,22 @@ class MainViewModel @Inject constructor(
             return azanTime // Return original time if calculation fails
         }
     }
+    
+    private fun addMinutesToTime(timeString: String, minutesToAdd: Int): String {
+        try {
+            val parts = timeString.split(":")
+            val hours = parts[0].toInt()
+            val minutes = parts[1].toInt()
+            
+            val totalMinutes = (hours * 60) + minutes + minutesToAdd
+            val newHours = (totalMinutes / 60) % 24
+            val newMinutes = totalMinutes % 60
+            
+            return String.format("%02d:%02d", newHours, newMinutes)
+        } catch (e: Exception) {
+            return timeString
+        }
+    }
 }
 
 sealed class MainUiState {
@@ -150,4 +235,10 @@ sealed class MainUiState {
         val nextPrayer: PrayerType?
     ) : MainUiState()
     data class Error(val message: String) : MainUiState()
+}
+
+sealed class WeatherUiState {
+    class Loading : WeatherUiState()
+    data class Success(val weatherInfo: WeatherInfo) : WeatherUiState()
+    data class Error(val message: String) : WeatherUiState()
 }
