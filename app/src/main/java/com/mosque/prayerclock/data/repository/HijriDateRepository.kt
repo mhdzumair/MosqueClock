@@ -1,15 +1,19 @@
 package com.mosque.prayerclock.data.repository
 
 import com.mosque.prayerclock.data.model.AppSettings
+import com.mosque.prayerclock.data.network.MosqueClockApi
+import com.mosque.prayerclock.data.network.NetworkResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class HijriDateRepository @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val mosqueClockApi: MosqueClockApi
 ) {
     
     data class HijriDate(
@@ -22,11 +26,78 @@ class HijriDateRepository @Inject constructor(
         val settings = settingsRepository.getSettings().first()
         
         if (settings.useApiForHijriDate) {
-            // TODO: Implement API call to get Hijri date
-            // For now, fall back to manual calculation
-            return calculateCurrentHijriDate(settings)
+            try {
+                val response = mosqueClockApi.getTodayBothCalendars()
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val hijriInfo = response.body()?.data?.hijriDate
+                    if (hijriInfo != null) {
+                        return HijriDate(
+                            day = hijriInfo.day,
+                            month = hijriInfo.month,
+                            year = hijriInfo.year
+                        )
+                    }
+                }
+                // If API call fails, fall back to manual calculation
+                return calculateCurrentHijriDate(settings)
+            } catch (e: Exception) {
+                // If there's an error, fall back to manual calculation
+                return calculateCurrentHijriDate(settings)
+            }
         } else {
             return calculateCurrentHijriDate(settings)
+        }
+    }
+    
+    fun getCurrentHijriDateFlow(): Flow<NetworkResult<HijriDate>> = flow {
+        emit(NetworkResult.Loading())
+        
+        try {
+            val response = mosqueClockApi.getTodayBothCalendars()
+            if (response.isSuccessful && response.body()?.success == true) {
+                val hijriInfo = response.body()?.data?.hijriDate
+                if (hijriInfo != null) {
+                    val hijriDate = HijriDate(
+                        day = hijriInfo.day,
+                        month = hijriInfo.month,
+                        year = hijriInfo.year
+                    )
+                    emit(NetworkResult.Success(hijriDate))
+                } else {
+                    emit(NetworkResult.Error("No Hijri date data available"))
+                }
+            } else {
+                val errorMessage = response.body()?.message ?: "Failed to fetch Hijri date"
+                emit(NetworkResult.Error(errorMessage, response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error("Network error: ${e.message}"))
+        }
+    }
+    
+    fun getHijriDateForGregorian(year: Int, month: Int, day: Int): Flow<NetworkResult<HijriDate>> = flow {
+        emit(NetworkResult.Loading())
+        
+        try {
+            val response = mosqueClockApi.getHijriDate(year, month, day)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val hijriInfo = response.body()?.data
+                if (hijriInfo != null) {
+                    val hijriDate = HijriDate(
+                        day = hijriInfo.day,
+                        month = hijriInfo.month,
+                        year = hijriInfo.year
+                    )
+                    emit(NetworkResult.Success(hijriDate))
+                } else {
+                    emit(NetworkResult.Error("No Hijri date data available"))
+                }
+            } else {
+                val errorMessage = response.body()?.message ?: "Failed to fetch Hijri date"
+                emit(NetworkResult.Error(errorMessage, response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error("Network error: ${e.message}"))
         }
     }
     

@@ -3,6 +3,7 @@ package com.mosque.prayerclock.data.repository
 import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.WeatherApi
+import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.toWeatherInfo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 
 @Singleton
 class WeatherRepository @Inject constructor(
-    private val weatherApi: WeatherApi
+    private val weatherApi: WeatherApi, // Keep for backward compatibility
+    private val mosqueClockApi: MosqueClockApi // New MosqueClock API
 ) {
     
     // TODO: Add your WeatherAPI.com API key to local.properties file as:
@@ -82,6 +84,54 @@ class WeatherRepository @Inject constructor(
                 visibility = 12.0,
                 uvIndex = 5.0
             )
+        }
+    }
+    
+    // New methods using MosqueClock API for accurate Sri Lankan weather
+    
+    fun getCurrentWeatherByCity(cityName: String): Flow<NetworkResult<WeatherInfo>> = flow {
+        emit(NetworkResult.Loading())
+        
+        try {
+            val response = mosqueClockApi.getCurrentWeatherByCity(cityName)
+            if (response.isSuccessful && response.body() != null) {
+                val weatherData = response.body()!!
+                val weatherInfo = weatherData.toWeatherInfo()
+                emit(NetworkResult.Success(weatherInfo))
+            } else {
+                emit(NetworkResult.Error("Failed to fetch weather data", response.code()))
+            }
+        } catch (e: Exception) {
+            // Fallback to mock data if API fails
+            try {
+                val mockWeatherInfo = createMockWeatherData(cityName)
+                emit(NetworkResult.Success(mockWeatherInfo))
+            } catch (mockException: Exception) {
+                emit(NetworkResult.Error("Failed to fetch weather data: ${e.message}"))
+            }
+        }
+    }
+    
+    fun getCurrentWeatherByCoordinates(latitude: Double, longitude: Double): Flow<NetworkResult<WeatherInfo>> = flow {
+        emit(NetworkResult.Loading())
+        
+        try {
+            val response = mosqueClockApi.getCurrentWeatherByCoordinates(latitude, longitude)
+            if (response.isSuccessful && response.body() != null) {
+                val weatherData = response.body()!!
+                val weatherInfo = weatherData.toWeatherInfo()
+                emit(NetworkResult.Success(weatherInfo))
+            } else {
+                emit(NetworkResult.Error("Failed to fetch weather data", response.code()))
+            }
+        } catch (e: Exception) {
+            // Fallback to mock data if API fails
+            try {
+                val mockWeatherInfo = createMockWeatherData("location")
+                emit(NetworkResult.Success(mockWeatherInfo))
+            } catch (mockException: Exception) {
+                emit(NetworkResult.Error("Failed to fetch weather data: ${e.message}"))
+            }
         }
     }
 }

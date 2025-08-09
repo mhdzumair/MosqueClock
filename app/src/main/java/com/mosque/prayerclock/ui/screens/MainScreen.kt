@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import android.app.UiModeManager
 import android.content.res.Configuration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationCity
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.localizedStringArrayResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,8 +63,17 @@ fun MainScreen(
     val weatherState by viewModel.weatherState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     
-    LaunchedEffect(Unit) {
-        viewModel.loadPrayerTimes()
+    LaunchedEffect(Unit) { viewModel.loadPrayerTimes() }
+    
+    // Reload prayer times when prayer service settings change
+    LaunchedEffect(settings.prayerServiceType, settings.selectedZone, settings.selectedRegion) { viewModel.loadPrayerTimes() }
+    
+    // Reload weather when weather settings change
+    // Only reload weather when weather settings change, not full prayer reload
+    LaunchedEffect(settings.weatherCity, settings.weatherCountry, settings.showWeather) {
+        if (settings.showWeather) {
+            viewModel.loadPrayerTimes()
+        }
     }
     
     Box(
@@ -578,11 +589,11 @@ fun CountdownDisplay(
     seconds: Long,
     isTV: Boolean = false
 ) {
-    val digitSize = if (isTV) 48.sp else 36.sp  // Further increased size for better visibility
-    val labelSize = if (isTV) 16.sp else 14.sp
+    val digitSize = if (isTV) 46.sp else 34.sp
+    val labelSize = if (isTV) 14.sp else 12.sp
     
     Row(
-        horizontalArrangement = Arrangement.spacedBy(if (isTV) 20.dp else 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (isTV) 16.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (hours > 0) {
@@ -807,16 +818,12 @@ fun NextPrayerCountdownSection(
                 
                 // Show countdown only if it was determined to be visible
                 if (showCountdown) {
-                    val countdownDataForDisplay = calculateTimeUntilPrayerData(targetTime, currentTime)
-                    if (countdownDataForDisplay != null) {
-                        val timeUntilPrayer = formatTimeRemaining(countdownDataForDisplay)
-                        CountdownDisplay(
-                            hours = countdownData.hours,
-                            minutes = countdownData.minutes,
-                            seconds = countdownData.seconds,
-                            isTV = isTV
-                        )
-                    }
+                    CountdownDisplay(
+                        hours = countdownData.hours,
+                        minutes = countdownData.minutes,
+                        seconds = countdownData.seconds,
+                        isTV = isTV
+                    )
                 }
             }
         }

@@ -11,6 +11,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Thunderstorm
+import androidx.compose.material.icons.filled.WaterDrop
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.WeatherInfo
@@ -43,10 +48,16 @@ fun WeatherCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Temperature and description
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+            // Left: weather glyph + temperature
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val icon = when (weatherInfo.icon.lowercase()) {
+                    in listOf("01d", "01n") -> Icons.Filled.WbSunny
+                    in listOf("09d", "10d", "09n", "10n") -> Icons.Filled.WaterDrop
+                    in listOf("11d", "11n") -> Icons.Filled.Thunderstorm
+                    else -> Icons.Filled.Cloud
+                }
+                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "${weatherInfo.temperature.toInt()}°C",
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -63,6 +74,7 @@ fun WeatherCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     maxLines = 1
                 )
+                }
             }
             
             // Compact details

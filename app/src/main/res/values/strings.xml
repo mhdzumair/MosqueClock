@@ -84,6 +84,7 @@
     <string name="jummah">Jummah</string>
     
     <!-- Weather -->
+    <string name="weather">Weather</string>
     <string name="weather_city">Weather City</string>
     <string name="weather_city_description">City for weather information (separate from prayer times location)</string>
     <string name="weather_placeholder">Enter city name for weather</string>

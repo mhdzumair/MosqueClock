@@ -70,12 +70,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
     
-    fun updateUseManualTimes(useManualTimes: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.updateUseManualTimes(useManualTimes)
-        }
-    }
-    
     fun updateManualTime(timeType: String, time: String) {
         viewModelScope.launch {
             settingsRepository.updateManualTime(timeType, time)
@@ -97,6 +91,48 @@ class SettingsViewModel @Inject constructor(
     fun updateWeatherCountry(weatherCountry: String) {
         viewModelScope.launch {
             settingsRepository.updateWeatherCountry(weatherCountry)
+        }
+    }
+    
+    fun updateWeatherProvider(provider: WeatherProvider) {
+        viewModelScope.launch {
+            settingsRepository.updateWeatherProvider(provider)
+        }
+    }
+    
+    fun updateShowWeather(showWeather: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateShowWeather(showWeather)
+        }
+    }
+    
+    fun updatePrayerServiceType(serviceType: PrayerServiceType) {
+        viewModelScope.launch {
+            settingsRepository.updatePrayerServiceType(serviceType)
+        }
+    }
+    
+    fun updateSelectedZone(zone: Int) {
+        viewModelScope.launch {
+            settingsRepository.updateSelectedZone(zone)
+        }
+    }
+    
+    fun updateSelectedRegion(region: String) {
+        viewModelScope.launch {
+            settingsRepository.updateSelectedRegion(region)
+        }
+    }
+    
+    fun updateUseApiForHijriDate(useApi: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateUseApiForHijriDate(useApi)
+        }
+    }
+    
+    fun updateHijriDate(day: Int, month: Int, year: Int) {
+        viewModelScope.launch {
+            settingsRepository.updateHijriDate(day, month, year, java.time.LocalDate.now().toString())
         }
     }
 }

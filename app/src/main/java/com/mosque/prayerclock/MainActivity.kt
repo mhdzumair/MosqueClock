@@ -45,7 +45,25 @@ class MainActivity : ComponentActivity() {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             
             MosqueClockTheme(theme = settings.theme) {
-                LocalizedApp(language = settings.language) {
+                var effectiveLanguage by remember { mutableStateOf(settings.language) }
+                LaunchedEffect(settings.language) {
+                    if (settings.language == com.mosque.prayerclock.data.model.Language.MULTI) {
+                        val cycle = listOf(
+                            com.mosque.prayerclock.data.model.Language.ENGLISH,
+                            com.mosque.prayerclock.data.model.Language.TAMIL,
+                            com.mosque.prayerclock.data.model.Language.SINHALA
+                        )
+                        var index = 0
+                        while (true) {
+                            effectiveLanguage = cycle[index % cycle.size]
+                            index++
+                            kotlinx.coroutines.delay(10_000)
+                        }
+                    } else {
+                        effectiveLanguage = settings.language
+                    }
+                }
+                LocalizedApp(language = effectiveLanguage) {
                     MosqueClockApp(
                         onExitApp = {
                             finish()

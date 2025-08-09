@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.floor
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.utils.LocaleManager
 
 @Composable
 fun DigitalClock(
@@ -43,7 +44,6 @@ fun DigitalClock(
     
     val localDateTime = currentTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
     
-    val dateFormat = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault())
     val date = Date(currentTime.toEpochMilliseconds())
     
     // Get Hijri date from repository or fallback
@@ -57,19 +57,37 @@ fun DigitalClock(
     val dayNames = localizedStringArrayResource(R.array.day_names)
     val hijriMonthNames = localizedStringArrayResource(R.array.hijri_months)
     
+    // Helper to add ordinal suffix to day of month (English only)
+    val currentLocale = LocaleManager.getCurrentLocale(
+        com.mosque.prayerclock.ui.LocalLocalizedContext.current
+    )
+    fun addOrdinalLocalized(day: Int): String {
+        return if (currentLocale.language.equals("en", ignoreCase = true)) {
+            if (day in 11..13) "${day}th" else when (day % 10) {
+                1 -> "${day}st"
+                2 -> "${day}nd"
+                3 -> "${day}rd"
+                else -> "${day}th"
+            }
+        } else {
+            // For non-English, just return the number; month/year are localized separately
+            day.toString()
+        }
+    }
+
+    // Format Gregorian as: 8th August 2025
+    val monthYear = SimpleDateFormat("MMMM yyyy", currentLocale).format(date)
+    val gregorianPretty = "${addOrdinalLocalized(localDateTime.dayOfMonth)} $monthYear"
+
     val formattedDate = hijriDate?.let { hDate ->
         val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
         val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
-        val gregorianShort = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
-        val gregorianFull = dateFormat.format(date)
-        
-        // Use localized format - showing day name, Hijri date, and Gregorian date
-        "$dayName, $hijriMonth ${hDate.day}, ${hDate.year}\n$gregorianShort"
+        // Show day name + Hijri date + pretty Gregorian date
+        "$dayName, $hijriMonth ${hDate.day}, ${hDate.year}\n$gregorianPretty"
     } ?: run {
         // Fallback if hijriDate is not loaded yet
         val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
-        val gregorianShort = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
-        "$dayName, ${localizedStringResource(R.string.loading_hijri)}\n$gregorianShort"
+        "$dayName, ${localizedStringResource(R.string.loading_hijri)}\n$gregorianPretty"
     }
     
     // Format time manually for better 12/24 hour control
@@ -143,7 +161,7 @@ fun DigitalClock(
                     fontSize = fontSize * 0.29f,
                     fontWeight = FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
         }

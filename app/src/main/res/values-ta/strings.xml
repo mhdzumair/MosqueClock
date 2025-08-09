@@ -84,6 +84,7 @@
     <string name="jummah">ஜும்ஆ</string>
     
     <!-- Weather -->
+    <string name="weather">காலநிலை</string>
     <string name="weather_city">காலநிலை நகரம்</string>
     <string name="weather_city_description">காலநிலை தகவலுக்கான நகரம் (தொழுகை நேர இடத்திலிருந்து தனி)</string>
     <string name="weather_placeholder">காலநிலைக்கான நகர பெயரை உள்ளிடவும்</string>

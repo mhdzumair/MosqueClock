@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">පල්ලිය නමාජ කාල වේලාව</string>
+
+    <!-- Prayer Names -->
+    <string name="fajr">ෆඩ්ර්</string>
+    <string name="dhuhr">සුහ්ර්</string>
+    <string name="asr">ආසර්</string>
+    <string name="maghrib">මඛ්රිබ්</string>
+    <string name="isha">ඉෂා</string>
+    <string name="sunrise">සූර්යෝදය</string>
+    <string name="jummah">ජුමා</string>
+
+    <!-- Time Labels -->
+    <string name="azan">අදාන්</string>
+    <string name="iqamah">ඉකමාත්</string>
+    <string name="current_time">දැන් කාලය</string>
+    <string name="next_prayer">මීලඟ නමාජය</string>
+    <string name="time_remaining">ඉතිරි කාලය</string>
+
+    <!-- Days and Dates -->
+    <string name="today">අද</string>
+    <string name="islamic_date">හිජ්රී දිනය</string>
+    <string name="gregorian_date">දිනය</string>
+
+    <!-- Settings -->
+    <string name="settings">සැකසුම්</string>
+    <string name="language">භාෂාව</string>
+    <string name="region">කලාපය</string>
+    <string name="city">නගරය</string>
+    <string name="mosque_name">පල්ලියේ නාමය</string>
+    <string name="clock_type">ඔරලෝසු වර්ගය</string>
+    <string name="theme">තේමාව</string>
+    <string name="font_size">අකුරු ප්‍රමාණය</string>
+    <string name="show_seconds">තත්පර පෙන්වන්න</string>
+    <string name="hour_format_24">24 පැය ආකෘතිය</string>
+
+    <!-- Clock Types -->
+    <string name="digital_clock">ඩිජිටල්</string>
+    <string name="analog_clock">ඇනලොග්</string>
+
+    <!-- Themes -->
+    <string name="theme_default">සාමාන්‍ය</string>
+    <string name="theme_dark">අඳුරු</string>
+    <string name="theme_light">ආලෝකමත්</string>
+    <string name="theme_mosque_green">පල්ලිය හරිත</string>
+    <string name="theme_blue">නිල්</string>
+
+    <!-- Messages -->
+    <string name="loading">පූරණය වෙමින්...</string>
+    <string name="error_network">ජාල දෝෂයකි</string>
+    <string name="error_no_data">නමාජ කාල වෙලාව නොමැත</string>
+    <string name="refresh">නව්‍ය කරන්න</string>
+
+    <!-- Navigation -->
+    <string name="back">ආපසු</string>
+    <string name="save">සුරකින්න</string>
+    <string name="cancel">අවලංගු</string>
+
+    <!-- Time Format -->
+    <string name="am">AM</string>
+    <string name="pm">PM</string>
+
+    <!-- Weather -->
+    <string name="weather">කාලගුණ</string>
+    <string name="weather_city">කාලගුණ නගරය</string>
+    <string name="weather_city_description">කාලගුණ තොරතුරු සඳහා නගරය</string>
+    <string name="weather_placeholder">නගර නාමය ඇතුල් කරන්න</string>
+
+    <!-- Weather Details -->
+    <string name="humidity_short">ඝනත්වය</string>
+    <string name="feels_like_short">ඇහුම්කම්</string>
+
+    <!-- Prayer Status -->
+    <string name="current_prayer">දැන් නමාජය</string>
+
+    <!-- Day Names -->
+    <string-array name="day_names">
+        <item>සදුදා</item>
+        <item>අඟහරුවාදා</item>
+        <item>බදාදා</item>
+        <item>බ්‍රහස්පතින්දා</item>
+        <item>සිකුරාදා</item>
+        <item>සෙනසුරාදා</item>
+        <item>ඉරිදා</item>
+    </string-array>
+
+    <!-- Hijri Month Names -->
+    <string-array name="hijri_months">
+        <item>මුහර්රම්</item>
+        <item>සරෆර්</item>
+        <item>රබීඇල් අව්වල්</item>
+        <item>රබීඇල් සානි</item>
+        <item>ජුමාදාල් ඕලා</item>
+        <item>ජුමාදාල් සානි</item>
+        <item>රජබ්</item>
+        <item>ෂාබාන්</item>
+        <item>රමදාන්</item>
+        <item>ෂව්වාල්</item>
+        <item>දුල් කාඛිදා</item>
+        <item>දුල් හිජ්ජා</item>
+    </string-array>
+
+    <!-- Loading text -->
+    <string name="loading_hijri">පූරණය වෙමින්...</string>
+</resources>
+

@@ -46,6 +46,6 @@ enum class PrayerType {
 data class PrayerInfo(
     val type: PrayerType,
     val azanTime: String,
-    val iqamahTime: String? = null,
+    val iqamahTime: String?,
     val name: String
 )

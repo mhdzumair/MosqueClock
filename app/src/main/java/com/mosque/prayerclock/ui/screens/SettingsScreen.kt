@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.*
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
+import androidx.compose.material3.Checkbox
 
 @Composable
 fun SettingsScreen(
@@ -75,42 +76,56 @@ fun SettingsScreen(
                 }
                 
                 item {
-                    LocationSettings(
-                        city = settings.city,
-                        country = settings.country,
-                        onCityChange = viewModel::updateCity,
-                        onCountryChange = viewModel::updateCountry
+                    PrayerServiceSettings(
+                        selectedServiceType = settings.prayerServiceType,
+                        selectedZone = settings.selectedZone,
+                        selectedRegion = settings.selectedRegion,
+                        onServiceTypeChange = viewModel::updatePrayerServiceType,
+                        onZoneChange = viewModel::updateSelectedZone,
+                        onRegionChange = viewModel::updateSelectedRegion
                     )
                 }
-                
-                item {
-                    WeatherCitySettings(
-                        weatherCity = settings.weatherCity,
-                        onWeatherCityChange = viewModel::updateWeatherCity
-                    )
-                }
-                
-                item {
-                    ManualTimesToggle(
-                        useManualTimes = settings.useManualTimes,
-                        onToggle = viewModel::updateUseManualTimes
-                    )
-                }
-                
-                if (settings.useManualTimes) {
+
+                if (settings.prayerServiceType == PrayerServiceType.MANUAL) {
                     item {
                         ManualPrayerTimesSettings(
                             settings = settings,
                             onUpdateManualTime = viewModel::updateManualTime
                         )
                     }
-                } else {
-                    item {
-                        IqamahGapSettings(
-                            settings = settings,
-                            onUpdateIqamahGap = viewModel::updateIqamahGap
-                        )
-                    }
+                }
+
+                // Place Iqamah Gaps and Prayer Time setup right after Prayer Service
+                item {
+                    IqamahGapSettings(
+                        settings = settings,
+                        onUpdateIqamahGap = viewModel::updateIqamahGap
+                    )
+                }
+
+                item {
+                    WeatherSettings(
+                        showWeather = settings.showWeather,
+                        onToggleShowWeather = viewModel::updateShowWeather,
+                        weatherCity = settings.weatherCity,
+                        onWeatherCityChange = viewModel::updateWeatherCity,
+                        provider = settings.weatherProvider,
+                        onProviderChange = viewModel::updateWeatherProvider
+                    )
+                }
+
+                // Hijri Date Settings
+                item {
+                    HijriDateSettings(
+                        useApi = settings.useApiForHijriDate,
+                        day = settings.manualHijriDay,
+                        month = settings.manualHijriMonth,
+                        year = settings.manualHijriYear,
+                        onUseApiChange = viewModel::updateUseApiForHijriDate,
+                        onManualChange = { d, m, y ->
+                            viewModel.updateHijriDate(d, m, y)
+                        }
+                    )
                 }
                 
                 item {
@@ -134,49 +149,6 @@ fun SettingsScreen(
                         onShowSecondsChange = viewModel::updateShowSeconds,
                         onShow24HourChange = viewModel::updateShow24HourFormat
                     )
-                }
-                
-                // Exit App button
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp)
-                        ) {
-                            Text(
-                                text = "App Control",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Button(
-                                onClick = onExitApp,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text(
-                                    text = "Exit Prayer Clock",
-                                    color = MaterialTheme.colorScheme.onError,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -274,9 +246,227 @@ private fun LanguageSetting(
                     Spacer(modifier = Modifier.width(8.dp))
                     
                     Text(
-                        text = language.displayName,
+                        text = language.displayName, // Settings labels stay in English
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrayerServiceSettings(
+    selectedServiceType: PrayerServiceType,
+    selectedZone: Int,
+    selectedRegion: String,
+    onServiceTypeChange: (PrayerServiceType) -> Unit,
+    onZoneChange: (Int) -> Unit,
+    onRegionChange: (String) -> Unit
+) {
+    SettingsCard {
+        Column {
+            Text(
+                text = "Prayer Service",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Text(
+                text = "Choose between our backend or third-party service for prayer times",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Service Type Selection (Manual handled separately below)
+            val serviceOptions = listOf(
+                PrayerServiceType.MOSQUE_CLOCK_API,
+                PrayerServiceType.AL_ADHAN_API,
+                PrayerServiceType.MANUAL
+            )
+            serviceOptions.forEach { serviceType ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = selectedServiceType == serviceType,
+                            onClick = { onServiceTypeChange(serviceType) }
+                        )
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selectedServiceType == serviceType,
+                        onClick = { onServiceTypeChange(serviceType) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Text(
+                        text = serviceType.displayName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Zone selection only for MosqueClock backend
+            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API) {
+                ZoneSelection(
+                    selectedZone = selectedZone,
+                    onZoneChange = onZoneChange
+                )
+            }
+
+            // Region selection for third-party (Al-Adhan)
+            if (selectedServiceType == PrayerServiceType.AL_ADHAN_API) {
+                Spacer(modifier = Modifier.height(8.dp))
+                RegionSelection(
+                    selectedRegion = selectedRegion,
+                    onRegionChange = onRegionChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ZoneSelection(
+    selectedZone: Int,
+    onZoneChange: (Int) -> Unit
+) {
+    var showZoneDropdown by remember { mutableStateOf(false) }
+    
+    Column {
+        Text(
+            text = "Sri Lankan Zone",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { showZoneDropdown = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val selectedZoneData = PrayerZones.zones.find { it.id == selectedZone }
+                    Text(
+                        text = selectedZoneData?.let { "${it.name}: ${it.description}" } ?: "Select Zone",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text("▼", color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+            
+            DropdownMenu(
+                expanded = showZoneDropdown,
+                onDismissRequest = { showZoneDropdown = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                PrayerZones.zones.forEach { zone ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(
+                                    text = zone.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = zone.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        },
+                        onClick = {
+                            onZoneChange(zone.id)
+                            showZoneDropdown = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegionSelection(
+    selectedRegion: String,
+    onRegionChange: (String) -> Unit
+) {
+    val thirdPartyRegions = remember {
+        listOf(
+            "Colombo", "Kandy", "Galle", "Jaffna", "Kuala Lumpur", "Penang", 
+            "Singapore", "Jakarta", "Chennai", "Mumbai", "Delhi", "Dubai", 
+            "Riyadh", "Doha", "London", "New York", "Toronto"
+        )
+    }
+    
+    var showRegionDropdown by remember { mutableStateOf(false) }
+    
+    Column {
+        Text(
+            text = "City/Region",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { showRegionDropdown = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (selectedRegion.isNotEmpty()) selectedRegion else "Select Region",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text("▼", color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+            
+            DropdownMenu(
+                expanded = showRegionDropdown,
+                onDismissRequest = { showRegionDropdown = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                thirdPartyRegions.forEach { region ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(region)
+                        },
+                        onClick = {
+                            onRegionChange(region)
+                            showRegionDropdown = false
+                        }
                     )
                 }
             }
@@ -389,71 +579,81 @@ private fun LocationSettings(
 }
 
 @Composable
-private fun WeatherCitySettings(
+private fun WeatherSettings(
+    showWeather: Boolean,
+    onToggleShowWeather: (Boolean) -> Unit,
     weatherCity: String,
-    onWeatherCityChange: (String) -> Unit
+    onWeatherCityChange: (String) -> Unit,
+    provider: WeatherProvider,
+    onProviderChange: (WeatherProvider) -> Unit
 ) {
     SettingsCard {
-        Column {
-            Text(
-                text = "Weather City",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Text(
-                text = "City for weather information (separate from prayer times location)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            ImprovedTextField(
-                value = weatherCity,
-                onValueChange = onWeatherCityChange,
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = "Enter city name for weather",
-                keyboardType = KeyboardType.Text
-            )
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.weather),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.weather_city_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+                Switch(checked = showWeather, onCheckedChange = onToggleShowWeather)
+            }
+            if (showWeather) {
+                // Provider selection (radio)
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Provider",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    WeatherProvider.values().forEach { p ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(selected = provider == p, onClick = { onProviderChange(p) })
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = provider == p, onClick = { onProviderChange(p) })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = when (p) {
+                                    WeatherProvider.MOSQUE_CLOCK -> "MosqueClock API"
+                                    WeatherProvider.OPEN_WEATHER -> "OpenWeatherMap"
+                                },
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.weather_city),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ImprovedTextField(
+                    value = weatherCity,
+                    onValueChange = onWeatherCityChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(R.string.weather_placeholder),
+                    keyboardType = KeyboardType.Text
+                )
+            }
         }
     }
 }
 
-@Composable
-private fun ManualTimesToggle(
-    useManualTimes: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    SettingsCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Manual Prayer Times",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Use manual times instead of API",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
-            
-            Switch(
-                checked = useManualTimes,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    }
-}
 
 @Composable
 private fun ManualPrayerTimesSettings(
@@ -477,21 +677,9 @@ private fun ManualPrayerTimesSettings(
             )
             
             PrayerTimeInput(
-                label = "Fajr Iqamah",
-                time = settings.manualFajrIqamah,
-                onTimeChange = { onUpdateManualTime("fajrIqamah", it) }
-            )
-            
-            PrayerTimeInput(
                 label = "Dhuhr Azan",
                 time = settings.manualDhuhrAzan,
                 onTimeChange = { onUpdateManualTime("dhuhrAzan", it) }
-            )
-            
-            PrayerTimeInput(
-                label = "Dhuhr Iqamah",
-                time = settings.manualDhuhrIqamah,
-                onTimeChange = { onUpdateManualTime("dhuhrIqamah", it) }
             )
             
             PrayerTimeInput(
@@ -501,33 +689,15 @@ private fun ManualPrayerTimesSettings(
             )
             
             PrayerTimeInput(
-                label = "Asr Iqamah",
-                time = settings.manualAsrIqamah,
-                onTimeChange = { onUpdateManualTime("asrIqamah", it) }
-            )
-            
-            PrayerTimeInput(
                 label = "Maghrib Azan",
                 time = settings.manualMaghribAzan,
                 onTimeChange = { onUpdateManualTime("maghribAzan", it) }
             )
             
             PrayerTimeInput(
-                label = "Maghrib Iqamah",
-                time = settings.manualMaghribIqamah,
-                onTimeChange = { onUpdateManualTime("maghribIqamah", it) }
-            )
-            
-            PrayerTimeInput(
                 label = "Isha Azan",
                 time = settings.manualIshaAzan,
                 onTimeChange = { onUpdateManualTime("ishaAzan", it) }
-            )
-            
-            PrayerTimeInput(
-                label = "Isha Iqamah",
-                time = settings.manualIshaIqamah,
-                onTimeChange = { onUpdateManualTime("ishaIqamah", it) }
             )
         }
     }
@@ -604,7 +774,7 @@ private fun PrayerTimeInput(
         TimePickerField(
             value = time,
             onValueChange = onTimeChange,
-            modifier = Modifier.width(120.dp)
+            modifier = Modifier.width(200.dp)
         )
     }
 }
@@ -632,7 +802,7 @@ private fun IqamahGapInput(
         NumberPickerField(
             value = gap,
             onValueChange = onGapChange,
-            modifier = Modifier.width(80.dp),
+            modifier = Modifier.width(160.dp),
             range = 0..60
         )
         
@@ -780,9 +950,7 @@ private fun ClockFormatSettings(
                 Switch(
                     checked = showSeconds,
                     onCheckedChange = onShowSecondsChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary
-                    )
+
                 )
             }
             
@@ -802,9 +970,7 @@ private fun ClockFormatSettings(
                 Switch(
                     checked = show24Hour,
                     onCheckedChange = onShow24HourChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary
-                    )
+
                 )
             }
         }
@@ -834,6 +1000,45 @@ private fun SettingsCard(
 }
 
 @Composable
+private fun HijriDateSettings(
+    useApi: Boolean,
+    day: Int,
+    month: Int,
+    year: Int,
+    onUseApiChange: (Boolean) -> Unit,
+    onManualChange: (Int, Int, Int) -> Unit
+) {
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = "Hijri Date",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Use API for Hijri Date",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Switch(checked = useApi, onCheckedChange = onUseApiChange)
+            }
+            if (!useApi) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    NumberPickerField(value = day, onValueChange = { onManualChange(it, month, year) }, range = 1..30)
+                    NumberPickerField(value = month, onValueChange = { onManualChange(day, it, year) }, range = 1..12)
+                    NumberPickerField(value = year, onValueChange = { onManualChange(day, month, it) }, range = 1300..1600)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ImprovedTextField(
     value: String,
     onValueChange: (String) -> Unit,
@@ -842,7 +1047,7 @@ private fun ImprovedTextField(
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
-    val focusManager = LocalFocusManager.current
+    val focusManager = LocalFocusManager.current // kept for keyboard nav; referenced below
     
     OutlinedTextField(
         value = value,
@@ -881,21 +1086,32 @@ private fun TimePickerField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var hours by remember { mutableStateOf("") }
-    var minutes by remember { mutableStateOf("") }
+    var hours by remember { mutableStateOf("00") }
+    var minutes by remember { mutableStateOf("00") }
+    var isInitialized by remember { mutableStateOf(false) }
     
     // Parse initial value
     LaunchedEffect(value) {
-        val parts = value.split(":")
-        if (parts.size == 2) {
-            hours = parts[0].padStart(2, '0')
-            minutes = parts[1].padStart(2, '0')
+        if (value.isNotEmpty()) {
+            val parts = value.split(":")
+            if (parts.size >= 2) {
+                hours = parts[0].padStart(2, '0')
+                minutes = parts[1].padStart(2, '0')
+            } else {
+                // Handle cases where value might be malformed
+                hours = "00"
+                minutes = "00"
+            }
+        } else {
+            hours = "00" 
+            minutes = "00"
         }
+        isInitialized = true
     }
     
-    // Update value when hours or minutes change
-    LaunchedEffect(hours, minutes) {
-        if (hours.isNotEmpty() && minutes.isNotEmpty()) {
+    // Update value when hours or minutes change (only after initialization)
+    LaunchedEffect(hours, minutes, isInitialized) {
+        if (isInitialized) {
             val h = hours.toIntOrNull()?.coerceIn(0, 23) ?: 0
             val m = minutes.toIntOrNull()?.coerceIn(0, 59) ?: 0
             onValueChange(String.format("%02d:%02d", h, m))
@@ -957,7 +1173,7 @@ private fun TimePickerField(
                 IconButton(
                     onClick = {
                         val currentHour = hours.toIntOrNull() ?: 0
-                        val newHour = if (currentHour == 0) 23 else currentHour - 1
+                        val newHour = if (currentHour <= 0) 23 else currentHour - 1
                         hours = String.format("%02d", newHour)
                     },
                     modifier = Modifier
@@ -1031,7 +1247,7 @@ private fun TimePickerField(
                 IconButton(
                     onClick = {
                         val currentMin = minutes.toIntOrNull() ?: 0
-                        val newMin = if (currentMin == 0) 59 else currentMin - 1
+                        val newMin = if (currentMin <= 0) 59 else currentMin - 1
                         minutes = String.format("%02d", newMin)
                     },
                     modifier = Modifier
@@ -1065,7 +1281,6 @@ private fun NumberPickerField(
     modifier: Modifier = Modifier,
     range: IntRange = 0..99
 ) {
-    val focusManager = LocalFocusManager.current
     
     Row(
         modifier = modifier,
@@ -1080,41 +1295,28 @@ private fun NumberPickerField(
             enabled = value > range.first
         ) {
             Text(
-                text = "-",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
+                text = "−",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = if (value > range.first) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             )
         }
         
-        // Number display/input
-        OutlinedTextField(
-            value = value.toString(),
-            onValueChange = { newValue ->
-                newValue.toIntOrNull()?.let { intValue ->
-                    if (intValue in range) {
-                        onValueChange(intValue)
-                    }
-                }
-            },
-            modifier = Modifier.width(60.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        // Number display (card-based for TV/remote friendliness)
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
             ),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = {
-                    focusManager.moveFocus(FocusDirection.Down)
-                }
-            ),
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        )
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Box(modifier = Modifier.width(64.dp).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = value.toString().padStart(2, '0'),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
         
         // Increase button
         IconButton(
@@ -1126,8 +1328,8 @@ private fun NumberPickerField(
         ) {
             Text(
                 text = "+",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = if (value < range.last) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             )
         }
     }

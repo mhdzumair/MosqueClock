@@ -37,6 +37,9 @@ class MainViewModel @Inject constructor(
     private val _weatherState = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading())
     val weatherState: StateFlow<WeatherUiState> = _weatherState.asStateFlow()
     
+    @Volatile
+    private var isLoadingPrayerTimes: Boolean = false
+    
     // Function to recalculate next prayer - can be called from UI when needed
     fun updateNextPrayer() {
         val currentState = _uiState.value
@@ -49,10 +52,12 @@ class MainViewModel @Inject constructor(
     }
     
     fun loadPrayerTimes() {
+        if (isLoadingPrayerTimes) return
+        isLoadingPrayerTimes = true
         viewModelScope.launch {
             val currentSettings = settings.value
             
-            if (currentSettings.useManualTimes) {
+            if (currentSettings.prayerServiceType == PrayerServiceType.MANUAL) {
                 val manualPrayerTimes = createManualPrayerTimes(currentSettings)
                 val nextPrayer = calculateNextPrayer(manualPrayerTimes)
                 _uiState.value = MainUiState.Success(
@@ -60,10 +65,8 @@ class MainViewModel @Inject constructor(
                     nextPrayer = nextPrayer
                 )
             } else {
-                prayerTimesRepository.getTodayPrayerTimes(
-                    currentSettings.city,
-                    currentSettings.country
-                ).collect { result ->
+                // Use the new settings-based prayer times method
+                prayerTimesRepository.getTodayPrayerTimesFromSettings().collect { result ->
                     when (result) {
                         is NetworkResult.Loading -> {
                             _uiState.value = MainUiState.Loading
@@ -85,25 +88,46 @@ class MainViewModel @Inject constructor(
             
             // Load weather data if enabled
             if (currentSettings.showWeather) {
-                loadWeatherData(currentSettings.weatherCity, currentSettings.weatherCountry)
+                loadWeatherData(currentSettings.weatherCity, currentSettings.weatherCountry, currentSettings.weatherProvider)
+            }
+            isLoadingPrayerTimes = false
+        }
+    }
+
+    
+    private fun loadWeatherData(city: String, country: String, provider: WeatherProvider) {
+        viewModelScope.launch {
+            when (provider) {
+                WeatherProvider.MOSQUE_CLOCK -> {
+                    weatherRepository.getCurrentWeatherByCity(city).collect { result ->
+                        if (result is NetworkResult.Error) {
+                            weatherRepository.getCurrentWeather(city, country).collect { fallbackResult ->
+                                handleWeatherResult(fallbackResult)
+                            }
+                        } else {
+                            handleWeatherResult(result)
+                        }
+                    }
+                }
+                WeatherProvider.OPEN_WEATHER -> {
+                    weatherRepository.getCurrentWeather(city, country).collect { result ->
+                        handleWeatherResult(result)
+                    }
+                }
             }
         }
     }
     
-    private fun loadWeatherData(city: String, country: String) {
-        viewModelScope.launch {
-            weatherRepository.getCurrentWeather(city, country).collect { result ->
-                when (result) {
-                    is NetworkResult.Loading -> {
-                        _weatherState.value = WeatherUiState.Loading()
-                    }
-                    is NetworkResult.Success -> {
-                        _weatherState.value = WeatherUiState.Success(result.data)
-                    }
-                    is NetworkResult.Error -> {
-                        _weatherState.value = WeatherUiState.Error(result.message)
-                    }
-                }
+    private fun handleWeatherResult(result: NetworkResult<WeatherInfo>) {
+        when (result) {
+            is NetworkResult.Loading -> {
+                _weatherState.value = WeatherUiState.Loading()
+            }
+            is NetworkResult.Success -> {
+                _weatherState.value = WeatherUiState.Success(result.data)
+            }
+            is NetworkResult.Error -> {
+                _weatherState.value = WeatherUiState.Error(result.message)
             }
         }
     }
@@ -170,15 +194,15 @@ class MainViewModel @Inject constructor(
         return PrayerTimes(
             date = today,
             fajrAzan = settings.manualFajrAzan,
-            fajrIqamah = settings.manualFajrIqamah,
+            fajrIqamah = calculateIqamahTime(settings.manualFajrAzan, settings.fajrIqamahGap),
             dhuhrAzan = settings.manualDhuhrAzan,
-            dhuhrIqamah = settings.manualDhuhrIqamah,
+            dhuhrIqamah = calculateIqamahTime(settings.manualDhuhrAzan, settings.dhuhrIqamahGap),
             asrAzan = settings.manualAsrAzan,
-            asrIqamah = settings.manualAsrIqamah,
+            asrIqamah = calculateIqamahTime(settings.manualAsrAzan, settings.asrIqamahGap),
             maghribAzan = settings.manualMaghribAzan,
-            maghribIqamah = settings.manualMaghribIqamah,
+            maghribIqamah = calculateIqamahTime(settings.manualMaghribAzan, settings.maghribIqamahGap),
             ishaAzan = settings.manualIshaAzan,
-            ishaIqamah = settings.manualIshaIqamah,
+            ishaIqamah = calculateIqamahTime(settings.manualIshaAzan, settings.ishaIqamahGap),
             sunrise = "06:00", // Default sunrise time
             hijriDate = null,
             location = "Manual Setup"
