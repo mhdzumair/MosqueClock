@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">පල්ලිය නමාජ කාල වේලාව</string>
+    <string name="app_name">පල්ලියේ යාඥා ඔරලෝසුව</string>
 
     <!-- Prayer Names -->
     <string name="fajr">ෆඩ්ර්</string>
-    <string name="dhuhr">සුහ්ර්</string>
-    <string name="asr">ආසර්</string>
-    <string name="maghrib">මඛ්රිබ්</string>
+    <string name="dhuhr">ලුහර්</string>
+    <string name="asr">අසර්</string>
+    <string name="maghrib">මග්රිබ්</string>
     <string name="isha">ඉෂා</string>
-    <string name="sunrise">සූර්යෝදය</string>
+    <string name="sunrise">හිරු උදාව</string>
     <string name="jummah">ජුමා</string>
 
     <!-- Time Labels -->
     <string name="azan">අදාන්</string>
     <string name="iqamah">ඉකමාත්</string>
     <string name="current_time">දැන් කාලය</string>
-    <string name="next_prayer">මීලඟ නමාජය</string>
+    <string name="next_prayer">මීලඟ යාච්ඤාව</string>
     <string name="time_remaining">ඉතිරි කාලය</string>
+    <string name="current_prayer">දැන් යාච්ඤාව</string>
 
     <!-- Days and Dates -->
     <string name="today">අද</string>
@@ -28,7 +29,7 @@
     <string name="language">භාෂාව</string>
     <string name="region">කලාපය</string>
     <string name="city">නගරය</string>
-    <string name="mosque_name">පල්ලියේ නාමය</string>
+    <string name="mosque_name">පල්ලියේ නම</string>
     <string name="clock_type">ඔරලෝසු වර්ගය</string>
     <string name="theme">තේමාව</string>
     <string name="font_size">අකුරු ප්‍රමාණය</string>
@@ -56,6 +57,9 @@
     <string name="back">ආපසු</string>
     <string name="save">සුරකින්න</string>
     <string name="cancel">අවලංගු</string>
+    <string name="exit_app">යෙදුමෙන් පිටවන්න</string>
+    <string name="exit_confirmation">ඔබට පල්ලියේ යාඥා ඔරලෝසුවෙන් පිටවීමට අවශ්‍ය බව ඔබට විශ්වාසද?</string>
+    <string name="exit">පිටවීම</string>
 
     <!-- Time Format -->
     <string name="am">AM</string>
@@ -71,9 +75,6 @@
     <string name="humidity_short">ඝනත්වය</string>
     <string name="feels_like_short">ඇහුම්කම්</string>
 
-    <!-- Prayer Status -->
-    <string name="current_prayer">දැන් නමාජය</string>
-
     <!-- Day Names -->
     <string-array name="day_names">
         <item>සදුදා</item>
@@ -88,17 +89,17 @@
     <!-- Hijri Month Names -->
     <string-array name="hijri_months">
         <item>මුහර්රම්</item>
-        <item>සරෆර්</item>
-        <item>රබීඇල් අව්වල්</item>
-        <item>රබීඇල් සානි</item>
-        <item>ජුමාදාල් ඕලා</item>
-        <item>ජුමාදාල් සානි</item>
+        <item>සෆර්</item>
+        <item>රබියුල් අව්වාල්</item>
+        <item>රබියුල් අකීර්</item>
+        <item>ජමාදුල් අව්වාල්</item>
+        <item>ජමාදුල් අකීර්</item>
         <item>රජබ්</item>
         <item>ෂාබාන්</item>
         <item>රමදාන්</item>
         <item>ෂව්වාල්</item>
-        <item>දුල් කාඛිදා</item>
-        <item>දුල් හිජ්ජා</item>
+        <item>දුල් කා’ආදා</item>
+        <item>දුල්හජ්</item>
     </string-array>
 
     <!-- Loading text -->

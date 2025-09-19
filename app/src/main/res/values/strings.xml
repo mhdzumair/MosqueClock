@@ -9,6 +9,7 @@
     <string name="maghrib">Maghrib</string>
     <string name="isha">Isha</string>
     <string name="sunrise">Sunrise</string>
+    <string name="jummah">Jummah</string>
     
     <!-- Time Labels -->
     <string name="azan">Azan</string>
@@ -16,10 +17,11 @@
     <string name="current_time">Current Time</string>
     <string name="next_prayer">Next Prayer</string>
     <string name="time_remaining">Time Remaining</string>
+    <string name="current_prayer">Current Prayer</string>
     
     <!-- Days and Dates -->
     <string name="today">Today</string>
-    <string name="islamic_date">Islamic Date</string>
+    <string name="islamic_date">Hijri Date</string>
     <string name="gregorian_date">Date</string>
     
     <!-- Settings -->
@@ -78,11 +80,7 @@
     <!-- Location -->
     <string name="colombo">Colombo</string>
     <string name="western_province">Western Province</string>
-    
-    <!-- Prayer Status -->
-    <string name="current_prayer">Current Prayer</string>
-    <string name="jummah">Jummah</string>
-    
+
     <!-- Weather -->
     <string name="weather">Weather</string>
     <string name="weather_city">Weather City</string>
@@ -107,8 +105,8 @@
     <string name="clock_format">Clock Format</string>
     
     <!-- Weather Details -->
-    <string name="humidity_short">H</string>
-    <string name="feels_like_short">FL</string>
+    <string name="humidity_short">Humidity</string>
+    <string name="feels_like_short">Feels Like</string>
     
     <!-- Time Calculation -->
     <string name="hours_short">hours</string>
@@ -139,16 +137,16 @@
     <string-array name="hijri_months">
         <item>Muharram</item>
         <item>Safar</item>
-        <item>Rabi al-awwal</item>
-        <item>Rabi al-thani</item>
-        <item>Jumada al-awwal</item>
-        <item>Jumada al-thani</item>
+        <item>Rabiul awwal</item>
+        <item>Rabiul akhir</item>
+        <item>Jamadhul awwal</item>
+        <item>Jamadhul akhir</item>
         <item>Rajab</item>
-        <item>Sha\'ban</item>
-        <item>Ramadan</item>
-        <item>Shawwal</item>
-        <item>Dhu al-Qi\'dah</item>
-        <item>Dhu al-Hijjah</item>
+        <item>Sha\'baan</item>
+        <item>Ramadaan</item>
+        <item>Shawwaal</item>
+        <item>Dhul Qa\'dah</item>
+        <item>DhulHaj</item>
     </string-array>
     
     <!-- Loading text -->

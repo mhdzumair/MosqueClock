@@ -9,14 +9,16 @@
     <string name="maghrib">மஃரிப்</string>
     <string name="isha">இஷா</string>
     <string name="sunrise">சூரிய உதயம்</string>
-    
+    <string name="jummah">ஜும்ஆ</string>
+
     <!-- Time Labels -->
     <string name="azan">அதான்</string>
     <string name="iqamah">இகாமத்</string>
     <string name="current_time">தற்போதைய நேரம்</string>
     <string name="next_prayer">அடுத்த தொழுகை</string>
     <string name="time_remaining">எஞ்சிய நேரம்</string>
-    
+    <string name="current_prayer">தற்போதைய தொழுகை</string>
+
     <!-- Days and Dates -->
     <string name="today">இன்று</string>
     <string name="islamic_date">இஸ்லாமிய தேதி</string>
@@ -79,10 +81,6 @@
     <string name="colombo">கொழும்பு</string>
     <string name="western_province">மேற்கு மாகாணம்</string>
     
-    <!-- Prayer Status -->
-    <string name="current_prayer">தற்போதைய தொழுகை</string>
-    <string name="jummah">ஜும்ஆ</string>
-    
     <!-- Weather -->
     <string name="weather">காலநிலை</string>
     <string name="weather_city">காலநிலை நகரம்</string>
@@ -138,17 +136,17 @@
     <!-- Hijri Month Names -->
     <string-array name="hijri_months">
         <item>முஹர்ரம்</item>
-        <item>ஸபர்</item>
-        <item>ரபீ அவ்வல்</item>
-        <item>ரபீ ஆகிர்</item>
-        <item>ஜுமாதா அவ்வல்</item>
-        <item>ஜுமாதா ஆகிர்</item>
+        <item>ஸஃபர்</item>
+        <item>ரபியுல் அவ்வல்</item>
+        <item>ரபியுல் ஆகிர்</item>
+        <item>ஜமாதுல் அவ்வல்</item>
+        <item>ஜமாதுல் ஆகிர்</item>
         <item>ரஜப்</item>
-        <item>ஷக்பான்</item>
+        <item>ஷஃபான்</item>
         <item>ரமலான்</item>
         <item>ஷவ்வல்</item>
-        <item>துல் க்வித்தா</item>
-        <item>துல் ஹிஜ்ஜா</item>
+        <item>துல்கஅதா</item>
+        <item>துல்ஹஜ்</item>
     </string-array>
     
     <!-- Loading text -->
