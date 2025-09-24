@@ -122,73 +122,47 @@ fun DigitalClock(
             "$timeWithSeconds $ampm"
         }
 
+    // Clean, elegant digital clock with subtle styling
     Card(
-        modifier =
-            modifier
-                .padding(8.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        modifier = modifier.padding(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), // Clean, subtle background
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         shape = RoundedCornerShape(20.dp),
     ) {
         Column(
-            modifier =
-                Modifier
-                    .padding(12.dp),
+            modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Time display with glow effect
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Glow effect
-                Text(
-                    text = formattedTime,
-                    style =
-                        MaterialTheme.typography.displayLarge.copy(
-                            fontSize = fontSize,
-                            fontWeight = FontWeight.Bold,
-                            shadow =
-                                Shadow(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                    offset = Offset(0f, 0f),
-                                    blurRadius = 20f,
-                                ),
-                        ),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-                // Main text
-                Text(
-                    text = formattedTime,
-                    style =
-                        MaterialTheme.typography.displayLarge.copy(
-                            fontSize = fontSize,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
+            // Clean time display with elegant brass color
+            Text(
+                text = formattedTime,
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Bold,
+                    shadow = Shadow(
+                        color = androidx.compose.ui.graphics.Color(0xFFB08D57).copy(alpha = 0.3f),
+                        offset = Offset(0f, 2f),
+                        blurRadius = 8f,
+                    ),
+                ),
+                color = androidx.compose.ui.graphics.Color(0xFFB08D57), // Elegant brass color
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+            )
 
-            Spacer(modifier = Modifier.height((fontSize.value * 0.08f).dp))
+            Spacer(modifier = Modifier.height((fontSize.value * 0.1f).dp))
 
-            // Date with subtle styling
+            // Clean date display
             Text(
                 text = formattedDate,
-                style =
-                    MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = fontSize * 0.29f,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = fontSize * 0.28f,
+                    fontWeight = FontWeight.Medium,
+                ),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Subtle text color
                 textAlign = TextAlign.Center,
             )
         }

@@ -808,6 +808,7 @@ private fun ClockTypeSetting(
                         when (clockType) {
                             ClockType.DIGITAL -> stringResource(R.string.digital_clock)
                             ClockType.ANALOG -> stringResource(R.string.analog_clock)
+                            ClockType.BOTH -> "Both (Auto Cycle)"
                         },
                 )
             }

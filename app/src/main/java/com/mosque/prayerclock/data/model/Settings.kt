@@ -61,6 +61,7 @@ enum class HijriProvider {
 enum class ClockType {
     DIGITAL,
     ANALOG,
+    BOTH, // Cycles between Digital and Analog
 }
 
 enum class AppTheme {

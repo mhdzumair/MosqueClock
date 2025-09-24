@@ -251,15 +251,15 @@ fun NewMainLayout(
             horizontalArrangement = Arrangement.spacedBy(spacingSize),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Clock section - Takes available space
-            ClockSection(
-                settings = settings,
-                onClockClick = onOpenSettings,
-                isCompact = false, // Make clock larger
-                currentTime = globalCurrentTime,
-                hijriDateRepository = viewModel.hijriDateRepository,
-                modifier = Modifier.weight(1.5f), // Increased weight for bigger clock
-            )
+        // Clock section - Takes available space
+        ClockSection(
+            settings = settings,
+            onClockClick = onOpenSettings,
+            isCompact = false, // Make clock larger
+            currentTime = globalCurrentTime,
+            hijriDateRepository = viewModel.hijriDateRepository,
+            modifier = Modifier.weight(1.5f), // Increased weight for bigger clock
+        )
 
             // Combined Next Prayer and Weather section
             Column(
@@ -452,22 +452,65 @@ fun ClockSection(
                 modifier = Modifier.padding(boxPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                when (settings.clockType) {
-                    ClockType.DIGITAL -> {
-                        DigitalClock(
-                            show24Hour = settings.show24HourFormat,
-                            showSeconds = settings.showSeconds,
-                            fontSize = fontSize,
-                            hijriDateRepository = hijriDateRepository,
-                            currentTime = currentTime,
-                        )
+                // Handle cycling logic for BOTH option with smooth transitions
+                val actualClockType = when (settings.clockType) {
+                    ClockType.BOTH -> {
+                        // Cycle between Digital and Analog every 2 minutes
+                        var currentType by remember { mutableStateOf(ClockType.DIGITAL) }
+                        
+                        LaunchedEffect(Unit) {
+                            while (true) {
+                                kotlinx.coroutines.delay(120000) // 2 minutes (120 seconds)
+                                currentType = if (currentType == ClockType.DIGITAL) {
+                                    ClockType.ANALOG
+                                } else {
+                                    ClockType.DIGITAL
+                                }
+                            }
+                        }
+                        
+                        currentType
                     }
-                    ClockType.ANALOG -> {
-                        AnalogClock(
-                            size = clockSize,
-                            modifier = Modifier,
-                            currentTime = currentTime,
-                        )
+                    else -> settings.clockType
+                }
+                
+                // Smooth transition between clock types
+                AnimatedContent(
+                    targetState = actualClockType,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(1000)) togetherWith
+                            fadeOut(animationSpec = tween(1000))
+                    },
+                    label = "clock_transition"
+                ) { clockType ->
+                    when (clockType) {
+                        ClockType.DIGITAL -> {
+                            DigitalClock(
+                                show24Hour = settings.show24HourFormat,
+                                showSeconds = settings.showSeconds,
+                                fontSize = fontSize,
+                                hijriDateRepository = hijriDateRepository,
+                                currentTime = currentTime,
+                            )
+                        }
+                        ClockType.ANALOG -> {
+                            AnalogClock(
+                                size = clockSize,
+                                modifier = Modifier,
+                                currentTime = currentTime,
+                                hijriDateRepository = hijriDateRepository,
+                            )
+                        }
+                        ClockType.BOTH -> {
+                            // This case should not be reached due to the logic above
+                            DigitalClock(
+                                show24Hour = settings.show24HourFormat,
+                                showSeconds = settings.showSeconds,
+                                fontSize = fontSize,
+                                hijriDateRepository = hijriDateRepository,
+                                currentTime = currentTime,
+                            )
+                        }
                     }
                 }
             }
@@ -657,13 +700,188 @@ private fun getCountdownData(
 
         val hours = duration.inWholeHours
         val minutes = (duration.inWholeMinutes % 60)
-        val seconds = (duration.inWholeSeconds % 60)
+        val seconds = (duration.inWholeSeconds % 60) + 1 // Add 1 second to fix timing
         val totalMinutes = duration.inWholeMinutes
-        val totalSeconds = duration.inWholeSeconds
+        val totalSeconds = duration.inWholeSeconds + 1 // Add 1 second to fix timing
 
         return CountdownData(hours, minutes, seconds, totalMinutes, totalSeconds)
     } catch (e: Exception) {
         return CountdownData(0, 0, 0, 0, 0)
+    }
+}
+
+@Composable
+fun FlipClockCountdown(
+    hours: Long,
+    minutes: Long,
+    seconds: Long,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (hours > 0) {
+            FlipClockDigitPair(
+                value = hours,
+            )
+            
+            Text(
+                text = ":",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        
+        FlipClockDigitPair(
+            value = minutes,
+        )
+        
+        Text(
+            text = ":",
+            style = MaterialTheme.typography.displayLarge.copy(
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        
+        FlipClockDigitPair(
+            value = seconds,
+        )
+    }
+}
+
+@Composable
+fun FlipClockDigitPair(
+    value: Long,
+) {
+    val tens = (value / 10).toInt()
+    val units = (value % 10).toInt()
+    
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        AnimatedFlipDigit(digit = tens)
+        AnimatedFlipDigit(digit = units)
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun AnimatedFlipDigit(
+    digit: Int,
+) {
+    var previousDigit by remember { mutableStateOf(digit) }
+    var currentDigit by remember { mutableStateOf(digit) }
+    
+    // Detect digit change for animation
+    LaunchedEffect(digit) {
+        if (digit != currentDigit) {
+            previousDigit = currentDigit
+            currentDigit = digit
+        }
+    }
+    
+    Box(
+        modifier = Modifier.size(width = 52.dp, height = 72.dp),
+    ) {
+        // Main flip card background - elegant natural color matching your mosque clock theme
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF2D4A22), // Deep forest green matching your analog clock
+            ),
+            shape = RoundedCornerShape(8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        ) {
+            // Inner card with elegant brass-tinted background
+            Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(2.dp), // Thin border to show outer color
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF3A5F2A), // Slightly lighter forest green
+                ),
+                shape = RoundedCornerShape(6.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Animated digit transition
+                    AnimatedContent(
+                        targetState = currentDigit,
+                        transitionSpec = {
+                            if (targetState > initialState) {
+                                // Flip up animation
+                                slideInVertically { height -> -height } + fadeIn() togetherWith
+                                    slideOutVertically { height -> height } + fadeOut()
+                            } else {
+                                // Flip down animation  
+                                slideInVertically { height -> height } + fadeIn() togetherWith
+                                    slideOutVertically { height -> -height } + fadeOut()
+                            }.using(
+                                SizeTransform(clip = false)
+                            )
+                        },
+                        label = "digit_flip"
+                    ) { animatedDigit ->
+                        Text(
+                            text = animatedDigit.toString(),
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                fontSize = 40.sp,
+                                fontWeight = FontWeight.Black, // Extra bold for visibility
+                            ),
+                            color = Color(0xFFB08D57), // Elegant brass/gold color matching your analog clock
+                        )
+                    }
+                    
+                    // Horizontal line in the middle to simulate flip mechanism - subtle brass accent
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFB08D57).copy(alpha = 0.6f)) // Subtle brass line
+                            .align(Alignment.Center)
+                    )
+                    
+                    // Add subtle gradient shadows for depth like your analog clock
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.2f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                            .align(Alignment.TopCenter)
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.2f)
+                                    )
+                                )
+                            )
+                            .align(Alignment.BottomCenter)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -673,36 +891,11 @@ fun CountdownDisplay(
     minutes: Long,
     seconds: Long,
 ) {
-    val digitSize = 46.sp
-    val labelSize = 14.sp
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (hours > 0) {
-            CountdownUnit(
-                value = hours,
-                label = "H",
-                digitSize = digitSize,
-                labelSize = labelSize,
-            )
-        }
-
-        CountdownUnit(
-            value = minutes,
-            label = "M",
-            digitSize = digitSize,
-            labelSize = labelSize,
-        )
-
-        CountdownUnit(
-            value = seconds,
-            label = "S",
-            digitSize = digitSize,
-            labelSize = labelSize,
-        )
-    }
+    FlipClockCountdown(
+        hours = hours,
+        minutes = minutes,
+        seconds = seconds,
+    )
 }
 
 @Composable
@@ -986,6 +1179,30 @@ fun CompactPrayerTimeCard(
             }
         }
     }
+    
+    // Determine if we're showing Azan or Iqamah
+    val isShowingAzan = showAzan || prayerInfo.iqamahTime == null
+    
+    // Get the prayer color based on current state
+    val prayerColor = if (isNext) {
+        // Special handling for next prayer colors
+        if (prayerInfo.type == PrayerType.SUNRISE) {
+            Color(0xFFFF5722) // Red for Sunrise (next)
+        } else if (!isShowingAzan && prayerInfo.iqamahTime != null) {
+            Color(0xFF2196F3) // Blue for Iqamah (next)
+        } else {
+            MaterialTheme.colorScheme.primary // Default primary for Azan (next)
+        }
+    } else {
+        // Non-next prayer colors
+        if (prayerInfo.type == PrayerType.SUNRISE) {
+            Color(0xFFFF5722) // Red for Sunrise (always)
+        } else if (isShowingAzan) {
+            Color(0xFF4CAF50) // Bright Green for Azan
+        } else {
+            Color(0xFF2196F3) // Bright Blue for Iqamah
+        }
+    }
 
     Card(
         modifier =
@@ -995,7 +1212,7 @@ fun CompactPrayerTimeCard(
                     if (isNext) {
                         cardModifier.border(
                             width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = prayerColor,
                             shape = RoundedCornerShape(cornerRadius),
                         )
                     } else {
@@ -1018,7 +1235,7 @@ fun CompactPrayerTimeCard(
                 CardDefaults.cardColors(
                     containerColor =
                         if (isNext) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            prayerColor.copy(alpha = 0.05f)
                         } else {
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                         },
@@ -1059,13 +1276,7 @@ fun CompactPrayerTimeCard(
                             fontSize = prayerNameFontSize,
                             fontWeight = FontWeight.Bold,
                         ),
-                    color =
-                        if (isNext) {
-                            // Emphasize with primary color to focus on timing
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                 )
@@ -1096,15 +1307,8 @@ fun CompactPrayerTimeCard(
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize = labelFontSize,
                                     ),
-                                color =
-                                    if (isNext) {
-                                        // Emphasize with primary color
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
-                                    } else if (isShowingAzan) {
-                                        Color(0xFF66BB6A) // Azan label color
-                                    } else {
-                                        Color(0xFF64B5F6) // Iqamah label color
-                                    },
+                                color = prayerColor
+,
                             )
                         }
 
@@ -1125,15 +1329,7 @@ fun CompactPrayerTimeCard(
                                 ),
                             maxLines = 1,
                             softWrap = false,
-                            color =
-                                if (isNext) {
-                                    // Bold primary color to emphasize timing values
-                                    MaterialTheme.colorScheme.primary
-                                } else if (isShowingAzan) {
-                                    Color(0xFF4CAF50) // Bright Green for Azan
-                                } else {
-                                    Color(0xFF2196F3) // Bright Blue for Iqamah
-                                },
+                            color = prayerColor, // Use the same color as the card background
                         )
                     }
                 }
