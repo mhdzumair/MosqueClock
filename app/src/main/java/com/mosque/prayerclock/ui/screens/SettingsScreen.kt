@@ -1,9 +1,10 @@
 package com.mosque.prayerclock.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -13,84 +14,88 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.util.regex.Pattern
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.*
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
-import androidx.compose.material3.Checkbox
 
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit,
-    onExitApp: () -> Unit = {},
-    viewModel: SettingsViewModel = hiltViewModel()
+        onNavigateBack: () -> Unit,
+        onExitApp: () -> Unit = {},
+        viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
-    
+
+    // Handle back button to navigate back to main screen, not exit app
+    BackHandler { onNavigateBack() }
+
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface
-                    )
-                )
-            )
+            modifier =
+                    Modifier.fillMaxSize()
+                            .background(
+                                    Brush.verticalGradient(
+                                            colors =
+                                                    listOf(
+                                                            MaterialTheme.colorScheme.background,
+                                                            MaterialTheme.colorScheme.surface,
+                                                    ),
+                                    ),
+                            ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
+                modifier = Modifier.fillMaxSize().padding(24.dp),
         ) {
             SettingsHeader(onNavigateBack = onNavigateBack)
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item {
                     MosqueNameSetting(
-                        mosqueName = settings.mosqueName,
-                        onMosqueNameChange = viewModel::updateMosqueName
+                            mosqueName = settings.mosqueName,
+                            onMosqueNameChange = viewModel::updateMosqueName,
                     )
                 }
-                
+
                 item {
                     LanguageSetting(
-                        selectedLanguage = settings.language,
-                        onLanguageChange = viewModel::updateLanguage
+                            selectedLanguage = settings.language,
+                            onLanguageChange = viewModel::updateLanguage,
                     )
                 }
-                
+
                 item {
                     PrayerServiceSettings(
-                        selectedServiceType = settings.prayerServiceType,
-                        selectedZone = settings.selectedZone,
-                        selectedRegion = settings.selectedRegion,
-                        onServiceTypeChange = viewModel::updatePrayerServiceType,
-                        onZoneChange = viewModel::updateSelectedZone,
-                        onRegionChange = viewModel::updateSelectedRegion
+                            selectedServiceType = settings.prayerServiceType,
+                            selectedZone = settings.selectedZone,
+                            selectedRegion = settings.selectedRegion,
+                            onServiceTypeChange = viewModel::updatePrayerServiceType,
+                            onZoneChange = viewModel::updateSelectedZone,
+                            onRegionChange = viewModel::updateSelectedRegion,
                     )
                 }
 
                 if (settings.prayerServiceType == PrayerServiceType.MANUAL) {
                     item {
                         ManualPrayerTimesSettings(
-                            settings = settings,
-                            onUpdateManualTime = viewModel::updateManualTime
+                                settings = settings,
+                                onUpdateManualTime = viewModel::updateManualTime,
                         )
                     }
                 }
@@ -98,56 +103,47 @@ fun SettingsScreen(
                 // Place Iqamah Gaps and Prayer Time setup right after Prayer Service
                 item {
                     IqamahGapSettings(
-                        settings = settings,
-                        onUpdateIqamahGap = viewModel::updateIqamahGap
+                            settings = settings,
+                            onUpdateIqamahGap = viewModel::updateIqamahGap,
                     )
                 }
 
                 item {
                     WeatherSettings(
-                        showWeather = settings.showWeather,
-                        onToggleShowWeather = viewModel::updateShowWeather,
-                        weatherCity = settings.weatherCity,
-                        onWeatherCityChange = viewModel::updateWeatherCity,
-                        provider = settings.weatherProvider,
-                        onProviderChange = viewModel::updateWeatherProvider
+                            showWeather = settings.showWeather,
+                            onToggleShowWeather = viewModel::updateShowWeather,
+                            weatherCity = settings.weatherCity,
+                            onWeatherCityChange = viewModel::updateWeatherCity,
+                            provider = settings.weatherProvider,
+                            onProviderChange = viewModel::updateWeatherProvider,
                     )
                 }
 
                 // Hijri Date Settings
                 item {
                     HijriDateSettings(
-                        useApi = settings.useApiForHijriDate,
-                        day = settings.manualHijriDay,
-                        month = settings.manualHijriMonth,
-                        year = settings.manualHijriYear,
-                        onUseApiChange = viewModel::updateUseApiForHijriDate,
-                        onManualChange = { d, m, y ->
-                            viewModel.updateHijriDate(d, m, y)
-                        }
+                            useApi = settings.useApiForHijriDate,
+                            day = settings.manualHijriDay,
+                            month = settings.manualHijriMonth,
+                            year = settings.manualHijriYear,
+                            onUseApiChange = viewModel::updateUseApiForHijriDate,
+                            onManualChange = { d, m, y -> viewModel.updateHijriDate(d, m, y) },
                     )
                 }
-                
+
                 item {
                     ClockTypeSetting(
-                        selectedClockType = settings.clockType,
-                        onClockTypeChange = viewModel::updateClockType
+                            selectedClockType = settings.clockType,
+                            onClockTypeChange = viewModel::updateClockType,
                     )
                 }
-                
-                item {
-                    ThemeSetting(
-                        selectedTheme = settings.theme,
-                        onThemeChange = viewModel::updateTheme
-                    )
-                }
-                
+
                 item {
                     ClockFormatSettings(
-                        showSeconds = settings.showSeconds,
-                        show24Hour = settings.show24HourFormat,
-                        onShowSecondsChange = viewModel::updateShowSeconds,
-                        onShow24HourChange = viewModel::updateShow24HourFormat
+                            showSeconds = settings.showSeconds,
+                            show24Hour = settings.show24HourFormat,
+                            onShowSecondsChange = viewModel::updateShowSeconds,
+                            onShow24HourChange = viewModel::updateShow24HourFormat,
                     )
                 }
             }
@@ -158,52 +154,52 @@ fun SettingsScreen(
 @Composable
 private fun SettingsHeader(onNavigateBack: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
     ) {
         Button(
-            onClick = onNavigateBack,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondary
-            )
-        ) {
-            Text(stringResource(R.string.back))
-        }
-        
+                onClick = onNavigateBack,
+                colors =
+                        ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                        ),
+        ) { Text(stringResource(R.string.back)) }
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Text(
-            text = stringResource(R.string.settings),
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.primary
+                text = stringResource(R.string.settings),
+                style =
+                        MaterialTheme.typography.headlineLarge.copy(
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                        ),
+                color = MaterialTheme.colorScheme.primary,
         )
     }
 }
 
 @Composable
 private fun MosqueNameSetting(
-    mosqueName: String,
-    onMosqueNameChange: (String) -> Unit
+        mosqueName: String,
+        onMosqueNameChange: (String) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = stringResource(R.string.mosque_name),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = stringResource(R.string.mosque_name),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             ImprovedTextField(
-                value = mosqueName,
-                onValueChange = onMosqueNameChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = "Enter mosque name",
-                keyboardType = KeyboardType.Text
+                    value = mosqueName,
+                    onValueChange = onMosqueNameChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = "Enter mosque name",
+                    keyboardType = KeyboardType.Text,
             )
         }
     }
@@ -211,46 +207,25 @@ private fun MosqueNameSetting(
 
 @Composable
 private fun LanguageSetting(
-    selectedLanguage: Language,
-    onLanguageChange: (Language) -> Unit
+        selectedLanguage: Language,
+        onLanguageChange: (Language) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = stringResource(R.string.language),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = stringResource(R.string.language),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Language.values().forEach { language ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = selectedLanguage == language,
-                            onClick = { onLanguageChange(language) }
-                        )
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
+                SelectableSettingsRow(
                         selected = selectedLanguage == language,
                         onClick = { onLanguageChange(language) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Text(
-                        text = language.displayName, // Settings labels stay in English
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                        text = language.displayName,
+                )
             }
         }
     }
@@ -258,71 +233,51 @@ private fun LanguageSetting(
 
 @Composable
 private fun PrayerServiceSettings(
-    selectedServiceType: PrayerServiceType,
-    selectedZone: Int,
-    selectedRegion: String,
-    onServiceTypeChange: (PrayerServiceType) -> Unit,
-    onZoneChange: (Int) -> Unit,
-    onRegionChange: (String) -> Unit
+        selectedServiceType: PrayerServiceType,
+        selectedZone: Int,
+        selectedRegion: String,
+        onServiceTypeChange: (PrayerServiceType) -> Unit,
+        onZoneChange: (Int) -> Unit,
+        onRegionChange: (String) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = "Prayer Service",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = "Prayer Service",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Text(
-                text = "Choose between our backend or third-party service for prayer times",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    text = "Choose between our backend or third-party service for prayer times",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Service Type Selection (Manual handled separately below)
-            val serviceOptions = listOf(
-                PrayerServiceType.MOSQUE_CLOCK_API,
-                PrayerServiceType.AL_ADHAN_API,
-                PrayerServiceType.MANUAL
-            )
+            val serviceOptions =
+                    listOf(
+                            PrayerServiceType.MOSQUE_CLOCK_API,
+                            PrayerServiceType.AL_ADHAN_API,
+                            PrayerServiceType.MANUAL,
+                    )
             serviceOptions.forEach { serviceType ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = selectedServiceType == serviceType,
-                            onClick = { onServiceTypeChange(serviceType) }
-                        )
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
+                SelectableSettingsRow(
                         selected = selectedServiceType == serviceType,
                         onClick = { onServiceTypeChange(serviceType) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Text(
                         text = serviceType.displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Zone selection only for MosqueClock backend
             if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API) {
                 ZoneSelection(
-                    selectedZone = selectedZone,
-                    onZoneChange = onZoneChange
+                        selectedZone = selectedZone,
+                        onZoneChange = onZoneChange,
                 )
             }
 
@@ -330,8 +285,8 @@ private fun PrayerServiceSettings(
             if (selectedServiceType == PrayerServiceType.AL_ADHAN_API) {
                 Spacer(modifier = Modifier.height(8.dp))
                 RegionSelection(
-                    selectedRegion = selectedRegion,
-                    onRegionChange = onRegionChange
+                        selectedRegion = selectedRegion,
+                        onRegionChange = onRegionChange,
                 )
             }
         }
@@ -340,67 +295,72 @@ private fun PrayerServiceSettings(
 
 @Composable
 private fun ZoneSelection(
-    selectedZone: Int,
-    onZoneChange: (Int) -> Unit
+        selectedZone: Int,
+        onZoneChange: (Int) -> Unit,
 ) {
     var showZoneDropdown by remember { mutableStateOf(false) }
-    
+
     Column {
         Text(
-            text = "Sri Lankan Zone",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface
+                text = "Sri Lankan Zone",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
-                onClick = { showZoneDropdown = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    onClick = { showZoneDropdown = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                            ),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val selectedZoneData = PrayerZones.zones.find { it.id == selectedZone }
                     Text(
-                        text = selectedZoneData?.let { "${it.name}: ${it.description}" } ?: "Select Zone",
-                        color = MaterialTheme.colorScheme.onSurface
+                            text = selectedZoneData?.let { "${it.name}: ${it.description}" }
+                                            ?: "Select Zone",
+                            color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text("▼", color = MaterialTheme.colorScheme.onSurface)
                 }
             }
-            
+
             DropdownMenu(
-                expanded = showZoneDropdown,
-                onDismissRequest = { showZoneDropdown = false },
-                modifier = Modifier.fillMaxWidth()
+                    expanded = showZoneDropdown,
+                    onDismissRequest = { showZoneDropdown = false },
+                    modifier = Modifier.fillMaxWidth(),
             ) {
                 PrayerZones.zones.forEach { zone ->
                     DropdownMenuItem(
-                        text = {
-                            Column {
-                                Text(
-                                    text = zone.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = zone.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                )
-                            }
-                        },
-                        onClick = {
-                            onZoneChange(zone.id)
-                            showZoneDropdown = false
-                        }
+                            text = {
+                                Column {
+                                    Text(
+                                            text = zone.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                            text = zone.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color =
+                                                    MaterialTheme.colorScheme.onSurface.copy(
+                                                            alpha = 0.7f,
+                                                    ),
+                                    )
+                                }
+                            },
+                            onClick = {
+                                onZoneChange(zone.id)
+                                showZoneDropdown = false
+                            },
                     )
                 }
             }
@@ -410,63 +370,81 @@ private fun ZoneSelection(
 
 @Composable
 private fun RegionSelection(
-    selectedRegion: String,
-    onRegionChange: (String) -> Unit
+        selectedRegion: String,
+        onRegionChange: (String) -> Unit,
 ) {
     val thirdPartyRegions = remember {
         listOf(
-            "Colombo", "Kandy", "Galle", "Jaffna", "Kuala Lumpur", "Penang", 
-            "Singapore", "Jakarta", "Chennai", "Mumbai", "Delhi", "Dubai", 
-            "Riyadh", "Doha", "London", "New York", "Toronto"
+                "Colombo",
+                "Kandy",
+                "Galle",
+                "Jaffna",
+                "Kuala Lumpur",
+                "Penang",
+                "Singapore",
+                "Jakarta",
+                "Chennai",
+                "Mumbai",
+                "Delhi",
+                "Dubai",
+                "Riyadh",
+                "Doha",
+                "London",
+                "New York",
+                "Toronto",
         )
     }
-    
+
     var showRegionDropdown by remember { mutableStateOf(false) }
-    
+
     Column {
         Text(
-            text = "City/Region",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface
+                text = "City/Region",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
-                onClick = { showRegionDropdown = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    onClick = { showRegionDropdown = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                            ),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = if (selectedRegion.isNotEmpty()) selectedRegion else "Select Region",
-                        color = MaterialTheme.colorScheme.onSurface
+                            text =
+                                    if (selectedRegion.isNotEmpty()) {
+                                        selectedRegion
+                                    } else {
+                                        "Select Region"
+                                    },
+                            color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text("▼", color = MaterialTheme.colorScheme.onSurface)
                 }
             }
-            
+
             DropdownMenu(
-                expanded = showRegionDropdown,
-                onDismissRequest = { showRegionDropdown = false },
-                modifier = Modifier.fillMaxWidth()
+                    expanded = showRegionDropdown,
+                    onDismissRequest = { showRegionDropdown = false },
+                    modifier = Modifier.fillMaxWidth(),
             ) {
                 thirdPartyRegions.forEach { region ->
                     DropdownMenuItem(
-                        text = {
-                            Text(region)
-                        },
-                        onClick = {
-                            onRegionChange(region)
-                            showRegionDropdown = false
-                        }
+                            text = { Text(region) },
+                            onClick = {
+                                onRegionChange(region)
+                                showRegionDropdown = false
+                            },
                     )
                 }
             }
@@ -476,100 +454,99 @@ private fun RegionSelection(
 
 @Composable
 private fun LocationSettings(
-    city: String,
-    country: String,
-    onCityChange: (String) -> Unit,
-    onCountryChange: (String) -> Unit
+        city: String,
+        country: String,
+        onCityChange: (String) -> Unit,
+        onCountryChange: (String) -> Unit,
 ) {
     val cities = remember {
         listOf(
-            "Colombo" to "Sri Lanka",
-            "Kandy" to "Sri Lanka",
-            "Galle" to "Sri Lanka",
-            "Jaffna" to "Sri Lanka",
-            "Kuala Lumpur" to "Malaysia",
-            "Penang" to "Malaysia",
-            "Johor Bahru" to "Malaysia",
-            "Singapore" to "Singapore",
-            "Jakarta" to "Indonesia",
-            "Bandung" to "Indonesia",
-            "Surabaya" to "Indonesia",
-            "Chennai" to "India",
-            "Mumbai" to "India",
-            "Delhi" to "India",
-            "Bangalore" to "India",
-            "Hyderabad" to "India",
-            "Dubai" to "UAE",
-            "Abu Dhabi" to "UAE",
-            "Riyadh" to "Saudi Arabia",
-            "Jeddah" to "Saudi Arabia",
-            "Mecca" to "Saudi Arabia",
-            "Medina" to "Saudi Arabia",
-            "Doha" to "Qatar",
-            "Kuwait City" to "Kuwait",
-            "London" to "UK",
-            "Manchester" to "UK",
-            "Birmingham" to "UK",
-            "Toronto" to "Canada",
-            "Vancouver" to "Canada",
-            "New York" to "USA",
-            "Los Angeles" to "USA",
-            "Chicago" to "USA",
-            "Sydney" to "Australia",
-            "Melbourne" to "Australia",
-            "Perth" to "Australia"
+                "Colombo" to "Sri Lanka",
+                "Kandy" to "Sri Lanka",
+                "Galle" to "Sri Lanka",
+                "Jaffna" to "Sri Lanka",
+                "Kuala Lumpur" to "Malaysia",
+                "Penang" to "Malaysia",
+                "Johor Bahru" to "Malaysia",
+                "Singapore" to "Singapore",
+                "Jakarta" to "Indonesia",
+                "Bandung" to "Indonesia",
+                "Surabaya" to "Indonesia",
+                "Chennai" to "India",
+                "Mumbai" to "India",
+                "Delhi" to "India",
+                "Bangalore" to "India",
+                "Hyderabad" to "India",
+                "Dubai" to "UAE",
+                "Abu Dhabi" to "UAE",
+                "Riyadh" to "Saudi Arabia",
+                "Jeddah" to "Saudi Arabia",
+                "Mecca" to "Saudi Arabia",
+                "Medina" to "Saudi Arabia",
+                "Doha" to "Qatar",
+                "Kuwait City" to "Kuwait",
+                "London" to "UK",
+                "Manchester" to "UK",
+                "Birmingham" to "UK",
+                "Toronto" to "Canada",
+                "Vancouver" to "Canada",
+                "New York" to "USA",
+                "Los Angeles" to "USA",
+                "Chicago" to "USA",
+                "Sydney" to "Australia",
+                "Melbourne" to "Australia",
+                "Perth" to "Australia",
         )
     }
-    
+
     var showCityDropdown by remember { mutableStateOf(false) }
-    
+
     SettingsCard {
         Column {
             Text(
-                text = "Location",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = "Location",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // City Dropdown
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(
-                    onClick = { showCityDropdown = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                        onClick = { showCityDropdown = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors =
+                                ButtonDefaults.outlinedButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                ),
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = if (city.isNotEmpty()) "$city, $country" else "Select City",
-                            color = MaterialTheme.colorScheme.onSurface
+                                text = if (city.isNotEmpty()) "$city, $country" else "Select City",
+                                color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text("▼", color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-                
+
                 DropdownMenu(
-                    expanded = showCityDropdown,
-                    onDismissRequest = { showCityDropdown = false },
-                    modifier = Modifier.fillMaxWidth()
+                        expanded = showCityDropdown,
+                        onDismissRequest = { showCityDropdown = false },
+                        modifier = Modifier.fillMaxWidth(),
                 ) {
                     cities.forEach { (cityName, countryName) ->
                         DropdownMenuItem(
-                            text = {
-                                Text("$cityName, $countryName")
-                            },
-                            onClick = {
-                                onCityChange(cityName)
-                                onCountryChange(countryName)
-                                showCityDropdown = false
-                            }
+                                text = { Text("$cityName, $countryName") },
+                                onClick = {
+                                    onCityChange(cityName)
+                                    onCountryChange(countryName)
+                                    showCityDropdown = false
+                                },
                         )
                     }
                 }
@@ -580,30 +557,30 @@ private fun LocationSettings(
 
 @Composable
 private fun WeatherSettings(
-    showWeather: Boolean,
-    onToggleShowWeather: (Boolean) -> Unit,
-    weatherCity: String,
-    onWeatherCityChange: (String) -> Unit,
-    provider: WeatherProvider,
-    onProviderChange: (WeatherProvider) -> Unit
+        showWeather: Boolean,
+        onToggleShowWeather: (Boolean) -> Unit,
+        weatherCity: String,
+        onWeatherCityChange: (String) -> Unit,
+        provider: WeatherProvider,
+        onProviderChange: (WeatherProvider) -> Unit,
 ) {
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
                     Text(
-                        text = stringResource(R.string.weather),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                            text = stringResource(R.string.weather),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = stringResource(R.string.weather_city_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            text = stringResource(R.string.weather_city_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     )
                 }
                 Switch(checked = showWeather, onCheckedChange = onToggleShowWeather)
@@ -612,92 +589,84 @@ private fun WeatherSettings(
                 // Provider selection (radio)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Provider",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                            text = "Provider",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
                     )
                     WeatherProvider.values().forEach { p ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(selected = provider == p, onClick = { onProviderChange(p) })
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(selected = provider == p, onClick = { onProviderChange(p) })
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = when (p) {
-                                    WeatherProvider.MOSQUE_CLOCK -> "MosqueClock API"
-                                    WeatherProvider.OPEN_WEATHER -> "OpenWeatherMap"
-                                },
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        SelectableSettingsRow(
+                                selected = provider == p,
+                                onClick = { onProviderChange(p) },
+                                text =
+                                        when (p) {
+                                            WeatherProvider.MOSQUE_CLOCK -> "MosqueClock API"
+                                            WeatherProvider.OPEN_WEATHER -> "OpenWeatherMap"
+                                        },
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.weather_city),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                        text = stringResource(R.string.weather_city),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 ImprovedTextField(
-                    value = weatherCity,
-                    onValueChange = onWeatherCityChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = stringResource(R.string.weather_placeholder),
-                    keyboardType = KeyboardType.Text
+                        value = weatherCity,
+                        onValueChange = onWeatherCityChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = stringResource(R.string.weather_placeholder),
+                        keyboardType = KeyboardType.Text,
                 )
             }
         }
     }
 }
 
-
 @Composable
 private fun ManualPrayerTimesSettings(
-    settings: AppSettings,
-    onUpdateManualTime: (String, String) -> Unit
+        settings: AppSettings,
+        onUpdateManualTime: (String, String) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = "Prayer Times Setup",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = "Prayer Times Setup",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             PrayerTimeInput(
-                label = "Fajr Azan",
-                time = settings.manualFajrAzan,
-                onTimeChange = { onUpdateManualTime("fajrAzan", it) }
+                    label = "Fajr Azan",
+                    time = settings.manualFajrAzan,
+                    onTimeChange = { onUpdateManualTime("fajrAzan", it) },
             )
-            
+
             PrayerTimeInput(
-                label = "Dhuhr Azan",
-                time = settings.manualDhuhrAzan,
-                onTimeChange = { onUpdateManualTime("dhuhrAzan", it) }
+                    label = "Dhuhr Azan",
+                    time = settings.manualDhuhrAzan,
+                    onTimeChange = { onUpdateManualTime("dhuhrAzan", it) },
             )
-            
+
             PrayerTimeInput(
-                label = "Asr Azan",
-                time = settings.manualAsrAzan,
-                onTimeChange = { onUpdateManualTime("asrAzan", it) }
+                    label = "Asr Azan",
+                    time = settings.manualAsrAzan,
+                    onTimeChange = { onUpdateManualTime("asrAzan", it) },
             )
-            
+
             PrayerTimeInput(
-                label = "Maghrib Azan",
-                time = settings.manualMaghribAzan,
-                onTimeChange = { onUpdateManualTime("maghribAzan", it) }
+                    label = "Maghrib Azan",
+                    time = settings.manualMaghribAzan,
+                    onTimeChange = { onUpdateManualTime("maghribAzan", it) },
             )
-            
+
             PrayerTimeInput(
-                label = "Isha Azan",
-                time = settings.manualIshaAzan,
-                onTimeChange = { onUpdateManualTime("ishaAzan", it) }
+                    label = "Isha Azan",
+                    time = settings.manualIshaAzan,
+                    onTimeChange = { onUpdateManualTime("ishaAzan", it) },
             )
         }
     }
@@ -705,47 +674,47 @@ private fun ManualPrayerTimesSettings(
 
 @Composable
 private fun IqamahGapSettings(
-    settings: AppSettings,
-    onUpdateIqamahGap: (String, Int) -> Unit
+        settings: AppSettings,
+        onUpdateIqamahGap: (String, Int) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = "Iqamah Time Gaps (minutes after Azan)",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = "Iqamah Time Gaps (minutes after Azan)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             IqamahGapInput(
-                label = "Fajr",
-                gap = settings.fajrIqamahGap,
-                onGapChange = { onUpdateIqamahGap("fajr", it) }
+                    label = "Fajr",
+                    gap = settings.fajrIqamahGap,
+                    onGapChange = { onUpdateIqamahGap("fajr", it) },
             )
-            
+
             IqamahGapInput(
-                label = "Dhuhr",
-                gap = settings.dhuhrIqamahGap,
-                onGapChange = { onUpdateIqamahGap("dhuhr", it) }
+                    label = "Dhuhr",
+                    gap = settings.dhuhrIqamahGap,
+                    onGapChange = { onUpdateIqamahGap("dhuhr", it) },
             )
-            
+
             IqamahGapInput(
-                label = "Asr",
-                gap = settings.asrIqamahGap,
-                onGapChange = { onUpdateIqamahGap("asr", it) }
+                    label = "Asr",
+                    gap = settings.asrIqamahGap,
+                    onGapChange = { onUpdateIqamahGap("asr", it) },
             )
-            
+
             IqamahGapInput(
-                label = "Maghrib",
-                gap = settings.maghribIqamahGap,
-                onGapChange = { onUpdateIqamahGap("maghrib", it) }
+                    label = "Maghrib",
+                    gap = settings.maghribIqamahGap,
+                    onGapChange = { onUpdateIqamahGap("maghrib", it) },
             )
-            
+
             IqamahGapInput(
-                label = "Isha",
-                gap = settings.ishaIqamahGap,
-                onGapChange = { onUpdateIqamahGap("isha", it) }
+                    label = "Isha",
+                    gap = settings.ishaIqamahGap,
+                    onGapChange = { onUpdateIqamahGap("isha", it) },
             )
         }
     }
@@ -753,167 +722,90 @@ private fun IqamahGapSettings(
 
 @Composable
 private fun PrayerTimeInput(
-    label: String,
-    time: String,
-    onTimeChange: (String) -> Unit
+        label: String,
+        time: String,
+        onTimeChange: (String) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
         )
-        
+
         TimePickerField(
-            value = time,
-            onValueChange = onTimeChange,
-            modifier = Modifier.width(200.dp)
+                value = time,
+                onValueChange = onTimeChange,
+                modifier = Modifier.width(200.dp),
         )
     }
 }
 
 @Composable
 private fun IqamahGapInput(
-    label: String,
-    gap: Int,
-    onGapChange: (Int) -> Unit
+        label: String,
+        gap: Int,
+        onGapChange: (Int) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
         )
-        
+
         NumberPickerField(
-            value = gap,
-            onValueChange = onGapChange,
-            modifier = Modifier.width(160.dp),
-            range = 0..60
+                value = gap,
+                onValueChange = onGapChange,
+                modifier = Modifier.width(160.dp),
+                range = 0..60,
         )
-        
+
         Spacer(modifier = Modifier.width(8.dp))
-        
+
         Text(
-            text = "min",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                text = "min",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
     }
 }
 
 @Composable
 private fun ClockTypeSetting(
-    selectedClockType: ClockType,
-    onClockTypeChange: (ClockType) -> Unit
+        selectedClockType: ClockType,
+        onClockTypeChange: (ClockType) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = stringResource(R.string.clock_type),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = stringResource(R.string.clock_type),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             ClockType.values().forEach { clockType ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = selectedClockType == clockType,
-                            onClick = { onClockTypeChange(clockType) }
-                        )
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
+                SelectableSettingsRow(
                         selected = selectedClockType == clockType,
                         onClick = { onClockTypeChange(clockType) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Text(
-                        text = when (clockType) {
-                            ClockType.DIGITAL -> stringResource(R.string.digital_clock)
-                            ClockType.ANALOG -> stringResource(R.string.analog_clock)
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThemeSetting(
-    selectedTheme: AppTheme,
-    onThemeChange: (AppTheme) -> Unit
-) {
-    SettingsCard {
-        Column {
-            Text(
-                text = stringResource(R.string.theme),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            AppTheme.values().forEach { theme ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = selectedTheme == theme,
-                            onClick = { onThemeChange(theme) }
-                        )
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = selectedTheme == theme,
-                        onClick = { onThemeChange(theme) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Text(
-                        text = when (theme) {
-                            AppTheme.DEFAULT -> stringResource(R.string.theme_default)
-                            AppTheme.DARK -> stringResource(R.string.theme_dark)
-                            AppTheme.LIGHT -> stringResource(R.string.theme_light)
-                            AppTheme.MOSQUE_GREEN -> stringResource(R.string.theme_mosque_green)
-                            AppTheme.BLUE -> stringResource(R.string.theme_blue)
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                        text =
+                                when (clockType) {
+                                    ClockType.DIGITAL -> stringResource(R.string.digital_clock)
+                                    ClockType.ANALOG -> stringResource(R.string.analog_clock)
+                                },
+                )
             }
         }
     }
@@ -921,56 +813,54 @@ private fun ThemeSetting(
 
 @Composable
 private fun ClockFormatSettings(
-    showSeconds: Boolean,
-    show24Hour: Boolean,
-    onShowSecondsChange: (Boolean) -> Unit,
-    onShow24HourChange: (Boolean) -> Unit
+        showSeconds: Boolean,
+        show24Hour: Boolean,
+        onShowSecondsChange: (Boolean) -> Unit,
+        onShow24HourChange: (Boolean) -> Unit,
 ) {
     SettingsCard {
         Column {
             Text(
-                text = "Clock Format",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = "Clock Format",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.show_seconds),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                        text = stringResource(R.string.show_seconds),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                 )
-                
-                Switch(
-                    checked = showSeconds,
-                    onCheckedChange = onShowSecondsChange,
 
+                Switch(
+                        checked = showSeconds,
+                        onCheckedChange = onShowSecondsChange,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.hour_format_24),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                        text = stringResource(R.string.hour_format_24),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                 )
-                
-                Switch(
-                    checked = show24Hour,
-                    onCheckedChange = onShow24HourChange,
 
+                Switch(
+                        checked = show24Hour,
+                        onCheckedChange = onShow24HourChange,
                 )
             }
         }
@@ -978,60 +868,72 @@ private fun ClockFormatSettings(
 }
 
 @Composable
-private fun SettingsCard(
-    content: @Composable () -> Unit
-) {
+private fun SettingsCard(isSelected: Boolean = false, content: @Composable () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor =
+                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Box(
-            modifier = Modifier.padding(16.dp)
-        ) {
-                content()
-        }
+                modifier = Modifier.padding(16.dp),
+        ) { content() }
     }
 }
 
 @Composable
 private fun HijriDateSettings(
-    useApi: Boolean,
-    day: Int,
-    month: Int,
-    year: Int,
-    onUseApiChange: (Boolean) -> Unit,
-    onManualChange: (Int, Int, Int) -> Unit
+        useApi: Boolean,
+        day: Int,
+        month: Int,
+        year: Int,
+        onUseApiChange: (Boolean) -> Unit,
+        onManualChange: (Int, Int, Int) -> Unit,
 ) {
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                text = "Hijri Date",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                    text = "Hijri Date",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
             )
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Use API for Hijri Date",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                        text = "Use API for Hijri Date",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                 )
                 Switch(checked = useApi, onCheckedChange = onUseApiChange)
             }
             if (!useApi) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    NumberPickerField(value = day, onValueChange = { onManualChange(it, month, year) }, range = 1..30)
-                    NumberPickerField(value = month, onValueChange = { onManualChange(day, it, year) }, range = 1..12)
-                    NumberPickerField(value = year, onValueChange = { onManualChange(day, month, it) }, range = 1300..1600)
+                Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NumberPickerField(
+                            value = day,
+                            onValueChange = { onManualChange(it, month, year) },
+                            range = 1..30,
+                    )
+                    NumberPickerField(
+                            value = month,
+                            onValueChange = { onManualChange(day, it, year) },
+                            range = 1..12,
+                    )
+                    NumberPickerField(
+                            value = year,
+                            onValueChange = { onManualChange(day, month, it) },
+                            range = 1300..1600,
+                    )
                 }
             }
         }
@@ -1040,56 +942,86 @@ private fun HijriDateSettings(
 
 @Composable
 private fun ImprovedTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    label: String? = null,
-    placeholder: String = "",
-    keyboardType: KeyboardType = KeyboardType.Text
+        value: String,
+        onValueChange: (String) -> Unit,
+        modifier: Modifier = Modifier,
+        label: String? = null,
+        placeholder: String = "",
+        keyboardType: KeyboardType = KeyboardType.Text,
 ) {
-    val focusManager = LocalFocusManager.current // kept for keyboard nav; referenced below
-    
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier
-            .defaultMinSize(minHeight = 56.dp)
-            .fillMaxWidth(),
-        label = label?.let { { Text(it) } },
-        placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder) } } else null,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-        ),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = ImeAction.Next
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = {
-                focusManager.moveFocus(FocusDirection.Down)
-            },
-            onDone = {
-                focusManager.clearFocus()
+    val focusManager = LocalFocusManager.current
+
+    // Use TextFieldValue to control cursor position
+    var textFieldValue by
+            remember(value) {
+                mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
             }
-        ),
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge
+
+    // Update textFieldValue when external value changes
+    LaunchedEffect(value) {
+        if (textFieldValue.text != value) {
+            textFieldValue = TextFieldValue(text = value, selection = TextRange(value.length))
+        }
+    }
+
+    OutlinedTextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                textFieldValue = newValue
+                onValueChange(newValue.text)
+            },
+            modifier =
+                    modifier.defaultMinSize(minHeight = 56.dp).fillMaxWidth().onFocusChanged {
+                            focusState ->
+                        // When field gains focus, move cursor to end
+                        if (focusState.isFocused &&
+                                        textFieldValue.selection.start != textFieldValue.text.length
+                        ) {
+                            textFieldValue =
+                                    textFieldValue.copy(
+                                            selection = TextRange(textFieldValue.text.length)
+                                    )
+                        }
+                    },
+            label = label?.let { { Text(it) } },
+            placeholder =
+                    if (placeholder.isNotEmpty()) {
+                        { Text(placeholder) }
+                    } else {
+                        null
+                    },
+            colors =
+                    OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
+            keyboardOptions =
+                    KeyboardOptions(
+                            keyboardType = keyboardType,
+                            imeAction = ImeAction.Next,
+                    ),
+            keyboardActions =
+                    KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                            onDone = { focusManager.clearFocus() },
+                    ),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge,
     )
 }
 
 @Composable
 private fun TimePickerField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+        value: String,
+        onValueChange: (String) -> Unit,
+        modifier: Modifier = Modifier,
 ) {
     var hours by remember { mutableStateOf("00") }
     var minutes by remember { mutableStateOf("00") }
     var isInitialized by remember { mutableStateOf(false) }
-    
+
     // Parse initial value
     LaunchedEffect(value) {
         if (value.isNotEmpty()) {
@@ -1103,12 +1035,12 @@ private fun TimePickerField(
                 minutes = "00"
             }
         } else {
-            hours = "00" 
+            hours = "00"
             minutes = "00"
         }
         isInitialized = true
     }
-    
+
     // Update value when hours or minutes change (only after initialization)
     LaunchedEffect(hours, minutes, isInitialized) {
         if (isInitialized) {
@@ -1117,157 +1049,189 @@ private fun TimePickerField(
             onValueChange(String.format("%02d:%02d", h, m))
         }
     }
-    
+
     Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+            modifier = modifier,
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = RoundedCornerShape(12.dp),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Hours picker
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
-                    onClick = {
-                        val currentHour = hours.toIntOrNull() ?: 0
-                        val newHour = (currentHour + 1) % 24
-                        hours = String.format("%02d", newHour)
-                    },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        )
+                        onClick = {
+                            val currentHour = hours.toIntOrNull() ?: 0
+                            val newHour = (currentHour + 1) % 24
+                            hours = String.format("%02d", newHour)
+                        },
+                        modifier =
+                                Modifier.size(40.dp)
+                                        .background(
+                                                MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.1f,
+                                                ),
+                                                RoundedCornerShape(8.dp),
+                                        ),
                 ) {
                     Text(
-                        text = "▲",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            text = "▲",
+                            color = MaterialTheme.colorScheme.primary,
+                            style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                    ),
                     )
                 }
-                
+
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(8.dp)
+                        colors =
+                                CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(8.dp),
                 ) {
                     Text(
-                        text = hours.padStart(2, '0'),
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            text = hours.padStart(2, '0'),
+                            style =
+                                    MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                    ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     )
                 }
-                
+
                 IconButton(
-                    onClick = {
-                        val currentHour = hours.toIntOrNull() ?: 0
-                        val newHour = if (currentHour <= 0) 23 else currentHour - 1
-                        hours = String.format("%02d", newHour)
-                    },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        )
+                        onClick = {
+                            val currentHour = hours.toIntOrNull() ?: 0
+                            val newHour = if (currentHour <= 0) 23 else currentHour - 1
+                            hours = String.format("%02d", newHour)
+                        },
+                        modifier =
+                                Modifier.size(40.dp)
+                                        .background(
+                                                MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.1f,
+                                                ),
+                                                RoundedCornerShape(8.dp),
+                                        ),
                 ) {
                     Text(
-                        text = "▼",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            text = "▼",
+                            color = MaterialTheme.colorScheme.primary,
+                            style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                    ),
                     )
                 }
-                
+
                 Text(
-                    text = "HH",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        text = "HH",
+                        style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Medium,
+                                ),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 )
             }
-            
+
             Text(
-                text = ":",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.primary
+                    text = ":",
+                    style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                            ),
+                    color = MaterialTheme.colorScheme.primary,
             )
-            
+
             // Minutes picker
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
-                    onClick = {
-                        val currentMin = minutes.toIntOrNull() ?: 0
-                        val newMin = (currentMin + 1) % 60
-                        minutes = String.format("%02d", newMin)
-                    },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        )
+                        onClick = {
+                            val currentMin = minutes.toIntOrNull() ?: 0
+                            val newMin = (currentMin + 1) % 60
+                            minutes = String.format("%02d", newMin)
+                        },
+                        modifier =
+                                Modifier.size(40.dp)
+                                        .background(
+                                                MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.1f,
+                                                ),
+                                                RoundedCornerShape(8.dp),
+                                        ),
                 ) {
                     Text(
-                        text = "▲",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            text = "▲",
+                            color = MaterialTheme.colorScheme.primary,
+                            style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                    ),
                     )
                 }
-                
+
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(8.dp)
+                        colors =
+                                CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(8.dp),
                 ) {
                     Text(
-                        text = minutes.padStart(2, '0'),
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            text = minutes.padStart(2, '0'),
+                            style =
+                                    MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                    ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     )
                 }
-                
+
                 IconButton(
-                    onClick = {
-                        val currentMin = minutes.toIntOrNull() ?: 0
-                        val newMin = if (currentMin <= 0) 59 else currentMin - 1
-                        minutes = String.format("%02d", newMin)
-                    },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        )
+                        onClick = {
+                            val currentMin = minutes.toIntOrNull() ?: 0
+                            val newMin = if (currentMin <= 0) 59 else currentMin - 1
+                            minutes = String.format("%02d", newMin)
+                        },
+                        modifier =
+                                Modifier.size(40.dp)
+                                        .background(
+                                                MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.1f,
+                                                ),
+                                                RoundedCornerShape(8.dp),
+                                        ),
                 ) {
                     Text(
-                        text = "▼",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            text = "▼",
+                            color = MaterialTheme.colorScheme.primary,
+                            style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                    ),
                     )
                 }
-                
+
                 Text(
-                    text = "MM",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        text = "MM",
+                        style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Medium,
+                                ),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 )
             }
         }
@@ -1276,61 +1240,152 @@ private fun TimePickerField(
 
 @Composable
 private fun NumberPickerField(
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    range: IntRange = 0..99
+        value: Int,
+        onValueChange: (Int) -> Unit,
+        modifier: Modifier = Modifier,
+        range: IntRange = 0..99,
 ) {
-    
     Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically,
     ) {
         // Decrease button
         IconButton(
-            onClick = {
-                val newValue = (value - 1).coerceIn(range)
-                onValueChange(newValue)
-            },
-            enabled = value > range.first
+                onClick = {
+                    val newValue = (value - 1).coerceIn(range)
+                    onValueChange(newValue)
+                },
+                enabled = value > range.first,
         ) {
             Text(
-                text = "−",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (value > range.first) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    text = "−",
+                    style =
+                            MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                            ),
+                    color =
+                            if (value > range.first) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            },
             )
         }
-        
+
         // Number display (card-based for TV/remote friendliness)
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(8.dp)
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                        ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(8.dp),
         ) {
-            Box(modifier = Modifier.width(64.dp).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+            Box(
+                    modifier = Modifier.width(64.dp).padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    text = value.toString().padStart(2, '0'),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+                        text = value.toString().padStart(2, '0'),
+                        style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                ),
+                        color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
-        
+
         // Increase button
         IconButton(
-            onClick = {
-                val newValue = (value + 1).coerceIn(range)
-                onValueChange(newValue)
-            },
-            enabled = value < range.last
+                onClick = {
+                    val newValue = (value + 1).coerceIn(range)
+                    onValueChange(newValue)
+                },
+                enabled = value < range.last,
         ) {
             Text(
-                text = "+",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (value < range.last) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    text = "+",
+                    style =
+                            MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                            ),
+                    color =
+                            if (value < range.last) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            },
             )
         }
+    }
+}
+
+@Composable
+private fun SelectableSettingsRow(
+        selected: Boolean,
+        onClick: () -> Unit,
+        text: String,
+        modifier: Modifier = Modifier,
+) {
+    Row(
+            modifier =
+                    modifier.fillMaxWidth()
+                            .selectable(
+                                    selected = selected,
+                                    onClick = onClick,
+                            )
+                            .background(
+                                    color =
+                                            if (selected) {
+                                                MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.2f,
+                                                ) // Bright highlight for selected
+                                            } else {
+                                                Color.Transparent
+                                            },
+                                    shape = RoundedCornerShape(8.dp),
+                            )
+                            .border(
+                                    width = if (selected) 2.dp else 0.dp,
+                                    color =
+                                            if (selected) {
+                                                MaterialTheme.colorScheme
+                                                        .primary // Bright border for selected
+                                            } else {
+                                                Color.Transparent
+                                            },
+                                    shape = RoundedCornerShape(8.dp),
+                            )
+                            .padding(
+                                    horizontal = 12.dp,
+                                    vertical = 12.dp,
+                            ), // More padding for better touch target
+            verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(
+                selected = selected,
+                onClick = onClick,
+                colors =
+                        RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary,
+                                unselectedColor =
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        ),
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color =
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary // Highlight selected text
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        )
     }
 }

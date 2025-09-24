@@ -31,4 +31,10 @@
     <color name="blue_700">#1976D2</color>
     <color name="blue_800">#1565C0</color>
     <color name="blue_900">#0D47A1</color>
+    
+    <!-- Prayer time colors for better visibility -->
+    <color name="azan_color">#FF4CAF50</color>        <!-- Bright Green for Azan -->
+    <color name="iqamah_color">#FF2196F3</color>      <!-- Bright Blue for Iqamah -->
+    <color name="azan_label_color">#FF66BB6A</color>  <!-- Lighter Green for Azan label -->
+    <color name="iqamah_label_color">#FF64B5F6</color><!-- Lighter Blue for Iqamah label -->
 </resources>

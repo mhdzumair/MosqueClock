@@ -19,25 +19,24 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java,
-            "mosque_clock_database"
-        ).build()
-    }
-    
+    fun provideAppDatabase(
+        @ApplicationContext context: Context,
+    ): AppDatabase =
+        Room
+            .databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                "mosque_clock_database",
+            ).build()
+
     @Provides
-    fun providePrayerTimesDao(database: AppDatabase): PrayerTimesDao {
-        return database.prayerTimesDao()
-    }
-    
+    fun providePrayerTimesDao(database: AppDatabase): PrayerTimesDao = database.prayerTimesDao()
+
     @Provides
     @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return context.dataStore
-    }
+    fun provideDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> = context.dataStore
 }

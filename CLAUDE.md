@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an Android TV application for mosques that displays prayer times, digital/analog clocks, and provides multilingual support (English/Tamil). The app fetches prayer times from the AlAdhan API and provides a beautiful, customizable interface optimized for large screens.
+This is an Android TV application for mosques that displays prayer times, digital/analog clocks, and provides multilingual support (English/Tamil/Sinhala). The app fetches prayer times from the AlAdhan API and provides a beautiful, customizable interface optimized for large screens.
 
 ## Build and Development Commands
 

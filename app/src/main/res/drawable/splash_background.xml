@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base background -->
+    <item android:drawable="@color/green_900" />
+    
+    <!-- Radial gradient overlay for modern look -->
+    <item>
+        <shape>
+            <gradient
+                android:type="radial"
+                android:startColor="@color/green_800"
+                android:centerColor="@color/green_900"
+                android:endColor="@color/black"
+                android:gradientRadius="800dp" />
+        </shape>
+    </item>
+    
+    <!-- Centered logo for immediate display during static screen -->
+    <item android:width="350dp" android:height="350dp" android:gravity="center">
+        <bitmap
+            android:src="@drawable/mosque_logo"
+            android:gravity="fill" />
+    </item>
+</layer-list>

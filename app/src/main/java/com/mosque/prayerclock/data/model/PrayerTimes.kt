@@ -30,22 +30,27 @@ data class PrayerTimes(
     val ishaIqamah: String,
     val sunrise: String,
     val hijriDate: String? = null,
-    val location: String? = null
+    val location: String? = null,
 )
 
 data class PrayerTimeResponse(
     val success: Boolean,
     val data: List<PrayerTimes>,
-    val message: String? = null
+    val message: String? = null,
 )
 
 enum class PrayerType {
-    FAJR, DHUHR, ASR, MAGHRIB, ISHA, SUNRISE
+    FAJR,
+    DHUHR,
+    ASR,
+    MAGHRIB,
+    ISHA,
+    SUNRISE,
 }
 
 data class PrayerInfo(
     val type: PrayerType,
     val azanTime: String,
     val iqamahTime: String?,
-    val name: String
+    val name: String,
 )

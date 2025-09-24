@@ -1,72 +1,71 @@
 package com.mosque.prayerclock.data.network
 
+import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.*
-import com.google.gson.annotations.SerializedName
 
 interface MosqueClockApi {
-    
     // Prayer Times endpoints
     @GET("api/v1/prayer-times/{zone}/")
     suspend fun getPrayerTimesByZone(
         @Path("zone") zone: Int,
-        @Query("date") date: String? = null
+        @Query("date") date: String? = null,
     ): Response<MosquePrayerTimesListResponse>
-    
+
     @GET("api/v1/today/")
     suspend fun getTodayPrayerTimes(
         @Query("zone") zone: Int,
-        @Query("apartment") apartment: Boolean = false
+        @Query("apartment") apartment: Boolean = false,
     ): Response<BackendPrayerTime>
-    
+
     @GET("api/v1/prayer-times/{zone}/{year}/{month}/")
     suspend fun getMonthPrayerTimes(
         @Path("zone") zone: Int,
         @Path("year") year: Int,
-        @Path("month") month: String
+        @Path("month") month: String,
     ): Response<MosquePrayerTimesResponse>
-    
+
     // Hijri Calendar endpoints
     @GET("api/v1/hijri-date/")
     suspend fun getHijriDate(
         @Query("year") year: Int,
         @Query("month") month: Int,
-        @Query("day") day: Int
+        @Query("day") day: Int,
     ): Response<HijriDateResponse>
-    
+
     @GET("api/v1/today-both-calendars/")
     suspend fun getTodayBothCalendars(): Response<BothCalendarsResponse>
-    
+
     @GET("api/v1/gregorian-date/")
     suspend fun getGregorianDate(
         @Query("hijri_year") hijriYear: Int,
         @Query("hijri_month") hijriMonth: Int,
-        @Query("hijri_day") hijriDay: Int
+        @Query("hijri_day") hijriDay: Int,
     ): Response<GregorianDateResponse>
-    
+
     @GET("api/v1/hijri-months/")
     suspend fun getHijriMonths(): Response<HijriMonthsResponse>
-    
+
     // Weather endpoints
     @GET("api/v1/weather/current/city/{city_name}/")
     suspend fun getCurrentWeatherByCity(
-        @Path("city_name") cityName: String
+        @Path("city_name") cityName: String,
     ): Response<ProcessedCurrentWeather>
-    
+
     @GET("api/v1/weather/current/coordinates/")
     suspend fun getCurrentWeatherByCoordinates(
         @Query("lat") latitude: Double,
-        @Query("lon") longitude: Double
+        @Query("lon") longitude: Double,
     ): Response<ProcessedCurrentWeather>
-    
+
     @GET("api/v1/weather/forecast/")
     suspend fun getForecastDickwella(): Response<ProcessedForecastResponse>
-    
+
     @GET("api/v1/weather/forecast/city/{city_name}/")
     suspend fun getForecastByCity(
-        @Path("city_name") cityName: String
+        @Path("city_name") cityName: String,
     ): Response<ProcessedForecastResponse>
-    
+
     @GET("api/v1/weather/locations/sri-lanka/")
     suspend fun getSriLankaLocations(): Response<SriLankaLocationsResponse>
 }
@@ -75,19 +74,19 @@ interface MosqueClockApi {
 data class MosquePrayerTimesResponse(
     val success: Boolean,
     val data: MosquePrayerTimes,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class MosquePrayerTimesListResponse(
     val success: Boolean,
     val data: List<MosquePrayerTimes>,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class SinglePrayerTimeResponse(
     val success: Boolean,
     val data: MosquePrayerTimes,
-    val message: String? = null
+    val message: String? = null,
 )
 
 // Backend prayer time format (matches PrayerTimeSchema from backend)
@@ -99,7 +98,7 @@ data class BackendPrayerTime(
     val dhuhr: String,
     val asr: String,
     val magrib: String, // Note: backend uses "magrib" not "maghrib"
-    val isha: String
+    val isha: String,
 )
 
 data class MosquePrayerTimes(
@@ -128,32 +127,32 @@ data class MosquePrayerTimes(
     @SerializedName("hijri_date")
     val hijriDate: String? = null,
     val location: String? = null,
-    val zone: Int? = null
+    val zone: Int? = null,
 )
 
 // Hijri Calendar Data Classes
 data class HijriDateResponse(
     val success: Boolean,
     val data: HijriDateInfo,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class BothCalendarsResponse(
     val success: Boolean,
     val data: BothCalendarsInfo,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class GregorianDateResponse(
     val success: Boolean,
     val data: GregorianDateInfo,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class HijriMonthsResponse(
     val success: Boolean,
     val data: List<HijriMonthInfo>,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class HijriDateInfo(
@@ -177,14 +176,14 @@ data class HijriDateInfo(
     @SerializedName("formatted_ta")
     val formattedTa: String,
     @SerializedName("formatted_si")
-    val formattedSi: String
+    val formattedSi: String,
 )
 
 data class BothCalendarsInfo(
     @SerializedName("gregorian_date")
     val gregorianDate: String,
     @SerializedName("hijri_date")
-    val hijriDate: HijriDateInfo
+    val hijriDate: HijriDateInfo,
 )
 
 data class GregorianDateInfo(
@@ -193,7 +192,7 @@ data class GregorianDateInfo(
     val day: Int,
     val formatted: String,
     @SerializedName("hijri_conversion")
-    val hijriConversion: HijriDateInfo
+    val hijriConversion: HijriDateInfo,
 )
 
 data class HijriMonthInfo(
@@ -205,26 +204,26 @@ data class HijriMonthInfo(
     @SerializedName("name_ta")
     val nameTa: String,
     @SerializedName("name_si")
-    val nameSi: String
+    val nameSi: String,
 )
 
 // Weather Data Classes
 data class ProcessedCurrentWeatherResponse(
     val success: Boolean,
     val data: ProcessedCurrentWeather,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class ProcessedForecastResponse(
     val success: Boolean,
     val data: ProcessedForecast,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class SriLankaLocationsResponse(
     val success: Boolean,
     val data: List<WeatherLocationInfo>,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class WeatherLocationInfo(
@@ -233,7 +232,7 @@ data class WeatherLocationInfo(
     val latitude: Double,
     val longitude: Double,
     @SerializedName("timezone_offset")
-    val timezoneOffset: Int
+    val timezoneOffset: Int,
 )
 
 data class ProcessedCurrentWeather(
@@ -260,14 +259,14 @@ data class ProcessedCurrentWeather(
     val sunrise: String,
     val sunset: String,
     @SerializedName("is_daytime")
-    val isDaytime: Boolean
+    val isDaytime: Boolean,
 )
 
 data class ProcessedForecast(
     val location: WeatherLocationInfo,
     @SerializedName("current_weather")
     val currentWeather: ProcessedCurrentWeather,
-    val forecast: List<ProcessedForecastItem>
+    val forecast: List<ProcessedForecastItem>,
 )
 
 data class ProcessedForecastItem(
@@ -302,12 +301,12 @@ data class ProcessedForecastItem(
     @SerializedName("snow_3h")
     val snow3h: Double?,
     @SerializedName("is_daytime")
-    val isDaytime: Boolean
+    val isDaytime: Boolean,
 )
 
 // Extension functions to convert to existing models
-fun MosquePrayerTimes.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes {
-    return com.mosque.prayerclock.data.model.PrayerTimes(
+fun MosquePrayerTimes.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes =
+    com.mosque.prayerclock.data.model.PrayerTimes(
         date = this.date,
         fajrAzan = this.fajrAzan,
         fajrIqamah = this.fajrIqamah,
@@ -321,24 +320,22 @@ fun MosquePrayerTimes.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerT
         ishaIqamah = this.ishaIqamah,
         sunrise = this.sunrise,
         hijriDate = this.hijriDate,
-        location = this.location
+        location = this.location,
     )
-}
 
-fun ProcessedCurrentWeather.toWeatherInfo(): com.mosque.prayerclock.data.model.WeatherInfo {
-    return com.mosque.prayerclock.data.model.WeatherInfo(
+fun ProcessedCurrentWeather.toWeatherInfo(): com.mosque.prayerclock.data.model.WeatherInfo =
+    com.mosque.prayerclock.data.model.WeatherInfo(
         temperature = this.temperature,
         description = this.weatherDescription,
         icon = this.weatherIcon,
         humidity = this.humidity,
         feelsLike = this.feelsLike,
         visibility = this.visibility?.toDouble(),
-        uvIndex = null // UV index not provided by our API yet
+        uvIndex = null, // UV index not provided by our API yet
     )
-}
 
-fun BackendPrayerTime.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes {
-    return com.mosque.prayerclock.data.model.PrayerTimes(
+fun BackendPrayerTime.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes =
+    com.mosque.prayerclock.data.model.PrayerTimes(
         date = this.date,
         fajrAzan = this.fajr,
         fajrIqamah = this.fajr, // Backend doesn't provide separate iqamah times
@@ -352,6 +349,5 @@ fun BackendPrayerTime.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerT
         ishaIqamah = this.isha,
         sunrise = this.sunrise,
         hijriDate = null, // Backend doesn't include hijri date in prayer times
-        location = "Zone from MosqueClock Backend"
+        location = "Zone from MosqueClock Backend",
     )
-}

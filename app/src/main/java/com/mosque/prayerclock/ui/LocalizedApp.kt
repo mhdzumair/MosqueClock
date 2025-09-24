@@ -11,17 +11,18 @@ val LocalLocalizedContext = compositionLocalOf<Context> { error("No localized co
 @Composable
 fun LocalizedApp(
     language: Language,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val baseContext = LocalContext.current
-    
+
     // Create localized context based on the selected language
-    val localizedContext = remember(language) {
-        LocaleManager.setLocale(baseContext, language)
-    }
-    
+    val localizedContext =
+        remember(language) {
+            LocaleManager.setLocale(baseContext, language)
+        }
+
     CompositionLocalProvider(
-        LocalLocalizedContext provides localizedContext
+        LocalLocalizedContext provides localizedContext,
     ) {
         content()
     }
