@@ -34,7 +34,7 @@ fun PrayerTimeCard(
                 .let { cardModifier ->
                     if (isNext) {
                         cardModifier.border(
-                            width = 4.dp,
+                            width = 3.dp,
                             color = MaterialTheme.colorScheme.primary,
                             shape = RoundedCornerShape(16.dp),
                         )
@@ -44,124 +44,134 @@ fun PrayerTimeCard(
                 },
         colors =
             CardDefaults.cardColors(
-                containerColor = 
-                    if (isNext) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                    } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    }
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(if (isCompact) 12.dp else 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(4.dp),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        if (isNext) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                        } else {
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                        },
+                ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            shape = RoundedCornerShape(12.dp),
         ) {
-            Text(
-                text = prayerInfo.name,
-                style =
-                    MaterialTheme.typography.headlineMedium.copy(
-                        fontSize =
-                            when {
-                                isNext && !isCompact -> 28.sp
-                                isNext && isCompact -> 22.sp
-                                isCompact -> 18.sp
-                                else -> 24.sp
-                            },
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = 
-                    if (isNext) {
-                        // Emphasize with primary color to focus on timing
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                textAlign = TextAlign.Center,
-            )
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(if (isCompact) 12.dp else 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = prayerInfo.name,
+                    style =
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontSize =
+                                when {
+                                    isNext && !isCompact -> 28.sp
+                                    isNext && isCompact -> 22.sp
+                                    isCompact -> 18.sp
+                                    else -> 24.sp
+                                },
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    color =
+                        if (isNext) {
+                            // Emphasize with primary color to focus on timing
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                    textAlign = TextAlign.Center,
+                )
 
-            Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
+                Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
 
-            Text(
-                text = prayerInfo.azanTime,
-                style =
-                    MaterialTheme.typography.displayLarge.copy(
-                        fontSize =
-                            when {
-                                isNext && !isCompact -> 42.sp
-                                isNext && isCompact -> 32.sp
-                                isCompact -> 28.sp
-                                else -> 36.sp
-                            },
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color =
-                    if (isNext) {
-                        // Bold primary color to emphasize timing values
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                textAlign = TextAlign.Center,
-            )
+                Text(
+                    text = prayerInfo.azanTime,
+                    style =
+                        MaterialTheme.typography.displayLarge.copy(
+                            fontSize =
+                                when {
+                                    isNext && !isCompact -> 42.sp
+                                    isNext && isCompact -> 32.sp
+                                    isCompact -> 28.sp
+                                    else -> 36.sp
+                                },
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    color =
+                        if (isNext) {
+                            // Bold primary color to emphasize timing values
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                    textAlign = TextAlign.Center,
+                )
 
-            prayerInfo.iqamahTime?.let { iqamahTime ->
-                Spacer(modifier = Modifier.height(if (isCompact) 2.dp else 4.dp))
+                prayerInfo.iqamahTime?.let { iqamahTime ->
+                    Spacer(modifier = Modifier.height(if (isCompact) 2.dp else 4.dp))
 
-                if (isCompact) {
-                    Text(
-                        text = "${localizedStringResource(R.string.iqamah)}: $iqamahTime",
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        color =
-                            if (isNext) {
-                                // Emphasize with primary color
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                            },
-                        textAlign = TextAlign.Center,
-                    )
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
+                    if (isCompact) {
                         Text(
-                            text = "${localizedStringResource(R.string.iqamah)}: ",
+                            text = "${localizedStringResource(R.string.iqamah)}: $iqamahTime",
                             style =
-                                MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 16.sp,
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
                                 ),
                             color =
                                 if (isNext) {
                                     // Emphasize with primary color
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                                 } else {
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                                 },
+                            textAlign = TextAlign.Center,
                         )
-                        Text(
-                            text = iqamahTime,
-                            style =
-                                MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color =
-                                if (isNext) {
-                                    // Bold primary color to emphasize timing values
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                text = "${localizedStringResource(R.string.iqamah)}: ",
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        fontSize = 16.sp,
+                                    ),
+                                color =
+                                    if (isNext) {
+                                        // Emphasize with primary color
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                    },
+                            )
+                            Text(
+                                text = iqamahTime,
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                color =
+                                    if (isNext) {
+                                        // Bold primary color to emphasize timing values
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                            )
+                        }
                     }
                 }
             }

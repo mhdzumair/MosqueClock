@@ -27,7 +27,7 @@ data class AppSettings(
     val weatherCity: String = "Colombo",
     val weatherCountry: String = "Sri Lanka",
     val weatherProvider: WeatherProvider = WeatherProvider.MOSQUE_CLOCK,
-    val useApiForHijriDate: Boolean = false,
+    val hijriProvider: HijriProvider = HijriProvider.MANUAL,
     val manualHijriDay: Int = 7,
     val manualHijriMonth: Int = 2, // Safar
     val manualHijriYear: Int = 1447,
@@ -50,6 +50,12 @@ enum class Language(
 enum class WeatherProvider {
     MOSQUE_CLOCK,
     OPEN_WEATHER,
+}
+
+enum class HijriProvider {
+    MOSQUE_CLOCK_API,
+    AL_ADHAN_API,
+    MANUAL,
 }
 
 enum class ClockType {

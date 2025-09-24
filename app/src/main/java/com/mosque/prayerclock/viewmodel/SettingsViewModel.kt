@@ -139,6 +139,12 @@ class SettingsViewModel
             }
         }
 
+        fun updateHijriProvider(provider: HijriProvider) {
+            viewModelScope.launch {
+                settingsRepository.updateHijriProvider(provider)
+            }
+        }
+
         fun updateHijriDate(
             day: Int,
             month: Int,

@@ -1,5 +1,6 @@
 package com.mosque.prayerclock.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,85 +25,94 @@ import com.mosque.prayerclock.ui.localizedStringResource
 @Composable
 fun WeatherCard(
     weatherInfo: WeatherInfo,
-    language: Language = Language.ENGLISH,
-    isTV: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val cardPadding = if (isTV) 12.dp else 10.dp
-    val temperatureFontSize = if (isTV) 28.sp else 22.sp // Increased temperature font size
-    val detailsFontSize = if (isTV) 14.sp else 12.sp // Increased details font size
+    val cardPadding = 8.dp
+    val temperatureFontSize = 26.sp
+    val detailsFontSize = 13.sp
 
     Card(
         modifier =
             modifier
-                .height(if (isTV) 60.dp else 50.dp),
+                .height(65.dp)
+                .padding(2.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(cardPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+        Card(
+            modifier = Modifier.fillMaxSize().padding(3.dp),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            shape = RoundedCornerShape(9.dp),
         ) {
-            // Left: weather glyph + temperature
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val icon =
-                    when (weatherInfo.icon.lowercase()) {
-                        in listOf("01d", "01n") -> Icons.Filled.WbSunny
-                        in listOf("09d", "10d", "09n", "10n") -> Icons.Filled.WaterDrop
-                        in listOf("11d", "11n") -> Icons.Filled.Thunderstorm
-                        else -> Icons.Filled.Cloud
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(cardPadding),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Left: weather glyph + temperature
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val icon =
+                        when (weatherInfo.icon.lowercase()) {
+                            in listOf("01d", "01n") -> Icons.Filled.WbSunny
+                            in listOf("09d", "10d", "09n", "10n") -> Icons.Filled.WaterDrop
+                            in listOf("11d", "11n") -> Icons.Filled.Thunderstorm
+                            else -> Icons.Filled.Cloud
+                        }
+                    Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Text(
+                            text = "${weatherInfo.temperature.toInt()}°C",
+                            style =
+                                MaterialTheme.typography.headlineSmall.copy(
+                                    fontSize = temperatureFontSize,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = weatherInfo.description,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = detailsFontSize,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                            maxLines = 1,
+                        )
                     }
-                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Column(horizontalAlignment = Alignment.Start) {
+                }
+
+                // Compact details
+                Column(
+                    horizontalAlignment = Alignment.End,
+                ) {
                     Text(
-                        text = "${weatherInfo.temperature.toInt()}°C",
-                        style =
-                            MaterialTheme.typography.headlineSmall.copy(
-                                fontSize = temperatureFontSize,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = weatherInfo.description,
+                        text = "${localizedStringResource(R.string.humidity_short)}: ${weatherInfo.humidity}%",
                         style =
                             MaterialTheme.typography.bodySmall.copy(
                                 fontSize = detailsFontSize,
                             ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text = "${localizedStringResource(R.string.feels_like_short)}: ${weatherInfo.feelsLike.toInt()}°",
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontSize = detailsFontSize,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     )
                 }
-            }
-
-            // Compact details
-            Column(
-                horizontalAlignment = Alignment.End,
-            ) {
-                Text(
-                    text = "${localizedStringResource(R.string.humidity_short)}: ${weatherInfo.humidity}%",
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            fontSize = detailsFontSize,
-                        ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                )
-                Text(
-                    text = "${localizedStringResource(R.string.feels_like_short)}: ${weatherInfo.feelsLike.toInt()}°",
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            fontSize = detailsFontSize,
-                        ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                )
             }
         }
     }

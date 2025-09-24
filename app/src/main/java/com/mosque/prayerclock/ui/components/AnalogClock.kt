@@ -27,17 +27,22 @@ import kotlin.math.*
 fun AnalogClock(
     modifier: Modifier = Modifier,
     size: androidx.compose.ui.unit.Dp = 200.dp,
+    currentTime: Instant? = null,
 ) {
-    var currentTime by remember { mutableStateOf(Clock.System.now()) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            currentTime = Clock.System.now()
-            delay(1000)
+    // Use provided time or fallback to local time source
+    val timeToUse =
+        currentTime ?: run {
+            var localCurrentTime by remember { mutableStateOf(Clock.System.now()) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    localCurrentTime = Clock.System.now()
+                    delay(1000)
+                }
+            }
+            localCurrentTime
         }
-    }
 
-    val localDateTime = currentTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    val localDateTime = timeToUse.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
     val hour = localDateTime.hour % 12
     val minute = localDateTime.minute
     val second = localDateTime.second

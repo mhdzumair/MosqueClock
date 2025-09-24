@@ -35,16 +35,17 @@ fun DigitalClock(
     currentTime: Instant? = null,
 ) {
     // Use provided time or fallback to local time source
-    val timeToUse = currentTime ?: run {
-        var localCurrentTime by remember { mutableStateOf(Clock.System.now()) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                localCurrentTime = Clock.System.now()
-                delay(1000)
+    val timeToUse =
+        currentTime ?: run {
+            var localCurrentTime by remember { mutableStateOf(Clock.System.now()) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    localCurrentTime = Clock.System.now()
+                    delay(1000)
+                }
             }
+            localCurrentTime
         }
-        localCurrentTime
-    }
 
     val localDateTime = timeToUse.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
 

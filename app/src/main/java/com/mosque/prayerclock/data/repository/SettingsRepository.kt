@@ -42,6 +42,7 @@ class SettingsRepository
             val WEATHER_COUNTRY = stringPreferencesKey("weather_country")
             val WEATHER_PROVIDER = stringPreferencesKey("weather_provider")
             val USE_API_FOR_HIJRI_DATE = booleanPreferencesKey("use_api_for_hijri_date")
+            val HIJRI_PROVIDER = stringPreferencesKey("hijri_provider")
             val MANUAL_HIJRI_DAY = intPreferencesKey("manual_hijri_day")
             val MANUAL_HIJRI_MONTH = intPreferencesKey("manual_hijri_month")
             val MANUAL_HIJRI_YEAR = intPreferencesKey("manual_hijri_year")
@@ -97,7 +98,10 @@ class SettingsRepository
                         WeatherProvider.values().find {
                             it.name == preferences[PreferencesKeys.WEATHER_PROVIDER]
                         } ?: WeatherProvider.MOSQUE_CLOCK,
-                    useApiForHijriDate = preferences[PreferencesKeys.USE_API_FOR_HIJRI_DATE] ?: false,
+                    hijriProvider =
+                        HijriProvider.values().find {
+                            it.name == preferences[PreferencesKeys.HIJRI_PROVIDER]
+                        } ?: HijriProvider.MANUAL,
                     manualHijriDay = preferences[PreferencesKeys.MANUAL_HIJRI_DAY] ?: 7,
                     manualHijriMonth = preferences[PreferencesKeys.MANUAL_HIJRI_MONTH] ?: 2,
                     manualHijriYear = preferences[PreferencesKeys.MANUAL_HIJRI_YEAR] ?: 1447,
@@ -218,6 +222,12 @@ class SettingsRepository
         suspend fun updateUseApiForHijriDate(useApi: Boolean) {
             dataStore.edit { preferences ->
                 preferences[PreferencesKeys.USE_API_FOR_HIJRI_DATE] = useApi
+            }
+        }
+
+        suspend fun updateHijriProvider(provider: HijriProvider) {
+            dataStore.edit { preferences ->
+                preferences[PreferencesKeys.HIJRI_PROVIDER] = provider.name
             }
         }
 

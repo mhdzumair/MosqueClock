@@ -60,7 +60,7 @@ class PrayerTimesRepository
                         emitAll(getPrayerTimesByZoneAndDate(settings.selectedZone, tomorrowDate))
                     }
                     PrayerServiceType.AL_ADHAN_API -> {
-                        // Use Al-Adhan API with selected region for tomorrow  
+                        // Use Al-Adhan API with selected region for tomorrow
                         emitAll(getTomorrowPrayerTimesByRegion(settings.selectedRegion))
                     }
                     PrayerServiceType.MANUAL -> {
@@ -124,8 +124,11 @@ class PrayerTimesRepository
                 try {
                     // Format tomorrow's date for Al-Adhan API (dd-MM-yyyy format)
                     val tomorrowLocalDate = tomorrow.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
-                    val tomorrowFormatted = "${tomorrowLocalDate.dayOfMonth.toString().padStart(2, '0')}-${tomorrowLocalDate.monthNumber.toString().padStart(2, '0')}-${tomorrowLocalDate.year}"
-                    
+                    val tomorrowFormatted = "${tomorrowLocalDate.dayOfMonth.toString().padStart(
+                        2,
+                        '0',
+                    )}-${tomorrowLocalDate.monthNumber.toString().padStart(2, '0')}-${tomorrowLocalDate.year}"
+
                     val response = api.getPrayerTimesByCity(region, getCountryForRegion(region), tomorrowFormatted)
                     if (response.isSuccessful && response.body()?.code == 200) {
                         val alAdhanData = response.body()?.data

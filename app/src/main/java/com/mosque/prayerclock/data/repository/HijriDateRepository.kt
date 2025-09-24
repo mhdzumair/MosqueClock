@@ -16,6 +16,7 @@ class HijriDateRepository
     constructor(
         private val settingsRepository: SettingsRepository,
         private val mosqueClockApi: MosqueClockApi,
+        private val prayerTimesApi: com.mosque.prayerclock.data.network.PrayerTimesApi,
     ) {
         data class HijriDate(
             val day: Int,
@@ -26,29 +27,71 @@ class HijriDateRepository
         suspend fun getCurrentHijriDate(): HijriDate {
             val settings = settingsRepository.getSettings().first()
 
-            if (settings.useApiForHijriDate) {
-                try {
-                    val response = mosqueClockApi.getTodayBothCalendars()
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val hijriInfo = response.body()?.data?.hijriDate
-                        if (hijriInfo != null) {
-                            return HijriDate(
-                                day = hijriInfo.day,
-                                month = hijriInfo.month,
-                                year = hijriInfo.year,
-                            )
+            return when (settings.hijriProvider) {
+                com.mosque.prayerclock.data.model.HijriProvider.MOSQUE_CLOCK_API -> {
+                    try {
+                        val response = mosqueClockApi.getTodayBothCalendars()
+                        if (response.isSuccessful && response.body()?.success == true) {
+                            val hijriInfo = response.body()?.data?.hijriDate
+                            if (hijriInfo != null) {
+                                return HijriDate(
+                                    day = hijriInfo.day,
+                                    month = hijriInfo.month,
+                                    year = hijriInfo.year,
+                                )
+                            }
                         }
+                        // If API call fails, fall back to manual calculation
+                        calculateCurrentHijriDate(settings)
+                    } catch (e: Exception) {
+                        // If there's an error, fall back to manual calculation
+                        calculateCurrentHijriDate(settings)
                     }
-                    // If API call fails, fall back to manual calculation
-                    return calculateCurrentHijriDate(settings)
-                } catch (e: Exception) {
-                    // If there's an error, fall back to manual calculation
-                    return calculateCurrentHijriDate(settings)
                 }
-            } else {
-                return calculateCurrentHijriDate(settings)
+                com.mosque.prayerclock.data.model.HijriProvider.AL_ADHAN_API -> {
+                    try {
+                        val response =
+                            prayerTimesApi.getPrayerTimesByCity(
+                                city = settings.selectedRegion,
+                                country = getCountryForRegion(settings.selectedRegion),
+                            )
+                        if (response.isSuccessful && response.body()?.code == 200) {
+                            val hijriData =
+                                response
+                                    .body()
+                                    ?.data
+                                    ?.date
+                                    ?.hijri
+                            if (hijriData != null) {
+                                return HijriDate(
+                                    day = hijriData.day.toInt(),
+                                    month = hijriData.month.number,
+                                    year = hijriData.year.toInt(),
+                                )
+                            }
+                        }
+                        // If API call fails, fall back to manual calculation
+                        calculateCurrentHijriDate(settings)
+                    } catch (e: Exception) {
+                        // If there's an error, fall back to manual calculation
+                        calculateCurrentHijriDate(settings)
+                    }
+                }
+                com.mosque.prayerclock.data.model.HijriProvider.MANUAL -> {
+                    calculateCurrentHijriDate(settings)
+                }
             }
         }
+
+        private fun getCountryForRegion(region: String): String =
+            when (region.lowercase()) {
+                "colombo", "kandy", "galle", "jaffna", "negombo" -> "Sri Lanka"
+                "chennai", "mumbai", "delhi", "bangalore", "hyderabad" -> "India"
+                "dhaka", "chittagong", "sylhet" -> "Bangladesh"
+                "karachi", "lahore", "islamabad", "faisalabad" -> "Pakistan"
+                "male" -> "Maldives"
+                else -> "Sri Lanka" // Default fallback
+            }
 
         fun getCurrentHijriDateFlow(): Flow<NetworkResult<HijriDate>> =
             flow {
