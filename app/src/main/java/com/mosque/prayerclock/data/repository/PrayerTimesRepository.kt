@@ -152,7 +152,6 @@ class PrayerTimesRepository
                     // Set fetching flag
                     isCurrentlyFetching = true
 
-
                     // Fetch data based on service type and emit results
                     when (settings.prayerServiceType) {
                         PrayerServiceType.MOSQUE_CLOCK_API -> {

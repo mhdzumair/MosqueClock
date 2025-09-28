@@ -68,7 +68,7 @@ class SplashActivity : ComponentActivity() {
 
         // Configure window flags to wake up display immediately
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        
+
         // Use modern approach for showing over lock screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)

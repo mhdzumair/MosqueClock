@@ -13,6 +13,7 @@ import com.mosque.prayerclock.data.model.PrayerTimes
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun prayerTimesDao(): PrayerTimesDao
+
     abstract fun hijriDateDao(): HijriDateDao
 
     companion object {

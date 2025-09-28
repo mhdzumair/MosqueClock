@@ -90,7 +90,7 @@ class MainViewModel
                 Log.d("MainViewModel", "Prayer times already loading, skipping")
                 return
             }
-            
+
             isLoadingPrayerTimes = true
 
             viewModelScope.launch(Dispatchers.IO) {

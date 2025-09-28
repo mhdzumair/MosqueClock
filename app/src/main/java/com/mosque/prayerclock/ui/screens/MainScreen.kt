@@ -103,10 +103,10 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val weatherState by viewModel.weatherState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
-    
+
     // Global synchronized animation state for all prayer cards
     var globalShowAzan by remember { mutableStateOf(true) }
-    
+
     // Synchronized animation timer - all cards will use this state
     LaunchedEffect(Unit) {
         while (true) {

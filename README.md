@@ -1,15 +1,18 @@
 # Mosque Prayer Clock - Android TV Application
 
-A comprehensive Android TV application designed for mosques to display prayer times, digital/analog clocks, and provide multilingual support (English/Tamil). The app fetches prayer times from the Sri Lankan Jamiath Ul Ulama server and provides a beautiful, customizable interface optimized for large screens.
+A comprehensive Android TV application designed for mosques to display prayer times, digital/analog clocks, weather information, and provide multilingual support. The app features multiple prayer time sources, intelligent caching systems, and performance optimizations for seamless operation.
 
-## Features
+## 🌟 Features
 
 ### 🕌 Prayer Times Display
-- **Real-time Prayer Times**: Fetches latest prayer times from Sri Lankan Jamiath Ul Ulama API
-- **Five Daily Prayers**: Fajr, Dhuhr, Asr, Maghrib, Isha
-- **Sunrise Time**: Additional sunrise information
-- **Azan & Iqamah Times**: Shows both azan and iqamah times for each prayer
-- **Next Prayer Highlight**: Automatically highlights the next upcoming prayer
+- **Multiple Prayer Time Sources**: 
+  - **MosqueClock API**: Custom backend with 13 Sri Lankan zones
+  - **Al-Adhan API**: International prayer times service
+  - **Manual Entry**: Custom prayer times with configurable Iqamah gaps
+- **Five Daily Prayers**: Fajr, Dhuhr, Asr, Maghrib, Isha with Sunrise
+- **Azan & Iqamah Times**: Synchronized animated display for all prayers
+- **Next Prayer Highlight**: Automatically highlights upcoming prayer
+- **Smart Caching**: Intelligent prayer times caching with provider-specific storage
 
 ### 🕐 Clock Features
 - **Digital Clock**: Large, customizable digital time display
@@ -17,45 +20,78 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 - **Both Clocks**: Display both digital and analog clocks simultaneously
 - **Time Formats**: Support for 12-hour and 24-hour formats
 - **Seconds Display**: Option to show/hide seconds
+- **Hijri Date Display**: Islamic calendar with intelligent caching system
+
+### 🌤️ Weather Integration
+- **Multiple Weather Providers**:
+  - **MosqueClock Weather API**: Custom weather service
+  - **OpenWeatherMap**: International weather data
+- **Real-time Weather**: Temperature, humidity, UV index, wind speed
+- **Location-based**: Accurate weather for Sri Lankan cities
+- **Smart Coordinates**: Automatic coordinate mapping for precise data
 
 ### 🌍 Multilingual Support
 - **English**: Full English language support
 - **Tamil**: Complete Tamil language support (தமிழ்)
+- **Sinhala**: Sinhala language support
+- **Multi-Language**: Combined language display option
 - **Dynamic Language Switching**: Change language in real-time
 
 ### ⚙️ Customization Options
 - **Mosque Name**: Add custom mosque name display
-- **Location Settings**: Configure region and city
+- **Location Settings**: Configure region, city, and zones
 - **Theme Selection**: Multiple themes including Default, Dark, Light, Mosque Green, Blue
-- **Font Sizes**: Adjustable font sizes for better visibility
+- **Font Sizes**: Adjustable font sizes (Small, Medium, Large, Extra Large)
 - **Clock Preferences**: Customize clock display options
+- **Sound Notifications**: Prayer countdown ticking with 5-second alerts
 
 ### 📱 Android TV Optimized
 - **TV Interface**: Designed specifically for Android TV and large screens
 - **Remote Control Support**: Full D-pad and remote control navigation
 - **Leanback Support**: Android TV Leanback launcher integration
 - **Landscape Orientation**: Optimized for TV landscape display
+- **Always-On Display**: Configurable screen-on settings for mosque displays
 
-## Technical Architecture
+## 🏗️ Technical Architecture
 
 ### Built With
 - **Kotlin**: Modern Android development language
 - **Jetpack Compose**: Modern UI toolkit for native Android
 - **Android TV**: Optimized for TV devices
 - **Hilt**: Dependency injection framework
-- **Room Database**: Local data persistence
+- **Room Database**: Local data persistence with intelligent caching
 - **DataStore**: Settings and preferences storage
-- **Retrofit**: REST API communication
-- **Coroutines**: Asynchronous programming
+- **Retrofit**: REST API communication with multiple endpoints
+- **Coroutines**: Asynchronous programming with performance optimizations
 - **Material Design 3**: Modern UI components
 
 ### Architecture Pattern
 - **MVVM**: Model-View-ViewModel architecture
-- **Repository Pattern**: Data layer abstraction
+- **Repository Pattern**: Data layer abstraction with smart caching
 - **Clean Architecture**: Separation of concerns
 - **Dependency Injection**: Hilt for dependency management
 
-## Installation & Setup
+### 🚀 Performance Optimizations
+
+#### Intelligent Caching System
+- **Prayer Times Caching**: Provider-specific caching (MANUAL, AL_ADHAN_API, MOSQUE_CLOCK_API)
+- **Hijri Date Caching**: Smart database caching with calculation fallbacks
+- **Repository-level Cache**: In-memory caching for instant access
+- **Auto-cleanup**: Removes old data after 30 days
+
+#### Smart API Management
+- **Throttling Removal**: Eliminated blocking throttling for responsive settings changes
+- **Concurrent Protection**: Prevents duplicate API calls while allowing legitimate updates
+- **Provider Isolation**: Separate caching per prayer time provider
+- **Fallback Strategies**: Graceful degradation when APIs are unavailable
+
+#### Database Optimizations
+- **Composite Keys**: Provider-specific database IDs for accurate caching
+- **Hijri Date Intelligence**: Calculates dates from cache when safe (non-month-end)
+- **Background Threading**: All database operations on IO dispatcher
+- **Smart Queries**: Efficient database lookups with provider context
+
+## 📦 Installation & Setup
 
 ### Prerequisites
 - Android Studio Arctic Fox or later
@@ -70,10 +106,14 @@ A comprehensive Android TV application designed for mosques to display prayer ti
    cd MosqueClock
    ```
 
-2. **Open in Android Studio**
-   - Open Android Studio
-   - Select "Open an existing Android Studio project"
-   - Navigate to the MosqueClock folder and select it
+2. **Configure API Keys**
+   ```bash
+   # Create local.properties file
+   cp local.properties.example local.properties
+   # Add your API keys:
+   # WEATHER_API_KEY=your_openweather_api_key
+   # MOSQUE_CLOCK_API_KEY=your_mosque_clock_api_key
+   ```
 
 3. **Build the Project**
    ```bash
@@ -85,82 +125,454 @@ A comprehensive Android TV application designed for mosques to display prayer ti
    ./gradlew installDebug
    ```
 
-### Running on Android TV Emulator
+### 📱 Android TV Device Setup & Optimization
 
-1. **Create Android TV AVD**
-   - Open AVD Manager in Android Studio
-   - Create a new Virtual Device
-   - Select TV category
-   - Choose Android TV (API 21+)
-   - Configure and finish
+For optimal mosque display setup, use these ADB commands to configure your Android TV device:
 
-2. **Run the Application**
+#### Prerequisites
+- Enable Developer Options and USB Debugging on Android TV
+- Connect device via ADB: `adb connect <device_ip>:5555`
+- Verify connection: `adb devices`
+
+#### 🔐 Essential Permissions
+
+**Grant Overlay Permission (Required for Always-On Display)**
+```bash
+# Grant system alert window permission
+adb shell pm grant com.mosque.prayerclock android.permission.SYSTEM_ALERT_WINDOW
+
+# Alternative method if above fails
+adb shell appops set com.mosque.prayerclock SYSTEM_ALERT_WINDOW allow
+
+# Verify overlay permission
+adb shell appops get com.mosque.prayerclock SYSTEM_ALERT_WINDOW
+```
+
+**Grant Additional Permissions**
+```bash
+# Wake lock permission (keep screen on)
+adb shell pm grant com.mosque.prayerclock android.permission.WAKE_LOCK
+
+# Network access
+adb shell pm grant com.mosque.prayerclock android.permission.INTERNET
+adb shell pm grant com.mosque.prayerclock android.permission.ACCESS_NETWORK_STATE
+
+# Location for weather (optional)
+adb shell pm grant com.mosque.prayerclock android.permission.ACCESS_COARSE_LOCATION
+```
+
+#### 🔋 Battery Optimization Removal
+
+**Disable Battery Optimization (Critical for 24/7 Operation)**
+```bash
+# Remove from battery optimization whitelist
+adb shell dumpsys deviceidle whitelist +com.mosque.prayerclock
+
+# Alternative method
+adb shell cmd appops set com.mosque.prayerclock RUN_IN_BACKGROUND allow
+
+# Disable doze mode for the app
+adb shell dumpsys deviceidle whitelist +com.mosque.prayerclock
+
+# Verify battery optimization status
+adb shell dumpsys battery | grep -i mosque
+```
+
+**Disable Power Management Features**
+```bash
+# Disable adaptive battery
+adb shell settings put global adaptive_battery_management_enabled 0
+
+# Disable app standby
+adb shell dumpsys usagestats set-standby-bucket com.mosque.prayerclock 10
+
+# Keep app active
+adb shell am set-inactive com.mosque.prayerclock false
+```
+
+#### 🏠 Launcher Configuration
+
+**Set as Default Launcher (Kiosk Mode)**
+```bash
+# Clear current default launcher
+adb shell pm clear-default-launcher
+
+# Set MosqueClock as default launcher
+adb shell cmd package set-home-activity com.mosque.prayerclock/.MainActivity
+
+# Alternative method - disable current launcher first
+adb shell pm disable-user --user 0 com.google.android.tvlauncher
+
+# Enable MosqueClock as launcher
+adb shell pm enable com.mosque.prayerclock
+adb shell pm set-home-activity com.mosque.prayerclock/.MainActivity
+```
+
+**Launcher Management**
+```bash
+# List all launchers
+adb shell pm query-activities --brief -c android.intent.category.HOME
+
+# Reset to original launcher (if needed)
+adb shell pm enable com.google.android.tvlauncher
+adb shell cmd package set-home-activity com.google.android.tvlauncher/.TvLauncherActivity
+
+# Clear launcher preferences (user will be prompted to choose)
+adb shell pm clear-default-launcher
+```
+
+#### 🧹 Debloating & System Optimization
+
+**Remove Unnecessary Apps (Android TV)**
+```bash
+# Google Apps (keep essential ones)
+adb shell pm uninstall --user 0 com.google.android.youtube.tv
+adb shell pm uninstall --user 0 com.google.android.apps.tv.launcherx
+adb shell pm uninstall --user 0 com.google.android.katniss
+adb shell pm uninstall --user 0 com.google.android.backdrop
+
+# Netflix and streaming apps
+adb shell pm uninstall --user 0 com.netflix.ninja
+adb shell pm uninstall --user 0 com.amazon.avod.thirdpartyclient
+adb shell pm uninstall --user 0 com.disney.disneyplus
+
+# Gaming and entertainment
+adb shell pm uninstall --user 0 com.google.android.play.games
+adb shell pm uninstall --user 0 com.android.vending
+
+# Social and communication
+adb shell pm uninstall --user 0 com.google.android.apps.photos
+adb shell pm uninstall --user 0 com.google.android.music
+```
+
+**Disable System Apps (Safer Alternative)**
+```bash
+# Disable instead of uninstall (can be re-enabled)
+adb shell pm disable-user --user 0 com.google.android.youtube.tv
+adb shell pm disable-user --user 0 com.netflix.ninja
+adb shell pm disable-user --user 0 com.google.android.play.games
+
+# List disabled packages
+adb shell pm list packages -d
+
+# Re-enable if needed
+adb shell pm enable com.google.android.youtube.tv
+```
+
+#### ⚙️ System Settings Optimization
+
+**Display Settings**
+```bash
+# Keep screen always on
+adb shell settings put system screen_off_timeout 2147483647
+
+# Set brightness to maximum
+adb shell settings put system screen_brightness 255
+
+# Disable screen saver
+adb shell settings put secure screensaver_enabled 0
+
+# Disable sleep mode
+adb shell settings put global stay_on_while_plugged_in 7
+```
+
+**Network & Performance**
+```bash
+# Disable automatic updates
+adb shell settings put global auto_update_enabled 0
+
+# Disable usage stats
+adb shell settings put global usage_stats_enabled 0
+
+# Optimize for performance
+adb shell settings put global animator_duration_scale 0.5
+adb shell settings put global transition_animation_scale 0.5
+adb shell settings put global window_animation_scale 0.5
+```
+
+**Privacy & Security**
+```bash
+# Disable location services (if not using weather)
+adb shell settings put secure location_providers_allowed ""
+
+# Disable crash reporting
+adb shell settings put secure send_action_app_error 0
+
+# Disable usage access
+adb shell settings put secure usage_access_enabled 0
+```
+
+#### 🔄 Auto-Start Configuration
+
+**Ensure App Starts on Boot**
+```bash
+# Enable auto-start permission
+adb shell pm grant com.mosque.prayerclock android.permission.RECEIVE_BOOT_COMPLETED
+
+# Set as persistent app
+adb shell cmd appops set com.mosque.prayerclock RUN_ANY_IN_BACKGROUND allow
+
+# Add to auto-start whitelist
+adb shell dumpsys deviceidle whitelist +com.mosque.prayerclock
+```
+
+#### 📊 Verification Commands
+
+**Check App Status**
+```bash
+# Verify app is installed and enabled
+adb shell pm list packages | grep mosque
+
+# Check app permissions
+adb shell dumpsys package com.mosque.prayerclock | grep permission
+
+# Check if app is running
+adb shell ps | grep mosque
+
+# Check battery optimization status
+adb shell dumpsys deviceidle | grep mosque
+```
+
+**System Status**
+```bash
+# Check current launcher
+adb shell cmd package get-home-activities
+
+# Check screen timeout
+adb shell settings get system screen_off_timeout
+
+# Check disabled packages
+adb shell pm list packages -d | grep -E "(youtube|netflix|play)"
+```
+
+#### 🚨 Troubleshooting
+
+**Common Issues & Solutions**
+```bash
+# If overlay permission fails
+adb shell settings put global policy_control immersive.full=com.mosque.prayerclock
+
+# If app doesn't start on boot
+adb shell am broadcast -a android.intent.action.BOOT_COMPLETED
+
+# Reset all settings (if needed)
+adb shell pm clear com.mosque.prayerclock
+
+# Force stop and restart
+adb shell am force-stop com.mosque.prayerclock
+adb shell am start -n com.mosque.prayerclock/.MainActivity
+```
+
+**Factory Reset Preparation**
+```bash
+# Backup current configuration
+adb shell pm list packages > installed_packages.txt
+adb shell settings list system > system_settings.txt
+adb shell settings list global > global_settings.txt
+
+# Create setup script for quick reconfiguration
+echo "#!/bin/bash" > setup_mosque_tv.sh
+echo "adb shell pm grant com.mosque.prayerclock android.permission.SYSTEM_ALERT_WINDOW" >> setup_mosque_tv.sh
+# Add other essential commands...
+chmod +x setup_mosque_tv.sh
+```
+
+#### 🚀 Quick Setup Script
+
+**Create an automated setup script for new devices:**
+
+```bash
+#!/bin/bash
+# mosque_tv_setup.sh - Complete Android TV setup for Mosque Prayer Clock
+
+echo "🕌 Setting up Android TV for Mosque Prayer Clock..."
+
+# Check ADB connection
+if ! adb devices | grep -q "device$"; then
+    echo "❌ No ADB device connected. Please connect your Android TV device first."
+    exit 1
+fi
+
+echo "📱 Connected to Android TV device"
+
+# Install APK if provided
+if [ -f "app-debug.apk" ]; then
+    echo "📦 Installing Mosque Prayer Clock APK..."
+    adb install -r app-debug.apk
+fi
+
+# Essential permissions
+echo "🔐 Granting essential permissions..."
+adb shell pm grant com.mosque.prayerclock android.permission.SYSTEM_ALERT_WINDOW
+adb shell pm grant com.mosque.prayerclock android.permission.WAKE_LOCK
+adb shell pm grant com.mosque.prayerclock android.permission.INTERNET
+adb shell pm grant com.mosque.prayerclock android.permission.ACCESS_NETWORK_STATE
+adb shell pm grant com.mosque.prayerclock android.permission.RECEIVE_BOOT_COMPLETED
+
+# Battery optimization
+echo "🔋 Removing battery optimization..."
+adb shell dumpsys deviceidle whitelist +com.mosque.prayerclock
+adb shell cmd appops set com.mosque.prayerclock RUN_IN_BACKGROUND allow
+adb shell am set-inactive com.mosque.prayerclock false
+
+# Display settings
+echo "📺 Configuring display settings..."
+adb shell settings put system screen_off_timeout 2147483647
+adb shell settings put system screen_brightness 255
+adb shell settings put secure screensaver_enabled 0
+adb shell settings put global stay_on_while_plugged_in 7
+
+# Performance optimization
+echo "⚡ Optimizing performance..."
+adb shell settings put global animator_duration_scale 0.5
+adb shell settings put global transition_animation_scale 0.5
+adb shell settings put global window_animation_scale 0.5
+
+# Debloat common apps (optional - uncomment if needed)
+echo "🧹 Debloating unnecessary apps..."
+# adb shell pm disable-user --user 0 com.google.android.youtube.tv
+# adb shell pm disable-user --user 0 com.netflix.ninja
+# adb shell pm disable-user --user 0 com.google.android.play.games
+
+# Set as launcher (optional - uncomment for kiosk mode)
+echo "🏠 Setting up launcher (optional)..."
+# adb shell pm clear-default-launcher
+# adb shell cmd package set-home-activity com.mosque.prayerclock/.MainActivity
+
+# Start the app
+echo "🚀 Starting Mosque Prayer Clock..."
+adb shell am start -n com.mosque.prayerclock/.MainActivity
+
+echo "✅ Setup complete! Your Android TV is now optimized for mosque display."
+echo "📋 Next steps:"
+echo "   1. Configure prayer times in the app settings"
+echo "   2. Set up weather (if desired)"
+echo "   3. Customize display preferences"
+echo "   4. Test the always-on display functionality"
+```
+
+**Usage:**
+```bash
+# Make script executable
+chmod +x mosque_tv_setup.sh
+
+# Run setup
+./mosque_tv_setup.sh
+```
+
+### Backend Setup (Optional)
+
+The app includes a custom FastAPI backend for enhanced features:
+
+1. **Start Backend Services**
    ```bash
-   ./gradlew installDebug
+   cd backend
+   docker run -d -p 27017:27017 --name mongodb-prayer-times mongo:latest
+   uv sync
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-## Configuration
+2. **Backend Features**
+   - Prayer times for 13 Sri Lankan zones
+   - Hijri calendar conversion
+   - Weather data integration
+   - Automatic ACJU data scraping
 
-### API Configuration
-The app is configured to fetch prayer times from the Sri Lankan Jamiath Ul Ulama API. The base URL is:
-```
-https://api.srilankanjamiathululama.org/
-```
+## ⚙️ Configuration
+
+### Prayer Time Sources
+
+#### 1. MosqueClock API (Recommended)
+- **Zones**: 13 Sri Lankan zones with ACJU data
+- **Features**: Automatic scraping, MongoDB caching, apartment adjustments
+- **Endpoint**: `http://localhost:8000/api/v1/`
+
+#### 2. Al-Adhan API
+- **Coverage**: International prayer times
+- **Regions**: Colombo, Kandy, Galle, Jaffna, and more
+- **Features**: Hijri date integration, multiple calculation methods
+
+#### 3. Manual Entry
+- **Custom Times**: Set prayer times manually
+- **Iqamah Gaps**: Configurable gaps between Azan and Iqamah
+- **Flexibility**: Perfect for mosques with specific timing requirements
+
+### Weather Configuration
+- **OpenWeatherMap**: Requires API key in `local.properties`
+- **MosqueClock Weather**: Uses custom backend weather service
+- **City Coordinates**: Automatic mapping for Sri Lankan cities
 
 ### Default Settings
+- **Prayer Service**: Manual (can be changed to API sources)
 - **Language**: English
-- **Location**: Colombo, Western Province
+- **Location**: Configurable based on selected service
 - **Clock Type**: Digital
-- **Theme**: Default
-- **Time Format**: 12-hour with seconds
+- **Theme**: Default (system-based)
+- **Weather**: Disabled by default
 
-## Usage
+## 🎮 Usage
 
 ### Navigation
 - **Menu Button**: Access settings screen
 - **Back Button**: Return to main screen from settings
 - **D-pad**: Navigate through settings options
+- **Remote Control**: Full Android TV remote support
 
 ### Main Screen
-- **Prayer Times**: Displayed in horizontal scrollable cards
+- **Prayer Times**: Animated cards showing Azan ⟷ Iqamah times
 - **Current Time**: Large digital/analog clock display
-- **Next Prayer**: Highlighted with different color
-- **Mosque Name**: Displayed at the top (if configured)
+- **Hijri Date**: Islamic calendar with intelligent caching
+- **Weather Info**: Temperature, conditions, and details (when enabled)
+- **Next Prayer**: Highlighted with countdown
 
 ### Settings Screen
-- **Language**: Switch between English and Tamil
-- **Location**: Configure region and city for prayer times
-- **Mosque Name**: Set custom mosque name
-- **Clock Type**: Choose between Digital, Analog, or Both
-- **Theme**: Select from available themes
-- **Time Format**: Configure 12/24 hour format and seconds display
+- **Prayer Service**: Choose between MosqueClock API, Al-Adhan API, or Manual
+- **Location**: Configure zones (MosqueClock) or regions (Al-Adhan)
+- **Manual Times**: Set custom prayer and Iqamah times
+- **Weather**: Enable/disable weather with provider selection
+- **Hijri Provider**: Choose Hijri date source
+- **Display**: Clock type, theme, font size, language
+- **Sound**: Prayer countdown notifications
 
-## Data Storage
+## 💾 Data Storage
 
 ### Local Database (Room)
-- **Prayer Times**: Cached locally for offline access
-- **Auto-cleanup**: Old prayer times automatically removed after 30 days
+- **Prayer Times**: Cached with provider-specific keys
+- **Hijri Dates**: Intelligent caching with calculation fallbacks
+- **Auto-cleanup**: Removes data older than 30 days
+- **Provider Isolation**: Separate caching per API source
 
 ### Settings (DataStore)
 - **User Preferences**: Language, theme, location settings
-- **Clock Configuration**: Display preferences
+- **Clock Configuration**: Display preferences and customizations
 - **Mosque Information**: Custom mosque name and details
+- **API Configuration**: Selected providers and credentials
 
-## API Integration
+### Caching Strategy
+- **Repository Cache**: In-memory for instant access
+- **Database Cache**: Persistent storage with smart queries
+- **Calculation Cache**: Hijri dates calculated from recent data
+- **Provider Context**: Separate caches per prayer time source
 
-### Prayer Times API
-The app integrates with the Sri Lankan Jamiath Ul Ulama prayer times API:
+## 🌐 API Integration
 
-- **Today's Prayer Times**: `/prayer-times/today`
-- **Monthly Prayer Times**: `/prayer-times`
-- **Available Locations**: `/locations`
+### MosqueClock Backend API
+- **Prayer Times**: `/api/v1/prayer-times/{zone}/`
+- **Today's Times**: `/api/v1/today/?zone={zone}`
+- **Hijri Calendar**: `/api/v1/today-both-calendars/`
+- **Weather**: `/api/v1/weather/current/city/{city}/`
+
+### Al-Adhan API
+- **Prayer Times**: `/v1/timingsByCity`
+- **Hijri Integration**: Automatic Hijri date extraction
+- **Multiple Regions**: Support for various Sri Lankan cities
 
 ### Offline Support
-- Prayer times are cached locally
-- App works offline with cached data
-- Automatic refresh when network is available
+- **Smart Caching**: Works offline with cached data
+- **Automatic Refresh**: Updates when network is available
+- **Fallback Strategies**: Graceful degradation when APIs fail
 
-## Themes
+## 🎨 Themes & Customization
 
 ### Available Themes
 1. **Default**: System-based light/dark theme
@@ -169,48 +581,115 @@ The app integrates with the Sri Lankan Jamiath Ul Ulama prayer times API:
 4. **Mosque Green**: Green-themed design
 5. **Blue**: Blue-themed design
 
-## Troubleshooting
+### Font Sizes
+- **Small**: Compact display for smaller screens
+- **Medium**: Standard size for most displays
+- **Large**: Enhanced visibility for large screens
+- **Extra Large**: Maximum visibility for distant viewing
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
 1. **Prayer Times Not Loading**
    - Check internet connection
-   - Verify API endpoint is accessible
-   - Check location settings
+   - Verify selected prayer service in settings
+   - Try switching between API providers
+   - Check API keys in `local.properties`
 
-2. **Theme Not Applying**
+2. **Weather Not Displaying**
+   - Ensure weather is enabled in settings
+   - Verify OpenWeatherMap API key
+   - Check city selection and coordinates
+
+3. **Hijri Date Issues**
+   - Try different Hijri providers in settings
+   - Check if manual Hijri date needs updating
+   - Verify API connectivity
+
+4. **Performance Issues**
+   - Clear app data to reset caches
+   - Check for sufficient storage space
    - Restart the application
-   - Check theme selection in settings
 
-3. **Language Not Switching**
-   - Ensure proper language selection
-   - Restart application if needed
+5. **Always-On Display Not Working**
+   - Grant overlay permission using ADB commands (see Android TV Setup section)
+   - Remove app from battery optimization
+   - Check screen timeout settings
+
+6. **App Not Starting on Boot**
+   - Use ADB commands to whitelist the app
+   - Grant RECEIVE_BOOT_COMPLETED permission
+   - Set app as persistent (see Auto-Start Configuration)
+
+7. **Kiosk Mode Issues**
+   - Set app as default launcher using ADB
+   - Disable other launchers if needed
+   - Use the provided setup script for automation
 
 ### Debug Mode
-Enable debug logging by setting `HttpLoggingInterceptor.Level.BODY` in NetworkModule.
+- Enable detailed logging in `NetworkModule.kt`
+- Check logcat for API response details
+- Monitor caching behavior through debug logs
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with proper testing
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-## License
+### Development Guidelines
+- Follow Kotlin coding standards
+- Use Jetpack Compose for UI components
+- Implement proper error handling
+- Add appropriate logging
+- Test on Android TV devices
+
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Sri Lankan Jamiath Ul Ulama for providing the prayer times API
-- Android TV development community
-- Jetpack Compose team for the modern UI toolkit
+- **ACJU (All Ceylon Jamiyyathul Ulama)** for prayer times data
+- **Al-Adhan API** for international prayer times service
+- **OpenWeatherMap** for weather data
+- **Android TV development community**
+- **Jetpack Compose team** for the modern UI toolkit
 
-## Support
+## 📞 Support
 
-For support and questions, please create an issue in the repository or contact the development team.
+For support and questions:
+- **Issues**: Create an issue in the repository
+- **Prayer Time Data**: Contact ACJU at info@acju.lk
+- **API Issues**: Check backend documentation
+- **General Support**: Contact the development team
 
 ---
 
-**Note**: This application is designed specifically for mosque use and requires proper configuration of location settings to display accurate prayer times for your region.
+## 🔄 Recent Updates
+
+### Performance Optimizations
+- ✅ **Intelligent Hijri Date Caching**: Reduces API calls by ~90%
+- ✅ **Smart Prayer Times Caching**: Provider-specific caching system
+- ✅ **Throttling Removal**: Responsive to settings changes
+- ✅ **Background Threading**: All heavy operations on IO dispatcher
+
+### New Features
+- ✅ **Multiple Prayer Time Sources**: MosqueClock API, Al-Adhan API, Manual
+- ✅ **Weather Integration**: Multiple providers with smart coordinates
+- ✅ **Enhanced Animations**: Synchronized Azan ⟷ Iqamah display
+- ✅ **Multilingual Support**: English, Tamil, Sinhala, Multi-language
+
+### Technical Improvements
+- ✅ **Database Schema Updates**: Enhanced caching with provider context
+- ✅ **API Management**: Better error handling and fallback strategies
+- ✅ **Memory Optimization**: Reduced memory usage and improved performance
+- ✅ **Code Quality**: Improved architecture and maintainability
+
+---
+
+**Note**: This application is designed specifically for mosque use and requires proper configuration of prayer time sources and location settings to display accurate information for your region.

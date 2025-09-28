@@ -17,9 +17,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Duration.Companion.days
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.days
 
 @Singleton
 class HijriDateRepository
@@ -38,7 +38,11 @@ class HijriDateRepository
 
         suspend fun getCurrentHijriDate(): HijriDate {
             val settings = settingsRepository.getSettings().first()
-            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val today =
+                Clock.System
+                    .now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
             val todayString = today.toString()
 
             return when (settings.hijriProvider) {
@@ -46,7 +50,7 @@ class HijriDateRepository
                     getHijriDateWithCaching(
                         provider = "MOSQUE_CLOCK_API",
                         gregorianDate = todayString,
-                        settings = settings
+                        settings = settings,
                     )
                 }
                 HijriProvider.AL_ADHAN_API -> {
@@ -54,7 +58,7 @@ class HijriDateRepository
                         provider = "AL_ADHAN_API",
                         gregorianDate = todayString,
                         settings = settings,
-                        region = settings.selectedRegion
+                        region = settings.selectedRegion,
                     )
                 }
                 HijriProvider.MANUAL -> {
@@ -73,10 +77,10 @@ class HijriDateRepository
             provider: String,
             gregorianDate: String,
             settings: AppSettings,
-            region: String? = null
+            region: String? = null,
         ): HijriDate {
             val cacheId = generateCacheId(provider, gregorianDate, region)
-            
+
             // Step 1: Check if we have exact cached data for today
             val cachedToday = hijriDateDao.getHijriDateById(cacheId)
             if (cachedToday != null) {
@@ -108,17 +112,22 @@ class HijriDateRepository
         private suspend fun tryCalculateFromCache(
             provider: String,
             targetDate: String,
-            region: String?
+            region: String?,
         ): HijriDate? {
             val targetLocalDate = LocalDate.parse(targetDate)
-            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-            
+            val today =
+                Clock.System
+                    .now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+
             // Don't calculate if target date is in the future
             if (targetLocalDate > today) return null
 
             // Find the most recent cached date before target
-            val recentCache = hijriDateDao.getLatestHijriDateBefore(provider, targetDate, region)
-                ?: return null
+            val recentCache =
+                hijriDateDao.getLatestHijriDateBefore(provider, targetDate, region)
+                    ?: return null
 
             val cachedDate = LocalDate.parse(recentCache.gregorianDate)
             val daysDifference = targetLocalDate.toEpochDays() - cachedDate.toEpochDays()
@@ -127,17 +136,26 @@ class HijriDateRepository
             // 1. Difference is reasonable (< 7 days)
             // 2. We're not near month-end (day < 28) to avoid month transition errors
             if (daysDifference > 7 || recentCache.hijriDay >= 28) {
-                Log.d("HijriDateRepository", "⚠️ Cannot calculate: daysDiff=$daysDifference, hijriDay=${recentCache.hijriDay}")
+                Log.d(
+                    "HijriDateRepository",
+                    "⚠️ Cannot calculate: daysDiff=$daysDifference, hijriDay=${recentCache.hijriDay}",
+                )
                 return null
             }
 
-            Log.d("HijriDateRepository", "🧮 Calculating Hijri date from cache: +$daysDifference days from ${recentCache.gregorianDate}")
-            
+            Log.d(
+                "HijriDateRepository",
+                "🧮 Calculating Hijri date from cache: +$daysDifference days from ${recentCache.gregorianDate}",
+            )
+
             val baseHijriDate = HijriDate(recentCache.hijriDay, recentCache.hijriMonth, recentCache.hijriYear)
             return addDaysToHijriDate(baseHijriDate, daysDifference.toInt())
         }
 
-        private suspend fun fetchFromMosqueClockApi(gregorianDate: String, settings: AppSettings): HijriDate {
+        private suspend fun fetchFromMosqueClockApi(
+            gregorianDate: String,
+            settings: AppSettings,
+        ): HijriDate {
             return try {
                 val response = mosqueClockApi.getTodayBothCalendars()
                 if (response.isSuccessful && response.body()?.success == true) {
@@ -157,20 +175,31 @@ class HijriDateRepository
             }
         }
 
-        private suspend fun fetchFromAlAdhanApi(gregorianDate: String, settings: AppSettings, region: String): HijriDate {
+        private suspend fun fetchFromAlAdhanApi(
+            gregorianDate: String,
+            settings: AppSettings,
+            region: String,
+        ): HijriDate {
             return try {
-                val response = prayerTimesApi.getPrayerTimesByCity(
-                    city = region,
-                    country = getCountryForRegion(region)
-                )
+                val response =
+                    prayerTimesApi.getPrayerTimesByCity(
+                        city = region,
+                        country = getCountryForRegion(region),
+                    )
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    val hijriData = response.body()?.data?.date?.hijri
+                    val hijriData =
+                        response
+                            .body()
+                            ?.data
+                            ?.date
+                            ?.hijri
                     if (hijriData != null) {
-                        val hijriDate = HijriDate(
-                            day = hijriData.day.toInt(),
-                            month = hijriData.month.number,
-                            year = hijriData.year.toInt()
-                        )
+                        val hijriDate =
+                            HijriDate(
+                                day = hijriData.day.toInt(),
+                                month = hijriData.month.number,
+                                year = hijriData.year.toInt(),
+                            )
                         // Cache the API result
                         cacheHijriDate("AL_ADHAN_API", gregorianDate, hijriDate, region, isCalculated = false)
                         return hijriDate
@@ -189,29 +218,36 @@ class HijriDateRepository
             gregorianDate: String,
             hijriDate: HijriDate,
             region: String?,
-            isCalculated: Boolean
+            isCalculated: Boolean,
         ) {
-            val entity = HijriDateEntity(
-                id = generateCacheId(provider, gregorianDate, region),
-                gregorianDate = gregorianDate,
-                hijriDay = hijriDate.day,
-                hijriMonth = hijriDate.month,
-                hijriYear = hijriDate.year,
-                provider = provider,
-                region = region,
-                isCalculated = isCalculated
-            )
+            val entity =
+                HijriDateEntity(
+                    id = generateCacheId(provider, gregorianDate, region),
+                    gregorianDate = gregorianDate,
+                    hijriDay = hijriDate.day,
+                    hijriMonth = hijriDate.month,
+                    hijriYear = hijriDate.year,
+                    provider = provider,
+                    region = region,
+                    isCalculated = isCalculated,
+                )
             hijriDateDao.insertHijriDate(entity)
-            Log.d("HijriDateRepository", "💾 Cached Hijri date: $gregorianDate -> ${hijriDate.day}/${hijriDate.month}/${hijriDate.year}")
+            Log.d(
+                "HijriDateRepository",
+                "💾 Cached Hijri date: $gregorianDate -> ${hijriDate.day}/${hijriDate.month}/${hijriDate.year}",
+            )
         }
 
-        private fun generateCacheId(provider: String, gregorianDate: String, region: String?): String {
-            return if (region != null) {
+        private fun generateCacheId(
+            provider: String,
+            gregorianDate: String,
+            region: String?,
+        ): String =
+            if (region != null) {
                 "${provider}_${region}_$gregorianDate"
             } else {
                 "${provider}_$gregorianDate"
             }
-        }
 
         /**
          * Clean up old cached data (older than 30 days)
@@ -379,5 +415,4 @@ class HijriDateRepository
             val yearInCycle = hijriYear % 30
             return yearInCycle in listOf(2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29)
         }
-
     }

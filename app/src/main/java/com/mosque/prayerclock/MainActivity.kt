@@ -141,7 +141,7 @@ class MainActivity : ComponentActivity() {
         try {
             // Keep screen on and prevent sleep
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            
+
             // Use modern approach for showing over lock screen
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 setShowWhenLocked(true)

@@ -11,26 +11,40 @@ interface HijriDateDao {
     suspend fun getHijriDateById(id: String): HijriDateEntity?
 
     @Query("SELECT * FROM hijri_dates WHERE gregorianDate = :gregorianDate AND provider = :provider")
-    suspend fun getHijriDateByDateAndProvider(gregorianDate: String, provider: String): HijriDateEntity?
+    suspend fun getHijriDateByDateAndProvider(
+        gregorianDate: String,
+        provider: String,
+    ): HijriDateEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM hijri_dates 
         WHERE provider = :provider 
         AND (:region IS NULL OR region = :region)
         ORDER BY gregorianDate DESC 
         LIMIT 1
-    """)
-    suspend fun getLatestHijriDateByProvider(provider: String, region: String? = null): HijriDateEntity?
+    """,
+    )
+    suspend fun getLatestHijriDateByProvider(
+        provider: String,
+        region: String? = null,
+    ): HijriDateEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM hijri_dates 
         WHERE provider = :provider 
         AND (:region IS NULL OR region = :region)
         AND gregorianDate < :beforeDate
         ORDER BY gregorianDate DESC 
         LIMIT 1
-    """)
-    suspend fun getLatestHijriDateBefore(provider: String, beforeDate: String, region: String? = null): HijriDateEntity?
+    """,
+    )
+    suspend fun getLatestHijriDateBefore(
+        provider: String,
+        beforeDate: String,
+        region: String? = null,
+    ): HijriDateEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHijriDate(hijriDate: HijriDateEntity)
@@ -38,14 +52,23 @@ interface HijriDateDao {
     @Query("DELETE FROM hijri_dates WHERE createdAt < :cutoffTime")
     suspend fun deleteOldHijriDates(cutoffTime: Long)
 
-    @Query("""
+    @Query(
+        """
         DELETE FROM hijri_dates 
         WHERE provider = :provider 
         AND (:region IS NULL OR region = :region)
         AND gregorianDate < :beforeDate
-    """)
-    suspend fun deleteHijriDatesBefore(provider: String, beforeDate: String, region: String? = null)
+    """,
+    )
+    suspend fun deleteHijriDatesBefore(
+        provider: String,
+        beforeDate: String,
+        region: String? = null,
+    )
 
     @Query("SELECT COUNT(*) FROM hijri_dates WHERE provider = :provider AND (:region IS NULL OR region = :region)")
-    suspend fun getHijriDateCountByProvider(provider: String, region: String? = null): Int
+    suspend fun getHijriDateCountByProvider(
+        provider: String,
+        region: String? = null,
+    ): Int
 }
