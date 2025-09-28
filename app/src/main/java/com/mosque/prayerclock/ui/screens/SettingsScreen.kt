@@ -3,6 +3,8 @@ package com.mosque.prayerclock.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +73,9 @@ import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerZones
 import com.mosque.prayerclock.data.model.WeatherProvider
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -193,6 +200,39 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LongPressIconButton(
+    onClick: () -> Unit,
+    onLongPress: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    stepDelay: Long = 100L, // Repeat interval in milliseconds
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val longPressListener by rememberUpdatedState(onLongPress)
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            delay(500) // Initial delay before starting repeat (long press threshold)
+            while (isPressed) {
+                longPressListener()
+                delay(stepDelay.coerceIn(1L, Long.MAX_VALUE))
+            }
+        }
+    }
+
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        interactionSource = interactionSource
+    ) {
+        content()
     }
 }
 
@@ -1139,8 +1179,13 @@ private fun TimePickerField(
         ) {
             // Hours picker
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                IconButton(
+                LongPressIconButton(
                     onClick = {
+                        val currentHour = hours.toIntOrNull() ?: 0
+                        val newHour = (currentHour + 1) % 24
+                        hours = String.format("%02d", newHour)
+                    },
+                    onLongPress = {
                         val currentHour = hours.toIntOrNull() ?: 0
                         val newHour = (currentHour + 1) % 24
                         hours = String.format("%02d", newHour)
@@ -1175,8 +1220,13 @@ private fun TimePickerField(
                     )
                 }
 
-                IconButton(
+                LongPressIconButton(
                     onClick = {
+                        val currentHour = hours.toIntOrNull() ?: 0
+                        val newHour = if (currentHour <= 0) 23 else currentHour - 1
+                        hours = String.format("%02d", newHour)
+                    },
+                    onLongPress = {
                         val currentHour = hours.toIntOrNull() ?: 0
                         val newHour = if (currentHour <= 0) 23 else currentHour - 1
                         hours = String.format("%02d", newHour)
@@ -1213,8 +1263,13 @@ private fun TimePickerField(
 
             // Minutes picker
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                IconButton(
+                LongPressIconButton(
                     onClick = {
+                        val currentMin = minutes.toIntOrNull() ?: 0
+                        val newMin = (currentMin + 1) % 60
+                        minutes = String.format("%02d", newMin)
+                    },
+                    onLongPress = {
                         val currentMin = minutes.toIntOrNull() ?: 0
                         val newMin = (currentMin + 1) % 60
                         minutes = String.format("%02d", newMin)
@@ -1249,8 +1304,13 @@ private fun TimePickerField(
                     )
                 }
 
-                IconButton(
+                LongPressIconButton(
                     onClick = {
+                        val currentMin = minutes.toIntOrNull() ?: 0
+                        val newMin = if (currentMin <= 0) 59 else currentMin - 1
+                        minutes = String.format("%02d", newMin)
+                    },
+                    onLongPress = {
                         val currentMin = minutes.toIntOrNull() ?: 0
                         val newMin = if (currentMin <= 0) 59 else currentMin - 1
                         minutes = String.format("%02d", newMin)
@@ -1291,8 +1351,12 @@ private fun NumberPickerField(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Decrease button
-        IconButton(
+        LongPressIconButton(
             onClick = {
+                val newValue = (value - 1).coerceIn(range)
+                onValueChange(newValue)
+            },
+            onLongPress = {
                 val newValue = (value - 1).coerceIn(range)
                 onValueChange(newValue)
             },
@@ -1338,8 +1402,12 @@ private fun NumberPickerField(
         }
 
         // Increase button
-        IconButton(
+        LongPressIconButton(
             onClick = {
+                val newValue = (value + 1).coerceIn(range)
+                onValueChange(newValue)
+            },
+            onLongPress = {
                 val newValue = (value + 1).coerceIn(range)
                 onValueChange(newValue)
             },
