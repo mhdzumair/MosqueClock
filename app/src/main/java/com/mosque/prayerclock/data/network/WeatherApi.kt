@@ -38,6 +38,8 @@ data class CurrentWeather(
     val feelslike_f: Double,
     val vis_km: Double,
     val uv: Double,
+    val wind_kph: Double,
+    val wind_mph: Double,
 )
 
 data class WeatherCondition(
@@ -55,4 +57,5 @@ fun WeatherResponse.toWeatherInfo(): WeatherInfo =
         feelsLike = current.feelslike_c,
         visibility = current.vis_km,
         uvIndex = current.uv,
+        windSpeed = current.wind_kph,
     )

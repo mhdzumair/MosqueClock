@@ -2,6 +2,8 @@ package com.mosque.prayerclock
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
@@ -23,20 +25,28 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mosque.prayerclock.data.model.WeatherProvider
 import com.mosque.prayerclock.ui.theme.MosqueClockTheme
 import com.mosque.prayerclock.viewmodel.MainUiState
 import com.mosque.prayerclock.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 
 @AndroidEntryPoint
 class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Optimize for faster startup
+        // Optimize for faster startup and TV wake-up
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
+        // Configure window flags to wake up display immediately
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
 
         setContent {
             MosqueClockTheme {
@@ -111,33 +121,45 @@ fun SplashScreen(
             label = "logo_alpha",
         )
 
-    // Start loading prayer times immediately and manage splash timing
+    // Load initial data in splash screen and navigate when complete
     LaunchedEffect(Unit) {
         // Start immediately without delay for faster perceived startup
         isVisible = true
-        // Start loading prayer times immediately
-        viewModel.loadPrayerTimes()
 
-        // Delay before showing animated content for smooth transition
-        delay(600) // Allow static content to be visible first
+        // Simply wait for settings to be available (repository handles all caching)
+        Log.d("SplashActivity", "Loading initial data...")
+        viewModel.settings.first() // Wait for settings to be loaded
+        Log.d("SplashActivity", "Settings loaded - starting data fetch")
+
+        // Show animated content while loading data
+        delay(300) // Brief delay for smooth transition
         showAnimatedContent = true
+
+        // Start loading initial data
+        Log.d("SplashActivity", "Starting initial data load in splash screen")
+        viewModel.loadPrayerTimes()
     }
 
-    // Handle splash finish logic based on loading state and minimum time
-    LaunchedEffect(uiState) {
-        when (uiState) {
-            is MainUiState.Success -> {
-                // Data is loaded, transition immediately to main screen
-                delay(200) // Just a tiny delay for smooth animation
-                onSplashFinished()
-            }
-            is MainUiState.Error -> {
-                // On error, also transition to main screen (it will show error there)
-                delay(200)
-                onSplashFinished()
-            }
-            MainUiState.Loading -> {
-                // Keep loading, will be handled by success/error cases above
+    // Wait for data loading to complete before navigating
+    LaunchedEffect(uiState, showAnimatedContent) {
+        if (showAnimatedContent) {
+            when (uiState) {
+                is MainUiState.Success -> {
+                    Log.d("SplashActivity", "Initial data loaded successfully - navigating to main screen")
+                    // Brief delay to show success state
+                    delay(500)
+                    onSplashFinished()
+                }
+                is MainUiState.Error -> {
+                    Log.d("SplashActivity", "Initial data load failed - navigating to main screen anyway")
+                    // Brief delay to show error state
+                    delay(1000)
+                    onSplashFinished()
+                }
+                is MainUiState.Loading -> {
+                    // Keep waiting for loading to complete
+                    Log.d("SplashActivity", "Still loading initial data...")
+                }
             }
         }
     }
@@ -184,15 +206,23 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Loading text - only show during loading state
-            if (uiState is MainUiState.Loading) {
-                androidx.compose.material3.Text(
-                    text = "Preparing prayer times...",
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.alpha(logoAlpha),
-                )
+            // Loading text based on current state
+            val loadingText = when (uiState) {
+                is MainUiState.Loading -> "Loading prayer times..."
+                is MainUiState.Success -> "Ready!"
+                is MainUiState.Error -> "Loading failed, continuing..."
             }
+            
+            androidx.compose.material3.Text(
+                text = loadingText,
+                color = when (uiState) {
+                    is MainUiState.Success -> Color(0xFF4CAF50) // Green for success
+                    is MainUiState.Error -> Color(0xFFFF9800) // Orange for error
+                    else -> Color.White.copy(alpha = 0.8f) // White for loading
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.alpha(logoAlpha),
+            )
         }
     }
 }

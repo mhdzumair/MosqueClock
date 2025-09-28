@@ -15,7 +15,7 @@ fun LocalizedApp(
 ) {
     val baseContext = LocalContext.current
 
-    // Create localized context based on the selected language
+    // Create localized context - keep it stable to avoid full app recomposition
     val localizedContext =
         remember(language) {
             LocaleManager.setLocale(baseContext, language)

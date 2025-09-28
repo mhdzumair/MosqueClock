@@ -13,6 +13,7 @@ data class AppSettings(
     val showSeconds: Boolean = true,
     val show24HourFormat: Boolean = false,
     val manualFajrAzan: String = "05:30",
+    val manualSunrise: String = "06:15",
     val manualDhuhrAzan: String = "12:15",
     val manualAsrAzan: String = "15:30",
     val manualMaghribAzan: String = "18:30",
@@ -20,21 +21,22 @@ data class AppSettings(
     val fajrIqamahGap: Int = 20,
     val dhuhrIqamahGap: Int = 10,
     val asrIqamahGap: Int = 10,
-    val maghribIqamahGap: Int = 5,
+    val maghribIqamahGap: Int = 10,
     val ishaIqamahGap: Int = 10,
     val refreshInterval: Long = 24 * 60 * 60 * 1000L, // 24 hours in milliseconds
-    val showWeather: Boolean = true,
+    val showWeather: Boolean = false,
     val weatherCity: String = "Colombo",
     val weatherCountry: String = "Sri Lanka",
-    val weatherProvider: WeatherProvider = WeatherProvider.MOSQUE_CLOCK,
+    val weatherProvider: WeatherProvider = WeatherProvider.OPEN_WEATHER,
     val hijriProvider: HijriProvider = HijriProvider.MANUAL,
     val manualHijriDay: Int = 7,
     val manualHijriMonth: Int = 2, // Safar
     val manualHijriYear: Int = 1447,
     val lastUpdatedGregorianDate: String = "2025-08-01", // Track when Hijri date was last set
-    val prayerServiceType: PrayerServiceType = PrayerServiceType.MOSQUE_CLOCK_API,
+    val prayerServiceType: PrayerServiceType = PrayerServiceType.MANUAL,
     val selectedZone: Int = 1, // For MosqueClock backend zones
     val selectedRegion: String = "Colombo", // For third-party prayer time services
+    val soundEnabled: Boolean = true, // Enable/disable beep countdown sound
 )
 
 enum class Language(
@@ -102,6 +104,7 @@ data class WeatherInfo(
     val feelsLike: Double,
     val visibility: Double? = null,
     val uvIndex: Double? = null,
+    val windSpeed: Double? = null, // in km/h
 )
 
 data class PrayerZone(
@@ -109,6 +112,36 @@ data class PrayerZone(
     val name: String,
     val description: String,
 )
+
+data class CityCoordinates(
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val country: String = "Sri Lanka",
+)
+
+// City coordinates mapping for accurate weather data
+object CityCoordinatesMap {
+    val cityCoordinates =
+        mapOf(
+            "Dickwella" to CityCoordinates("Dickwella", 5.9769, 80.6986),
+            "Colombo" to CityCoordinates("Colombo", 6.9271, 79.8612),
+            "Kandy" to CityCoordinates("Kandy", 7.2906, 80.6337),
+            "Galle" to CityCoordinates("Galle", 6.0535, 80.2210),
+            "Jaffna" to CityCoordinates("Jaffna", 9.6615, 80.0255),
+            "Negombo" to CityCoordinates("Negombo", 7.2083, 79.8358),
+            "Trincomalee" to CityCoordinates("Trincomalee", 8.5874, 81.2152),
+            "Batticaloa" to CityCoordinates("Batticaloa", 7.7102, 81.6924),
+            "Anuradhapura" to CityCoordinates("Anuradhapura", 8.3114, 80.4037),
+            "Ratnapura" to CityCoordinates("Ratnapura", 6.6828, 80.3992),
+            "Kurunegala" to CityCoordinates("Kurunegala", 7.4818, 80.3609),
+            "Badulla" to CityCoordinates("Badulla", 6.9934, 81.0550),
+            "Matara" to CityCoordinates("Matara", 5.9549, 80.5550),
+            "Hambantota" to CityCoordinates("Hambantota", 6.1241, 81.1185),
+        )
+
+    fun getCoordinates(cityName: String): CityCoordinates? = cityCoordinates[cityName]
+}
 
 // Predefined zones for MosqueClock backend (all 13 Sri Lankan zones as per ACJU)
 object PrayerZones {

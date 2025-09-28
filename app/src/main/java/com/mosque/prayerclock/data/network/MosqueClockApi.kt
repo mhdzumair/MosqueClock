@@ -307,7 +307,9 @@ data class ProcessedForecastItem(
 // Extension functions to convert to existing models
 fun MosquePrayerTimes.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes =
     com.mosque.prayerclock.data.model.PrayerTimes(
+        id = "", // Will be set later with proper composite ID
         date = this.date,
+        providerKey = null, // Will be set later with provider context
         fajrAzan = this.fajrAzan,
         fajrIqamah = this.fajrIqamah,
         dhuhrAzan = this.dhuhrAzan,
@@ -332,11 +334,14 @@ fun ProcessedCurrentWeather.toWeatherInfo(): com.mosque.prayerclock.data.model.W
         feelsLike = this.feelsLike,
         visibility = this.visibility?.toDouble(),
         uvIndex = null, // UV index not provided by our API yet
+        windSpeed = null, // Wind speed not provided by our API yet
     )
 
 fun BackendPrayerTime.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes =
     com.mosque.prayerclock.data.model.PrayerTimes(
+        id = "", // Will be set later with proper composite ID
         date = this.date,
+        providerKey = null, // Will be set later with provider context
         fajrAzan = this.fajr,
         fajrIqamah = this.fajr, // Backend doesn't provide separate iqamah times
         dhuhrAzan = this.dhuhr,

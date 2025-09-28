@@ -1,5 +1,6 @@
 package com.mosque.prayerclock.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mosque.prayerclock.data.model.*
@@ -8,6 +9,7 @@ import com.mosque.prayerclock.data.repository.HijriDateRepository
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import com.mosque.prayerclock.data.repository.WeatherRepository
+import com.mosque.prayerclock.utils.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -27,6 +29,10 @@ class MainViewModel
         private val weatherRepository: WeatherRepository,
         val hijriDateRepository: HijriDateRepository,
     ) : ViewModel() {
+        
+        // Add unique identifier to track ViewModel instances
+        private val viewModelId = System.currentTimeMillis().toString().takeLast(4)
+        
         val settings =
             settingsRepository
                 .getSettings()
@@ -43,7 +49,14 @@ class MainViewModel
         val weatherState: StateFlow<WeatherUiState> = _weatherState.asStateFlow()
 
         @Volatile private var isLoadingPrayerTimes: Boolean = false
-        private var weatherRefreshJob: Job? = null
+        
+        // Cache tomorrow's prayer times to avoid repeated fetching after Isha
+        private var cachedTomorrowFajr: PrayerTimes? = null
+        private var cachedTomorrowDate: String? = null
+
+        init {
+            Log.d("MainViewModel", "MainViewModel instance created with ID: $viewModelId")
+        }
 
         // Function to recalculate next prayer - can be called from UI when needed
         fun updateNextPrayer() {
@@ -57,77 +70,87 @@ class MainViewModel
         }
 
         fun loadPrayerTimes() {
-            if (isLoadingPrayerTimes) return
+            if (isLoadingPrayerTimes) {
+                Log.d("MainViewModel", "Already loading prayer times, skipping duplicate request")
+                return
+            }
             isLoadingPrayerTimes = true
+            
             viewModelScope.launch {
                 val currentSettings = settings.value
+                Log.d("MainViewModel", "[$viewModelId] Starting loadPrayerTimes with settings: prayerServiceType=${currentSettings.prayerServiceType}, showWeather=${currentSettings.showWeather}")
 
-                if (currentSettings.prayerServiceType == PrayerServiceType.MANUAL) {
-                    val manualPrayerTimes = createManualPrayerTimes(currentSettings)
-                    val nextPrayer = calculateNextPrayer(manualPrayerTimes)
-
-                    // If next prayer is Fajr and all today's prayers are done, get tomorrow's times
-                    val nextDayFajr =
-                        if (nextPrayer == PrayerType.FAJR && isAllPrayersCompleted(manualPrayerTimes)) {
-                            createManualPrayerTimesForTomorrow(currentSettings)
-                        } else {
-                            null
+                // Use the centralized repository method that handles all prayer service types
+                prayerTimesRepository.getTodayPrayerTimesFromSettings().collect { result ->
+                    Log.d("MainViewModel", "Prayer times result: ${result::class.simpleName}")
+                    when (result) {
+                        is NetworkResult.Loading -> {
+                            Log.d("MainViewModel", "Setting UI state to Loading")
+                            _uiState.value = MainUiState.Loading
                         }
+                        is NetworkResult.Success -> {
+                            Log.d("MainViewModel", "Prayer times loaded successfully, processing data")
+                            // For manual mode, prayer times are already calculated in repository
+                            // For API modes, adjust iqamah times based on settings
+                            val finalPrayerTimes =
+                                if (currentSettings.prayerServiceType == PrayerServiceType.MANUAL) {
+                                    result.data // Manual times are already complete
+                                } else {
+                                    adjustIqamahTimes(result.data, currentSettings) // Adjust API times
+                                }
 
-                    _uiState.value =
-                        MainUiState.Success(
-                            prayerTimes = manualPrayerTimes,
-                            nextPrayer = nextPrayer,
-                            nextDayFajr = nextDayFajr,
-                        )
-                } else {
-                    // Use the new settings-based prayer times method
-                    prayerTimesRepository.getTodayPrayerTimesFromSettings().collect { result ->
-                        when (result) {
-                            is NetworkResult.Loading -> {
-                                _uiState.value = MainUiState.Loading
-                            }
-                            is NetworkResult.Success -> {
-                                val adjustedPrayerTimes =
-                                    adjustIqamahTimes(result.data, currentSettings)
-                                val nextPrayer = calculateNextPrayer(adjustedPrayerTimes)
+                            val nextPrayer = calculateNextPrayer(finalPrayerTimes)
 
-                                // If next prayer is Fajr and all today's prayers are done, fetch tomorrow's times
-                                val nextDayFajr =
-                                    if (nextPrayer == PrayerType.FAJR && isAllPrayersCompleted(adjustedPrayerTimes)) {
-                                        fetchTomorrowPrayerTimes(currentSettings)
-                                    } else {
-                                        null
-                                    }
+                            // If next prayer is Fajr and all today's prayers are done, get tomorrow's times
+                            val nextDayFajr =
+                                if (nextPrayer == PrayerType.FAJR && isAllPrayersCompleted(finalPrayerTimes)) {
+                                    getTomorrowPrayerTimesOptimized(currentSettings)
+                                } else {
+                                    null
+                                }
 
-                                _uiState.value =
-                                    MainUiState.Success(
-                                        prayerTimes = adjustedPrayerTimes,
-                                        nextPrayer = nextPrayer,
-                                        nextDayFajr = nextDayFajr,
-                                    )
-                            }
-                            is NetworkResult.Error -> {
-                                _uiState.value = MainUiState.Error(result.message)
-                            }
+                            Log.d("MainViewModel", "Setting UI state to Success with nextPrayer: $nextPrayer")
+                            _uiState.value =
+                                MainUiState.Success(
+                                    prayerTimes = finalPrayerTimes,
+                                    nextPrayer = nextPrayer,
+                                    nextDayFajr = nextDayFajr,
+                                )
+                        }
+                        is NetworkResult.Error -> {
+                            Log.e("MainViewModel", "Prayer times loading failed: ${result.message}")
+                            _uiState.value = MainUiState.Error(result.message)
                         }
                     }
                 }
 
                 // Load weather data if enabled and start hourly refresh
+                Log.d("MainViewModel", "Checking weather settings: showWeather=${currentSettings.showWeather}")
                 if (currentSettings.showWeather) {
+                    Log.d("MainViewModel", "Weather is enabled - loading weather data")
                     loadWeatherData(
                         currentSettings.weatherCity,
                         currentSettings.weatherCountry,
                         currentSettings.weatherProvider,
                     )
-                    startHourlyWeatherRefresh(
+                    Log.d("MainViewModel", "About to start hourly weather refresh...")
+                    weatherRepository.startHourlyWeatherRefresh(
                         currentSettings.weatherCity,
                         currentSettings.weatherCountry,
-                        currentSettings.weatherProvider,
-                    )
+                        currentSettings.weatherProvider
+                    ) { result ->
+                        // Update weather state when refresh occurs
+                        when (result) {
+                            is NetworkResult.Loading -> _weatherState.value = WeatherUiState.Loading()
+                            is NetworkResult.Success -> _weatherState.value = WeatherUiState.Success(result.data)
+                            is NetworkResult.Error -> _weatherState.value = WeatherUiState.Error(result.message)
+                        }
+                    }
+                    Log.d("MainViewModel", "Hourly weather refresh started")
                 } else {
-                    stopWeatherRefresh()
+                    Log.d("MainViewModel", "Weather is disabled - stopping all weather refresh jobs")
+                    weatherRepository.stopAllWeatherRefreshJobs()
+                    _weatherState.value = WeatherUiState.Loading() // Reset weather state when disabled
                 }
                 isLoadingPrayerTimes = false
             }
@@ -139,10 +162,13 @@ class MainViewModel
             provider: WeatherProvider,
         ) {
             viewModelScope.launch {
+                Log.d("MainViewModel", "Loading weather data - City: $city, Country: $country, Provider: $provider")
                 when (provider) {
                     WeatherProvider.MOSQUE_CLOCK -> {
+                        Log.d("MainViewModel", "Using MosqueClock weather provider")
                         weatherRepository.getCurrentWeatherByCity(city).collect { result ->
                             if (result is NetworkResult.Error) {
+                                Log.d("MainViewModel", "MosqueClock API failed, falling back to OpenWeather")
                                 weatherRepository.getCurrentWeather(city, country).collect { fallbackResult ->
                                     handleWeatherResult(fallbackResult)
                                 }
@@ -152,6 +178,7 @@ class MainViewModel
                         }
                     }
                     WeatherProvider.OPEN_WEATHER -> {
+                        Log.d("MainViewModel", "Using OpenWeather weather provider")
                         weatherRepository.getCurrentWeather(city, country).collect { result ->
                             handleWeatherResult(result)
                         }
@@ -174,30 +201,13 @@ class MainViewModel
             }
         }
 
-        private fun startHourlyWeatherRefresh(
-            city: String,
-            country: String,
-            provider: WeatherProvider,
-        ) {
-            stopWeatherRefresh() // Cancel any existing refresh job
+        // Weather job management moved to WeatherRepository
 
-            weatherRefreshJob =
-                viewModelScope.launch {
-                    while (true) {
-                        delay(60 * 60 * 1000L) // Wait 1 hour (60 minutes * 60 seconds * 1000 milliseconds)
-                        loadWeatherData(city, country, provider)
-                    }
-                }
-        }
-
-        private fun stopWeatherRefresh() {
-            weatherRefreshJob?.cancel()
-            weatherRefreshJob = null
-        }
 
         override fun onCleared() {
+            Log.d("MainViewModel", "[$viewModelId] ViewModel onCleared() called")
             super.onCleared()
-            stopWeatherRefresh()
+            // Weather jobs are now managed by WeatherRepository and will survive ViewModel recreation
         }
 
         private fun calculateNextPrayer(prayerTimes: PrayerTimes): PrayerType? {
@@ -229,20 +239,20 @@ class MainViewModel
                 val iqamahTime = times.second
 
                 if (iqamahTime != null) { // Only check if Iqamah time exists
-                    val bufferTime = addMinutesToTime(iqamahTime, 5)
+                    val bufferTime = TimeUtils.addMinutesToTime(iqamahTime, 5)
 
                     // Check if we're between Azan and Iqamah + 5min buffer
-                    if (compareTimeStrings(azanTime, currentTime) <= 0 &&
-                        compareTimeStrings(currentTime, bufferTime) < 0
+                    if (TimeUtils.compareTimeStrings(azanTime, currentTime) <= 0 &&
+                        TimeUtils.compareTimeStrings(currentTime, bufferTime) < 0
                     ) {
                         // We're in the current prayer period (from Azan to Iqamah + 5min)
                         return prayerType
                     }
                 } else if (prayerType == PrayerType.DHUHR && isFriday) {
                     // For Friday, give 1 hour after Azan for Bayan
-                    val bayanEndTime = addMinutesToTime(times.first, 60)
-                    if (compareTimeStrings(times.first, currentTime) <= 0 &&
-                        compareTimeStrings(currentTime, bayanEndTime) < 0
+                    val bayanEndTime = TimeUtils.addMinutesToTime(times.first, 60)
+                    if (TimeUtils.compareTimeStrings(times.first, currentTime) <= 0 &&
+                        TimeUtils.compareTimeStrings(currentTime, bayanEndTime) < 0
                     ) {
                         return prayerType
                     }
@@ -252,7 +262,7 @@ class MainViewModel
             // Regular logic: find next prayer that hasn't started yet
             val nextTodayPrayer =
                 prayers
-                    .firstOrNull { (_, times) -> compareTimeStrings(currentTime, times.first) < 0 }
+                    .firstOrNull { (_, times) -> TimeUtils.compareTimeStrings(currentTime, times.first) < 0 }
                     ?.first
 
             // If no more prayers today, next prayer is Fajr of tomorrow
@@ -264,18 +274,22 @@ class MainViewModel
             val currentTime = "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
 
             // Check if current time is after Isha Azan (all prayers for the day are done)
-            return compareTimeStrings(currentTime, prayerTimes.ishaAzan) > 0
+            return TimeUtils.compareTimeStrings(currentTime, prayerTimes.ishaAzan) > 0
         }
 
-        private fun createManualPrayerTimesForTomorrow(settings: AppSettings): PrayerTimes {
-            // For manual times, tomorrow's times are the same as today's
-            // In a real implementation, you might want to calculate based on location
-            return createManualPrayerTimes(settings)
-        }
-
-        private suspend fun fetchTomorrowPrayerTimes(settings: AppSettings): PrayerTimes? {
+        private suspend fun getTomorrowPrayerTimesOptimized(settings: AppSettings): PrayerTimes? {
+            val tomorrow = Clock.System.now().plus(1, kotlinx.datetime.DateTimeUnit.DAY, kotlinx.datetime.TimeZone.currentSystemDefault())
+            val tomorrowDate = tomorrow.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date.toString()
+            
+            // Check if we already have cached tomorrow's prayer times for today
+            if (cachedTomorrowFajr != null && cachedTomorrowDate == tomorrowDate) {
+                Log.d("MainViewModel", "Using cached tomorrow's prayer times (avoiding repeated fetch after Isha)")
+                return cachedTomorrowFajr
+            }
+            
             return try {
-                // Fetch tomorrow's prayer times from the same API source as today
+                Log.d("MainViewModel", "Fetching tomorrow's prayer times (first time after Isha)")
+                // Fetch tomorrow's prayer times using the centralized repository method
                 val result = prayerTimesRepository.getTomorrowPrayerTimesFromSettings()
 
                 // Wait for the first emission from the Flow
@@ -283,12 +297,24 @@ class MainViewModel
                 result.collect { networkResult ->
                     when (networkResult) {
                         is NetworkResult.Success -> {
-                            tomorrowTimes = adjustIqamahTimes(networkResult.data, settings)
+                            // For manual mode, times are already complete; for API modes, adjust iqamah times
+                            tomorrowTimes =
+                                if (settings.prayerServiceType == PrayerServiceType.MANUAL) {
+                                    networkResult.data // Manual times are already complete
+                                } else {
+                                    adjustIqamahTimes(networkResult.data, settings) // Adjust API times
+                                }
+                            
+                            // Cache the result to avoid repeated fetching
+                            cachedTomorrowFajr = tomorrowTimes
+                            cachedTomorrowDate = tomorrowDate
+                            Log.d("MainViewModel", "Tomorrow's prayer times cached - no more fetching until tomorrow")
                             return@collect // Exit the collect loop
                         }
                         is NetworkResult.Error -> {
-                            // Fallback to manual times if API fails
-                            tomorrowTimes = createManualPrayerTimes(settings)
+                            // Repository handles all modes, including manual, so errors are genuine
+                            Log.e("MainViewModel", "Failed to fetch tomorrow's prayer times: ${networkResult.message}")
+                            tomorrowTimes = null
                             return@collect
                         }
                         is NetworkResult.Loading -> {
@@ -298,104 +324,26 @@ class MainViewModel
                 }
                 tomorrowTimes
             } catch (e: Exception) {
-                // Fallback to manual times if API fails
-                createManualPrayerTimes(settings)
+                Log.e("MainViewModel", "Error fetching tomorrow's prayer times: ${e.message}")
+                null
             }
         }
 
-        private fun compareTimeStrings(
-            time1: String,
-            time2: String,
-        ): Int {
-            val format = SimpleDateFormat("HH:mm", Locale.getDefault())
-            return try {
-                val date1 = format.parse(time1)
-                val date2 = format.parse(time2)
-                date1?.compareTo(date2) ?: 0
-            } catch (e: Exception) {
-                0
-            }
-        }
-
-        private fun createManualPrayerTimes(settings: AppSettings): PrayerTimes {
-            val today =
-                Clock.System
-                    .now()
-                    .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-                    .date
-                    .toString()
-
-            return PrayerTimes(
-                date = today,
-                fajrAzan = settings.manualFajrAzan,
-                fajrIqamah = calculateIqamahTime(settings.manualFajrAzan, settings.fajrIqamahGap),
-                dhuhrAzan = settings.manualDhuhrAzan,
-                dhuhrIqamah =
-                    calculateIqamahTime(settings.manualDhuhrAzan, settings.dhuhrIqamahGap),
-                asrAzan = settings.manualAsrAzan,
-                asrIqamah = calculateIqamahTime(settings.manualAsrAzan, settings.asrIqamahGap),
-                maghribAzan = settings.manualMaghribAzan,
-                maghribIqamah =
-                    calculateIqamahTime(settings.manualMaghribAzan, settings.maghribIqamahGap),
-                ishaAzan = settings.manualIshaAzan,
-                ishaIqamah = calculateIqamahTime(settings.manualIshaAzan, settings.ishaIqamahGap),
-                sunrise = "06:00", // Default sunrise time
-                hijriDate = null,
-                location = "Manual Setup",
-            )
-        }
 
         private fun adjustIqamahTimes(
             prayerTimes: PrayerTimes,
             settings: AppSettings,
         ): PrayerTimes =
             prayerTimes.copy(
-                fajrIqamah = calculateIqamahTime(prayerTimes.fajrAzan, settings.fajrIqamahGap),
+                fajrIqamah = TimeUtils.calculateIqamahTime(prayerTimes.fajrAzan, settings.fajrIqamahGap),
                 dhuhrIqamah =
-                    calculateIqamahTime(prayerTimes.dhuhrAzan, settings.dhuhrIqamahGap),
-                asrIqamah = calculateIqamahTime(prayerTimes.asrAzan, settings.asrIqamahGap),
+                    TimeUtils.calculateIqamahTime(prayerTimes.dhuhrAzan, settings.dhuhrIqamahGap),
+                asrIqamah = TimeUtils.calculateIqamahTime(prayerTimes.asrAzan, settings.asrIqamahGap),
                 maghribIqamah =
-                    calculateIqamahTime(prayerTimes.maghribAzan, settings.maghribIqamahGap),
-                ishaIqamah = calculateIqamahTime(prayerTimes.ishaAzan, settings.ishaIqamahGap),
+                    TimeUtils.calculateIqamahTime(prayerTimes.maghribAzan, settings.maghribIqamahGap),
+                ishaIqamah = TimeUtils.calculateIqamahTime(prayerTimes.ishaAzan, settings.ishaIqamahGap),
             )
 
-        private fun calculateIqamahTime(
-            azanTime: String,
-            minutesAfter: Int,
-        ): String {
-            try {
-                val parts = azanTime.split(":")
-                val hours = parts[0].toInt()
-                val minutes = parts[1].toInt()
-
-                val totalMinutes = (hours * 60) + minutes + minutesAfter
-                val newHours = (totalMinutes / 60) % 24
-                val newMinutes = totalMinutes % 60
-
-                return String.format("%02d:%02d", newHours, newMinutes)
-            } catch (e: Exception) {
-                return azanTime // Return original time if calculation fails
-            }
-        }
-
-        private fun addMinutesToTime(
-            timeString: String,
-            minutesToAdd: Int,
-        ): String {
-            try {
-                val parts = timeString.split(":")
-                val hours = parts[0].toInt()
-                val minutes = parts[1].toInt()
-
-                val totalMinutes = (hours * 60) + minutes + minutesToAdd
-                val newHours = (totalMinutes / 60) % 24
-                val newMinutes = totalMinutes % 60
-
-                return String.format("%02d:%02d", newHours, newMinutes)
-            } catch (e: Exception) {
-                return timeString
-            }
-        }
     }
 
 sealed class MainUiState {

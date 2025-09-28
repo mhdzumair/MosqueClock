@@ -5,9 +5,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mosque.prayerclock.service.PrayerNotificationService
 import com.mosque.prayerclock.ui.LocalizedApp
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.screens.MainScreen
@@ -41,8 +45,14 @@ class MainActivity : ComponentActivity() {
             android.util.Log.d("MainActivity", "App started from device boot")
         }
 
+        // Configure window for always-on display
+        configureDisplaySettings()
+
         // Request overlay permission for auto-start functionality
         requestOverlayPermission()
+
+        // Start prayer notification service for sound alerts
+        startPrayerNotificationService()
 
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
@@ -62,7 +72,8 @@ class MainActivity : ComponentActivity() {
                         while (true) {
                             effectiveLanguage = cycle[index % cycle.size]
                             index++
-                            kotlinx.coroutines.delay(10_000)
+                            // Much longer delay to minimize interference with countdown timer
+                            kotlinx.coroutines.delay(30_000) // 30 seconds - minimal frequency for smooth countdown
                         }
                     } else {
                         effectiveLanguage = settings.language
@@ -108,6 +119,52 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error requesting overlay permission", e)
         }
+    }
+
+    private fun configureDisplaySettings() {
+        try {
+            // Keep screen on and prevent sleep
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+            window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+
+            // Additional flags for TV/kiosk mode
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+                window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
+            }
+
+            android.util.Log.d("MainActivity", "Display settings configured for always-on mode")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error configuring display settings", e)
+        }
+    }
+
+    private fun startPrayerNotificationService() {
+        try {
+            val serviceIntent = Intent(this, PrayerNotificationService::class.java)
+            startService(serviceIntent)
+            android.util.Log.d("MainActivity", "Prayer notification service started")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error starting prayer notification service", e)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Optional: Put TV to sleep when app is destroyed
+        // Uncomment the line below if you want TV to sleep when app closes
+        // App destroyed - cleanup handled by system
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // App paused - display management handled by window flags
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Display management handled by window flags
     }
 }
 

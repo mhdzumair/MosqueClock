@@ -28,6 +28,9 @@ class AppStartService : Service() {
 
         startForeground(1, createNotification())
 
+        // Display management handled by activities through window flags
+        Log.i(TAG, "Starting mosque clock app from boot...")
+
         // Start SplashActivity immediately without coroutine delay
         try {
             val intent =

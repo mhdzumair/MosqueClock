@@ -161,4 +161,10 @@ class SettingsViewModel
                 )
             }
         }
+
+        fun updateSoundEnabled(soundEnabled: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateSoundEnabled(soundEnabled)
+            }
+        }
     }

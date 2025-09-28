@@ -8,7 +8,7 @@ import com.mosque.prayerclock.data.model.PrayerTimes
 
 @Database(
     entities = [PrayerTimes::class],
-    version = 1,
+    version = 2, // Incremented for schema change
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,7 +26,8 @@ abstract class AppDatabase : RoomDatabase() {
                             context.applicationContext,
                             AppDatabase::class.java,
                             "mosque_clock_database",
-                        ).build()
+                        )
+                        .build()
                 INSTANCE = instance
                 instance
             }

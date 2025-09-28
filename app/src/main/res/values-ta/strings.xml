@@ -15,9 +15,9 @@
     <string name="azan">அதான்</string>
     <string name="iqamah">இகாமத்</string>
     <string name="current_time">தற்போதைய நேரம்</string>
-    <string name="next_prayer">அடுத்த தொழுகை</string>
+    <string name="next_prayer">அடுத்து</string>
     <string name="time_remaining">எஞ்சிய நேரம்</string>
-    <string name="current_prayer">தற்போதைய தொழுகை</string>
+    <string name="current_prayer">தற்போது</string>
 
     <!-- Days and Dates -->
     <string name="today">இன்று</string>
@@ -35,6 +35,11 @@
     <string name="font_size">எழுத்து அளவு</string>
     <string name="show_seconds">விநாடிகளைக் காட்டு</string>
     <string name="hour_format_24">24 மணி நேர வடிவம்</string>
+    
+    <!-- Sound Settings -->
+    <string name="sound_notifications">தொழுகை கவுண்டவுன் டிக்கிங்</string>
+    <string name="sound_enabled">ஒலியை இயக்கு</string>
+    <string name="sound_description">அதான், இகாமத் மற்றும் சூரிய உதயத்திற்கு 5 விநாடிகளுக்கு முன் டிக்கிங் ஒலி</string>
     
     <!-- Clock Types -->
     <string name="digital_clock">டிஜிட்டல்</string>
@@ -108,6 +113,9 @@
     <string name="humidity_short">ஈரப்பதம்</string>
     <string name="feels_like_short">உணர்வு</string>
     
+    <!-- Prayer Buffer Period -->
+    <string name="silent_your_phone">உங்கள் தொலைபேசியை அமைதியாக்கவும்</string>
+    
     <!-- Time Calculation -->
     <string name="hours_short">மணி நேரம்</string>
     <string name="minutes_short">நிமிடங்கள்</string>
@@ -151,4 +159,6 @@
     
     <!-- Loading text -->
     <string name="loading_hijri">ஏற்றுகிறது...</string>
+    
+    <!-- Countdown type labels - removed as no longer used -->
 </resources>

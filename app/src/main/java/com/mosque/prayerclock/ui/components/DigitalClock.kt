@@ -1,5 +1,7 @@
 package com.mosque.prayerclock.ui.components
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -125,9 +127,10 @@ fun DigitalClock(
     // Clean, elegant digital clock with subtle styling
     Card(
         modifier = modifier.padding(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), // Clean, subtle background
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), // Clean, subtle background
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         shape = RoundedCornerShape(20.dp),
     ) {
@@ -138,16 +141,24 @@ fun DigitalClock(
             // Clean time display with elegant brass color
             Text(
                 text = formattedTime,
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = fontSize,
-                    fontWeight = FontWeight.Bold,
-                    shadow = Shadow(
-                        color = androidx.compose.ui.graphics.Color(0xFFB08D57).copy(alpha = 0.3f),
-                        offset = Offset(0f, 2f),
-                        blurRadius = 8f,
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = fontSize,
+                        fontWeight = FontWeight.Bold,
+                        shadow =
+                            Shadow(
+                                color =
+                                    androidx.compose.ui.graphics
+                                        .Color(0xFFB08D57)
+                                        .copy(alpha = 0.3f),
+                                offset = Offset(0f, 2f),
+                                blurRadius = 8f,
+                            ),
                     ),
-                ),
-                color = androidx.compose.ui.graphics.Color(0xFFB08D57), // Elegant brass color
+                color =
+                    androidx.compose.ui.graphics
+                        .Color(0xFFB08D57),
+                // Elegant brass color
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 softWrap = false,
@@ -155,16 +166,30 @@ fun DigitalClock(
 
             Spacer(modifier = Modifier.height((fontSize.value * 0.1f).dp))
 
-            // Clean date display
-            Text(
-                text = formattedDate,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = fontSize * 0.28f,
-                    fontWeight = FontWeight.Medium,
-                ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Subtle text color
-                textAlign = TextAlign.Center,
-            )
+            // Clean date display - animated for language transitions
+            AnimatedContent(
+                targetState = formattedDate,
+                transitionSpec = {
+                    fadeIn(
+                        animationSpec = tween(80, easing = LinearEasing),
+                    ) togetherWith
+                        fadeOut(
+                            animationSpec = tween(40, easing = LinearEasing),
+                        )
+                },
+                label = "digital_date_transition",
+            ) { animatedDate ->
+                Text(
+                    text = animatedDate,
+                    style =
+                        MaterialTheme.typography.headlineLarge.copy(
+                            fontSize = fontSize * 0.28f,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Subtle text color
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

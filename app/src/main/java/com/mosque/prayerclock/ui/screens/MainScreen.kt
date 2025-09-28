@@ -1,5 +1,6 @@
 package com.mosque.prayerclock.ui.screens
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +35,7 @@ import com.mosque.prayerclock.ui.components.DigitalClock
 import com.mosque.prayerclock.ui.components.PrayerTimeCard
 import com.mosque.prayerclock.ui.components.WeatherCard
 import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.utils.TimeUtils
 import com.mosque.prayerclock.viewmodel.MainUiState
 import com.mosque.prayerclock.viewmodel.MainViewModel
 import com.mosque.prayerclock.viewmodel.WeatherUiState
@@ -40,6 +43,14 @@ import kotlinx.datetime.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
+
+// Helper data class for returning four values
+data class Quadruple<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
 
 @Composable
 fun MainScreen(
@@ -50,24 +61,10 @@ fun MainScreen(
     val weatherState by viewModel.weatherState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
-    // Only load prayer times if not already loaded (optimization for splash screen pre-loading)
-    LaunchedEffect(Unit) {
-        if (uiState is MainUiState.Loading) {
-            viewModel.loadPrayerTimes()
-        }
-    }
-
-    // Reload prayer times when prayer service settings change
-    LaunchedEffect(settings.prayerServiceType, settings.selectedZone, settings.selectedRegion) {
+    // Simple settings change detection - repository handles all caching automatically
+    LaunchedEffect(settings) {
+        Log.d("MainScreen", "Settings changed - triggering data reload (repository will handle caching)")
         viewModel.loadPrayerTimes()
-    }
-
-    // Reload weather when weather settings change
-    // Only reload weather when weather settings change, not full prayer reload
-    LaunchedEffect(settings.weatherCity, settings.weatherCountry, settings.showWeather) {
-        if (settings.showWeather) {
-            viewModel.loadPrayerTimes()
-        }
     }
 
     Box(
@@ -84,25 +81,23 @@ fun MainScreen(
                     ),
                 ),
     ) {
-        NewMainLayout(
+        MainLayout(
             uiState = uiState,
             weatherState = weatherState,
             settings = settings,
             viewModel = viewModel,
             onOpenSettings = onOpenSettings,
-            onRetry = { viewModel.loadPrayerTimes() },
         )
     }
 }
 
 @Composable
-fun NewMainLayout(
+fun MainLayout(
     uiState: MainUiState,
     weatherState: WeatherUiState,
     settings: AppSettings,
     viewModel: MainViewModel,
     onOpenSettings: () -> Unit,
-    onRetry: () -> Unit,
 ) {
     val paddingSize = 12.dp
     val spacingSize = 5.dp
@@ -129,8 +124,8 @@ fun NewMainLayout(
             Spacer(modifier = Modifier.height(spacingSize))
         }
 
-        // Calculate countdown visibility and prayer state once for the entire layout
-        val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal) =
+        // Calculate countdown visibility, prayer state, and prayer-in-progress period once for the entire layout
+        val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, isPrayerInProgress) =
             when (uiState) {
                 is MainUiState.Success -> {
                     // Use centralized time source
@@ -151,13 +146,13 @@ fun NewMainLayout(
                                     "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
 
                                 val isAfterAzan =
-                                    compareTimeStrings(
+                                    TimeUtils.compareTimeStrings(
                                         prayer.azanTime,
                                         currentTimeString,
                                     ) <= 0
                                 val isBeforeIqamah =
                                     prayer.iqamahTime?.let { iqamahTime ->
-                                        compareTimeStrings(
+                                        TimeUtils.compareTimeStrings(
                                             currentTimeString,
                                             iqamahTime,
                                         ) < 0
@@ -185,9 +180,9 @@ fun NewMainLayout(
                                         // For prayers with Iqamah: current from Azan
                                         // time until Iqamah + 5min buffer
                                         val bufferTime =
-                                            addMinutesToTime(prayer.iqamahTime, 5)
+                                            TimeUtils.addMinutesToTime(prayer.iqamahTime, 5)
                                         isAfterAzan &&
-                                            compareTimeStrings(
+                                            TimeUtils.compareTimeStrings(
                                                 currentTimeString,
                                                 bufferTime,
                                             ) <= 0
@@ -195,9 +190,9 @@ fun NewMainLayout(
                                         // For prayers without Iqamah: current from Azan
                                         // time until Azan + 60min buffer
                                         val extendedTime =
-                                            addMinutesToTime(prayer.azanTime, 60)
+                                            TimeUtils.addMinutesToTime(prayer.azanTime, 60)
                                         isAfterAzan &&
-                                            compareTimeStrings(
+                                            TimeUtils.compareTimeStrings(
                                                 currentTimeString,
                                                 extendedTime,
                                             ) <= 0
@@ -209,7 +204,7 @@ fun NewMainLayout(
                                     if (prayer.iqamahTime != null) {
                                         // Hide countdown after Iqamah time (during
                                         // buffer period)
-                                        compareTimeStrings(
+                                        TimeUtils.compareTimeStrings(
                                             currentTimeString,
                                             prayer.iqamahTime,
                                         ) > 0
@@ -217,32 +212,47 @@ fun NewMainLayout(
                                         // Hide countdown after Azan + 60min for prayers
                                         // without Iqamah
                                         val extendedTime =
-                                            addMinutesToTime(prayer.azanTime, 60)
-                                        compareTimeStrings(
+                                            TimeUtils.addMinutesToTime(prayer.azanTime, 60)
+                                        TimeUtils.compareTimeStrings(
                                             currentTimeString,
                                             extendedTime,
                                         ) > 0
                                     }
 
-                                // Show countdown if time is positive, within 60 minutes,
+                                // Show countdown if time is positive, within 59 minutes,
                                 // and not in buffer period
                                 val isCountdownVisible =
                                     countdownData.totalSeconds > 0 &&
-                                        countdownData.totalMinutes <= 60 &&
+                                        countdownData.totalMinutes < 60 &&
                                         !isPastFinalTime
 
-                                Triple(
+                                // Check if we're in the 5-minute prayer-in-progress period after Iqamah
+                                val isPrayerInProgress = if (prayer.iqamahTime != null) {
+                                    val isAfterIqamah = TimeUtils.compareTimeStrings(
+                                        currentTimeString,
+                                        prayer.iqamahTime,
+                                    ) >= 0  // Changed from > 0 to >= 0 to include exact Iqamah time
+                                    val prayerEndTime = TimeUtils.addMinutesToTime(prayer.iqamahTime, 5)
+                                    val isBeforePrayerEnd = TimeUtils.compareTimeStrings(
+                                        currentTimeString,
+                                        prayerEndTime,
+                                    ) <= 0
+                                    isAfterIqamah && isBeforePrayerEnd
+                                } else false
+
+                                Quadruple(
                                     isCountdownVisible,
                                     currentTime,
                                     isCurrentPrayerLocal,
+                                    isPrayerInProgress,
                                 )
                             }
-                                ?: Triple(false, currentTime, false)
+                                ?: Quadruple(false, currentTime, false, false)
                         }
 
                     calculatedValues
                 }
-                else -> Triple(false, Clock.System.now(), false)
+                else -> Quadruple(false, Clock.System.now(), false, false)
             }
 
         // Main content row with Clock and combined Next Prayer + Weather
@@ -251,15 +261,15 @@ fun NewMainLayout(
             horizontalArrangement = Arrangement.spacedBy(spacingSize),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-        // Clock section - Takes available space
-        ClockSection(
-            settings = settings,
-            onClockClick = onOpenSettings,
-            isCompact = false, // Make clock larger
-            currentTime = globalCurrentTime,
-            hijriDateRepository = viewModel.hijriDateRepository,
-            modifier = Modifier.weight(1.5f), // Increased weight for bigger clock
-        )
+            // Clock section - Takes available space
+            ClockSection(
+                settings = settings,
+                onClockClick = onOpenSettings,
+                isCompact = false, // Make clock larger
+                currentTime = globalCurrentTime,
+                hijriDateRepository = viewModel.hijriDateRepository,
+                modifier = Modifier.weight(1.5f), // Increased weight for bigger clock
+            )
 
             // Combined Next Prayer and Weather section
             Column(
@@ -292,6 +302,7 @@ fun NewMainLayout(
                             showCountdown = isCountdownVisibleForWeight,
                             currentTime = currentTimeGlobal,
                             isCurrentPrayer = isCurrentPrayerGlobal,
+                            isPrayerInProgress = isPrayerInProgress,
                         )
                     }
                     is MainUiState.Error -> {
@@ -309,7 +320,7 @@ fun NewMainLayout(
                     }
                 }
 
-                // Weather section (if enabled) - Takes minimal space
+                // Weather section (if enabled and successful) - Takes minimal space
                 if (settings.showWeather) {
                     when (weatherState) {
                         is WeatherUiState.Loading -> {
@@ -330,17 +341,7 @@ fun NewMainLayout(
                             )
                         }
                         is WeatherUiState.Error -> {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().height(60.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = "Weather unavailable",
-                                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                )
-                            }
+                            // Hide weather section completely on error
                         }
                     }
                 }
@@ -453,27 +454,29 @@ fun ClockSection(
                 contentAlignment = Alignment.Center,
             ) {
                 // Handle cycling logic for BOTH option with smooth transitions
-                val actualClockType = when (settings.clockType) {
-                    ClockType.BOTH -> {
-                        // Cycle between Digital and Analog every 2 minutes
-                        var currentType by remember { mutableStateOf(ClockType.DIGITAL) }
-                        
-                        LaunchedEffect(Unit) {
-                            while (true) {
-                                kotlinx.coroutines.delay(120000) // 2 minutes (120 seconds)
-                                currentType = if (currentType == ClockType.DIGITAL) {
-                                    ClockType.ANALOG
-                                } else {
-                                    ClockType.DIGITAL
+                val actualClockType =
+                    when (settings.clockType) {
+                        ClockType.BOTH -> {
+                            // Cycle between Digital and Analog every 2 minutes
+                            var currentType by remember { mutableStateOf(ClockType.DIGITAL) }
+
+                            LaunchedEffect(Unit) {
+                                while (true) {
+                                    kotlinx.coroutines.delay(120000) // 2 minutes (120 seconds)
+                                    currentType =
+                                        if (currentType == ClockType.DIGITAL) {
+                                            ClockType.ANALOG
+                                        } else {
+                                            ClockType.DIGITAL
+                                        }
                                 }
                             }
+
+                            currentType
                         }
-                        
-                        currentType
+                        else -> settings.clockType
                     }
-                    else -> settings.clockType
-                }
-                
+
                 // Smooth transition between clock types
                 AnimatedContent(
                     targetState = actualClockType,
@@ -481,7 +484,7 @@ fun ClockSection(
                         fadeIn(animationSpec = tween(1000)) togetherWith
                             fadeOut(animationSpec = tween(1000))
                     },
-                    label = "clock_transition"
+                    label = "clock_transition",
                 ) { clockType ->
                     when (clockType) {
                         ClockType.DIGITAL -> {
@@ -518,34 +521,6 @@ fun ClockSection(
     }
 }
 
-@Composable
-private fun ErrorMessage(
-    message: String,
-    onRetry: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onRetry,
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ),
-        ) { Text(localizedStringResource(R.string.refresh)) }
-    }
-}
 
 private fun getFriendlyErrorMessage(technicalMessage: String): String =
     when {
@@ -613,59 +588,6 @@ private fun formatTimeBasedOnPreference(
     }
 }
 
-private fun calculateTimeUntilPrayerData(
-    prayerTime: String,
-    currentTime: Instant,
-): CountdownData? {
-    try {
-        val now = currentTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-        val parts = prayerTime.split(":")
-        val prayerHour = parts[0].toInt()
-        val prayerMinute = parts[1].toInt()
-
-        val prayerDateTime =
-            LocalDateTime(
-                now.date,
-                LocalTime(prayerHour, prayerMinute, 0), // Set seconds to 0 for consistency
-            )
-
-        val prayerInstant = prayerDateTime.toInstant(kotlinx.datetime.TimeZone.currentSystemDefault())
-        val duration = prayerInstant - currentTime
-
-        if (duration.isNegative()) {
-            return null
-        }
-
-        val hours = duration.inWholeHours
-        val minutes = (duration.inWholeMinutes % 60)
-        val seconds = (duration.inWholeSeconds % 60)
-        val totalMinutes = duration.inWholeMinutes
-        val totalSeconds = duration.inWholeSeconds
-
-        return CountdownData(hours, minutes, seconds, totalMinutes, totalSeconds)
-    } catch (e: Exception) {
-        return null
-    }
-}
-
-@Composable
-private fun formatTimeRemaining(countdownData: CountdownData): String =
-    when {
-        countdownData.hours > 0 ->
-            localizedStringResource(
-                R.string.time_format_hours_minutes,
-                countdownData.hours,
-                countdownData.minutes,
-            )
-        countdownData.minutes > 0 ->
-            localizedStringResource(
-                R.string.time_format_minutes_seconds,
-                countdownData.minutes,
-                countdownData.seconds,
-            )
-        else -> localizedStringResource(R.string.time_format_seconds, countdownData.seconds)
-    }
-
 data class CountdownData(
     val hours: Long,
     val minutes: Long,
@@ -724,30 +646,32 @@ fun FlipClockCountdown(
             FlipClockDigitPair(
                 value = hours,
             )
-            
+
             Text(
                 text = ":",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        
+
         FlipClockDigitPair(
             value = minutes,
         )
-        
+
         Text(
             text = ":",
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-            ),
+            style =
+                MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
             color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         FlipClockDigitPair(
             value = seconds,
         )
@@ -755,12 +679,10 @@ fun FlipClockCountdown(
 }
 
 @Composable
-fun FlipClockDigitPair(
-    value: Long,
-) {
+fun FlipClockDigitPair(value: Long) {
     val tens = (value / 10).toInt()
     val units = (value % 10).toInt()
-    
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -771,12 +693,10 @@ fun FlipClockDigitPair(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun AnimatedFlipDigit(
-    digit: Int,
-) {
+fun AnimatedFlipDigit(digit: Int) {
     var previousDigit by remember { mutableStateOf(digit) }
     var currentDigit by remember { mutableStateOf(digit) }
-    
+
     // Detect digit change for animation
     LaunchedEffect(digit) {
         if (digit != currentDigit) {
@@ -784,27 +704,31 @@ fun AnimatedFlipDigit(
             currentDigit = digit
         }
     }
-    
+
     Box(
         modifier = Modifier.size(width = 52.dp, height = 72.dp),
     ) {
         // Main flip card background - elegant natural color matching your mosque clock theme
         Card(
             modifier = Modifier.fillMaxSize(),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF2D4A22), // Deep forest green matching your analog clock
-            ),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = Color(0xFF2D4A22), // Deep forest green matching your analog clock
+                ),
             shape = RoundedCornerShape(8.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             // Inner card with elegant brass-tinted background
             Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(2.dp), // Thin border to show outer color
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF3A5F2A), // Slightly lighter forest green
-                ),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(2.dp),
+                // Thin border to show outer color
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = Color(0xFF3A5F2A), // Slightly lighter forest green
+                    ),
                 shape = RoundedCornerShape(6.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
@@ -821,63 +745,67 @@ fun AnimatedFlipDigit(
                                 slideInVertically { height -> -height } + fadeIn() togetherWith
                                     slideOutVertically { height -> height } + fadeOut()
                             } else {
-                                // Flip down animation  
+                                // Flip down animation
                                 slideInVertically { height -> height } + fadeIn() togetherWith
                                     slideOutVertically { height -> -height } + fadeOut()
                             }.using(
-                                SizeTransform(clip = false)
+                                SizeTransform(clip = false),
                             )
                         },
-                        label = "digit_flip"
+                        label = "digit_flip",
                     ) { animatedDigit ->
                         Text(
                             text = animatedDigit.toString(),
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontSize = 40.sp,
-                                fontWeight = FontWeight.Black, // Extra bold for visibility
-                            ),
+                            style =
+                                MaterialTheme.typography.displayLarge.copy(
+                                    fontSize = 40.sp,
+                                    fontWeight = FontWeight.Black, // Extra bold for visibility
+                                ),
                             color = Color(0xFFB08D57), // Elegant brass/gold color matching your analog clock
                         )
                     }
-                    
+
                     // Horizontal line in the middle to simulate flip mechanism - subtle brass accent
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFFB08D57).copy(alpha = 0.6f)) // Subtle brass line
-                            .align(Alignment.Center)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color(0xFFB08D57).copy(alpha = 0.6f)) // Subtle brass line
+                                .align(Alignment.Center),
                     )
-                    
+
                     // Add subtle gradient shadows for depth like your analog clock
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = 0.2f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                            .align(Alignment.TopCenter)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(3.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors =
+                                            listOf(
+                                                Color.Black.copy(alpha = 0.2f),
+                                                Color.Transparent,
+                                            ),
+                                    ),
+                                ).align(Alignment.TopCenter),
                     )
-                    
+
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.2f)
-                                    )
-                                )
-                            )
-                            .align(Alignment.BottomCenter)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(3.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors =
+                                            listOf(
+                                                Color.Transparent,
+                                                Color.Black.copy(alpha = 0.2f),
+                                            ),
+                                    ),
+                                ).align(Alignment.BottomCenter),
                     )
                 }
             }
@@ -951,6 +879,7 @@ fun NextPrayerCountdownSection(
     showCountdown: Boolean = false,
     currentTime: Instant = Clock.System.now(),
     isCurrentPrayer: Boolean = false,
+    isPrayerInProgress: Boolean = false,
 ) {
     val prayerInfoList = createPrayerInfoList(prayerTimes, currentTime)
 
@@ -971,13 +900,13 @@ fun NextPrayerCountdownSection(
     // Calculate if we should show Iqamah time (for display purposes)
     val isAfterAzan =
         nextPrayerInfo?.let { prayer ->
-            compareTimeStrings(prayer.azanTime, currentTimeString) <= 0
+            TimeUtils.compareTimeStrings(prayer.azanTime, currentTimeString) <= 0
         }
             ?: false
 
     val isBeforeIqamah =
         nextPrayerInfo?.iqamahTime?.let { iqamahTime ->
-            compareTimeStrings(currentTimeString, iqamahTime) < 0
+            TimeUtils.compareTimeStrings(currentTimeString, iqamahTime) < 0
         }
             ?: false
 
@@ -1006,7 +935,7 @@ fun NextPrayerCountdownSection(
         val countdownData = getCountdownData(targetTime, currentTime)
 
         Card(
-            modifier = modifier.fillMaxWidth().padding(4.dp),
+            modifier = modifier.fillMaxWidth().padding(2.dp),  // Reduced padding from 4.dp to 2.dp
             colors =
                 CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
@@ -1015,7 +944,7 @@ fun NextPrayerCountdownSection(
             shape = RoundedCornerShape(20.dp),
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth().padding(6.dp),
+                modifier = Modifier.fillMaxWidth().padding(3.dp),  // Reduced padding from 6.dp to 3.dp
                 colors =
                     CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
@@ -1024,9 +953,13 @@ fun NextPrayerCountdownSection(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding(4.dp),  // Reduced padding from 8.dp to 4.dp
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    // Show silent phone image during prayer-in-progress period
+                    if (isPrayerInProgress) {
+                        SilentPhoneSection()
+                    } else {
                     // Use TV sizes for all devices - slightly reduced when countdown is visible
                     val titleFontSize = if (showCountdown) 20.sp else 22.sp
                     val prayerNameFontSize = if (showCountdown) 32.sp else 36.sp
@@ -1071,8 +1004,18 @@ fun NextPrayerCountdownSection(
                             Spacer(modifier = Modifier.height(spacingSize))
                         }
 
+                        // Display prayer name with Azan/Iqamah suffix for prayers (not sunrise/jummah)
+                        // Use iqamahTime null check since both sunrise and jummah have no iqamah time
+                        val displayText =
+                            when {
+                                nextPrayerInfo.iqamahTime == null -> nextPrayerInfo.name // Sunrise or Jummah
+                                shouldShowIqamah ->
+                                    "${nextPrayerInfo.name} ${localizedStringResource(R.string.iqamah)}"
+                                else -> "${nextPrayerInfo.name} ${localizedStringResource(R.string.azan)}"
+                            }
+
                         Text(
-                            text = nextPrayerInfo.name,
+                            text = displayText,
                             style =
                                 MaterialTheme.typography.headlineLarge.copy(
                                     fontSize = prayerNameFontSize,
@@ -1083,18 +1026,27 @@ fun NextPrayerCountdownSection(
 
                         Spacer(modifier = Modifier.height(spacingSize))
 
-                        // Single time display - show only relevant time
+                        // Always show the time (removed countdown text display)
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            // Determine which time to show based on current timing
                             val timeToShow =
                                 if (shouldShowIqamah) {
                                     // Show Iqamah time if we're past Azan time
                                     nextPrayerInfo.iqamahTime ?: nextPrayerInfo.azanTime
                                 } else {
-                                    // Show Azan time by default
+                                    // Show Azan time by default (or sunrise time for sunrise)
                                     nextPrayerInfo.azanTime
+                                }
+
+                            // Apply color coding to time display
+                            val timeColor =
+                                if (nextPrayerInfo.type == PrayerType.SUNRISE) {
+                                    Color(0xFFFF5722) // Red for Sunrise time
+                                } else if (shouldShowIqamah) {
+                                    Color(0xFF2196F3) // Blue for Iqamah time
+                                } else {
+                                    Color(0xFF4CAF50) // Green for Azan time
                                 }
 
                             Text(
@@ -1104,7 +1056,7 @@ fun NextPrayerCountdownSection(
                                         fontSize = timeFontSize,
                                         fontWeight = FontWeight.Bold,
                                     ),
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = timeColor,
                             )
                         }
 
@@ -1118,10 +1070,46 @@ fun NextPrayerCountdownSection(
                                 seconds = countdownData.seconds,
                             )
                         }
-                    }
+                    } // End of else block
                 }
             }
+            }
         }
+    }
+}
+
+@Composable
+private fun SilentPhoneSection() {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    ) {
+        // Silent phone image - BACKGROUND
+        Image(
+            painter = painterResource(id = R.drawable.silent_phone),
+            contentDescription = "Silent Phone",
+            modifier = Modifier.size(250.dp),
+            contentScale = ContentScale.Fit,
+        )
+        
+        // Localized "Silent Your Phone" text - OVERLAID ON TOP OF IMAGE
+        Text(
+            text = localizedStringResource(R.string.silent_your_phone),
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            ),
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+        )
     }
 }
 
@@ -1179,30 +1167,31 @@ fun CompactPrayerTimeCard(
             }
         }
     }
-    
+
     // Determine if we're showing Azan or Iqamah
     val isShowingAzan = showAzan || prayerInfo.iqamahTime == null
-    
+
     // Get the prayer color based on current state
-    val prayerColor = if (isNext) {
-        // Special handling for next prayer colors
-        if (prayerInfo.type == PrayerType.SUNRISE) {
-            Color(0xFFFF5722) // Red for Sunrise (next)
-        } else if (!isShowingAzan && prayerInfo.iqamahTime != null) {
-            Color(0xFF2196F3) // Blue for Iqamah (next)
+    val prayerColor =
+        if (isNext) {
+            // Special handling for next prayer colors
+            if (prayerInfo.type == PrayerType.SUNRISE) {
+                Color(0xFFFF5722) // Red for Sunrise (next)
+            } else if (!isShowingAzan && prayerInfo.iqamahTime != null) {
+                Color(0xFF2196F3) // Blue for Iqamah (next)
+            } else {
+                MaterialTheme.colorScheme.primary // Default primary for Azan (next)
+            }
         } else {
-            MaterialTheme.colorScheme.primary // Default primary for Azan (next)
+            // Non-next prayer colors
+            if (prayerInfo.type == PrayerType.SUNRISE) {
+                Color(0xFFFF5722) // Red for Sunrise (always)
+            } else if (isShowingAzan) {
+                Color(0xFF4CAF50) // Bright Green for Azan
+            } else {
+                Color(0xFF2196F3) // Bright Blue for Iqamah
+            }
         }
-    } else {
-        // Non-next prayer colors
-        if (prayerInfo.type == PrayerType.SUNRISE) {
-            Color(0xFFFF5722) // Red for Sunrise (always)
-        } else if (isShowingAzan) {
-            Color(0xFF4CAF50) // Bright Green for Azan
-        } else {
-            Color(0xFF2196F3) // Bright Blue for Iqamah
-        }
-    }
 
     Card(
         modifier =
@@ -1307,8 +1296,7 @@ fun CompactPrayerTimeCard(
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize = labelFontSize,
                                     ),
-                                color = prayerColor
-,
+                                color = prayerColor,
                             )
                         }
 
@@ -1338,38 +1326,6 @@ fun CompactPrayerTimeCard(
     }
 }
 
-private fun compareTimeStrings(
-    time1: String,
-    time2: String,
-): Int {
-    val format = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return try {
-        val date1 = format.parse(time1)
-        val date2 = format.parse(time2)
-        date1?.compareTo(date2) ?: 0
-    } catch (e: Exception) {
-        0
-    }
-}
-
-private fun addMinutesToTime(
-    timeString: String,
-    minutesToAdd: Int,
-): String {
-    try {
-        val parts = timeString.split(":")
-        val hours = parts[0].toInt()
-        val minutes = parts[1].toInt()
-
-        val totalMinutes = (hours * 60) + minutes + minutesToAdd
-        val newHours = (totalMinutes / 60) % 24
-        val newMinutes = totalMinutes % 60
-
-        return String.format("%02d:%02d", newHours, newMinutes)
-    } catch (e: Exception) {
-        return timeString
-    }
-}
 
 @Composable
 private fun createPrayerInfoList(

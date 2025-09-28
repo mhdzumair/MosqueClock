@@ -1,6 +1,8 @@
 package com.mosque.prayerclock.ui.components
 
 import android.graphics.Paint
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.ui.AnimatedLocalizedText
 import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.utils.LocaleManager
@@ -92,14 +95,16 @@ fun AnalogClock(
 
             // Elegant forest green gradient background
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF2D5016), // Deep forest green center
-                        Color(0xFF1A2E0A), // Darker forest green edge
+                brush =
+                    Brush.radialGradient(
+                        colors =
+                            listOf(
+                                Color(0xFF2D5016), // Deep forest green center
+                                Color(0xFF1A2E0A), // Darker forest green edge
+                            ),
+                        radius = radius,
+                        center = center,
                     ),
-                    radius = radius,
-                    center = center,
-                ),
                 radius = radius,
                 center = center,
             )
@@ -154,58 +159,81 @@ fun AnalogClock(
 
         // Left side - Hijri date info (compact overlay)
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-            ),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 12.dp, top = 12.dp)
-                .width(90.dp), // Match the Gregorian date card width
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 12.dp)
+                    .width(100.dp),
         ) {
             Column(
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp),  // Reduced padding for more space
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 hijriDate?.let { hDate ->
                     val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
-                    
-                    // Month name (slightly larger)
-                    Text(
-                        text = hijriMonth,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                    )
-                    
+
+                    // Month name (slightly larger) - animated for language transitions
+                    AnimatedContent(
+                        targetState = hijriMonth,
+                        transitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(80, easing = LinearEasing),
+                            ) togetherWith
+                                fadeOut(
+                                    animationSpec = tween(40, easing = LinearEasing),
+                                )
+                        },
+                        label = "hijri_month_transition",
+                    ) { animatedMonth ->
+                        Text(
+                            text = animatedMonth,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(3.dp))
-                    
+
                     // Day (more prominent)
                     Text(
                         text = hDate.day.toString(),
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                        ),
+                        style =
+                            MaterialTheme.typography.headlineSmall.copy(
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
                     )
-                    
+
                     Spacer(modifier = Modifier.height(2.dp))
-                    
+
                     // Year (slightly larger)
                     Text(
                         text = hDate.year.toString(),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 14.sp,
+                            ),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
                     )
                 }
             }
@@ -213,75 +241,112 @@ fun AnalogClock(
 
         // Right side - Gregorian date info (compact overlay)
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-            ),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 12.dp, top = 12.dp)
-                .width(90.dp), // Slightly wider for full month name
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 12.dp, top = 12.dp)
+                    .width(100.dp),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(6.dp),  // Reduced padding for more space
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
                 val monthName = SimpleDateFormat("MMMM", currentLocale).format(date)
-                
-                // Day name (slightly larger)
-                Text(
-                    text = dayName,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                )
-                
+
+                // Day name (slightly larger) - animated for language transitions
+                AnimatedContent(
+                    targetState = dayName,
+                    transitionSpec = {
+                        fadeIn(
+                            animationSpec = tween(70, easing = LinearEasing),
+                        ) togetherWith
+                            fadeOut(
+                                animationSpec = tween(35, easing = LinearEasing),
+                            )
+                    },
+                    label = "day_name_transition",
+                ) { animatedDayName ->
+                    Text(
+                        text = animatedDayName,
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(3.dp))
-                
+
                 // Day number (more prominent)
                 Text(
                     text = localDateTime.dayOfMonth.toString(),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style =
+                        MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
                 )
-                
+
                 Spacer(modifier = Modifier.height(2.dp))
-                
-                // Month name (larger for readability)
-                Text(
-                    text = monthName,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center,
-                    maxLines = 2, // Allow wrapping for long month names
-                )
-                
+
+                // Month name (larger for readability) - animated for language transitions
+                AnimatedContent(
+                    targetState = monthName,
+                    transitionSpec = {
+                        fadeIn(
+                            animationSpec = tween(60, easing = LinearEasing),
+                        ) togetherWith
+                            fadeOut(
+                                animationSpec = tween(30, easing = LinearEasing),
+                            )
+                    },
+                    label = "month_name_transition",
+                ) { animatedMonthName ->
+                    Text(
+                        text = animatedMonthName,
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 2, // Allow wrapping for long month names
+                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(2.dp))
-                
+
                 // Year (slightly larger)
                 Text(
                     text = localDateTime.year.toString(),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 11.sp,
-                    ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 14.sp,
+                        ),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
                 )
             }
         }
@@ -383,13 +448,14 @@ private fun DrawScope.drawEnhancedClockNumbers(
             )
 
             // Draw shadow for the text
-            val shadowPaint = Paint().apply {
-                this.color = Color.Black.copy(alpha = 0.2f).toArgb()
-                textSize = 42f
-                textAlign = Paint.Align.CENTER
-                isAntiAlias = true
-                isFakeBoldText = true
-            }
+            val shadowPaint =
+                Paint().apply {
+                    this.color = Color.Black.copy(alpha = 0.2f).toArgb()
+                    textSize = 42f
+                    textAlign = Paint.Align.CENTER
+                    isAntiAlias = true
+                    isFakeBoldText = true
+                }
             canvas.nativeCanvas.drawText(
                 numbers[i],
                 x + 1,
@@ -532,25 +598,26 @@ private fun DrawScope.drawEnhancedSecondHand(
     )
 
     // Draw enhanced second hand circle with gradient
-    val circleCenter = Offset(
-        center.x + (length * 0.8f) * cos(Math.toRadians(angle.toDouble())).toFloat(),
-        center.y + (length * 0.8f) * sin(Math.toRadians(angle.toDouble())).toFloat(),
-    )
-    
+    val circleCenter =
+        Offset(
+            center.x + (length * 0.8f) * cos(Math.toRadians(angle.toDouble())).toFloat(),
+            center.y + (length * 0.8f) * sin(Math.toRadians(angle.toDouble())).toFloat(),
+        )
+
     // Shadow for circle
     drawCircle(
         color = Color.Black.copy(alpha = 0.2f),
         radius = 10f,
         center = Offset(circleCenter.x + 1, circleCenter.y + 1),
     )
-    
+
     // Main circle
     drawCircle(
         color = color,
         radius = 10f,
         center = circleCenter,
     )
-    
+
     // Inner highlight circle
     drawCircle(
         color = color.copy(alpha = 0.6f),
@@ -570,7 +637,7 @@ private fun DrawScope.drawSunburstPattern(
         val angle = i * 6f - 90f // 6 degrees per line
         val startRadius = radius * 0.3f // Start from inner area
         val endRadius = radius * 0.85f // End near outer edge
-        
+
         val startX = center.x + startRadius * cos(Math.toRadians(angle.toDouble())).toFloat()
         val startY = center.y + startRadius * sin(Math.toRadians(angle.toDouble())).toFloat()
         val endX = center.x + endRadius * cos(Math.toRadians(angle.toDouble())).toFloat()
@@ -578,7 +645,7 @@ private fun DrawScope.drawSunburstPattern(
 
         // Vary line opacity for sunburst effect
         val alpha = if (i % 5 == 0) 0.6f else 0.2f
-        
+
         drawLine(
             color = color.copy(alpha = alpha),
             start = Offset(startX, startY),
@@ -595,22 +662,24 @@ private fun DrawScope.drawModernNumbers(
     radius: Float,
     color: Color,
 ) {
-    val numbers = listOf(
-        Pair("12", 0),
-        Pair("3", 3),
-        Pair("6", 6),
-        Pair("9", 9)
-    )
+    val numbers =
+        listOf(
+            Pair("12", 0),
+            Pair("3", 3),
+            Pair("6", 6),
+            Pair("9", 9),
+        )
 
     drawIntoCanvas { canvas ->
-        val paint = Paint().apply {
-            this.color = color.toArgb()
-            textSize = 48f
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-            isFakeBoldText = true
-            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-        }
+        val paint =
+            Paint().apply {
+                this.color = color.toArgb()
+                textSize = 48f
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+                isFakeBoldText = true
+                typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            }
 
         numbers.forEach { (number, position) ->
             val angle = position * 30f - 90f
@@ -623,7 +692,7 @@ private fun DrawScope.drawModernNumbers(
                 radius = 30f,
                 center = Offset(x, y),
             )
-            
+
             drawCircle(
                 color = color.copy(alpha = 0.1f),
                 radius = 28f,
@@ -650,11 +719,11 @@ private fun DrawScope.drawModernHourMarkers(
     for (i in 0 until 12) {
         // Skip positions where numbers are displayed (12, 3, 6, 9)
         if (i % 3 == 0) continue
-        
+
         val angle = i * 30f - 90f
         val startRadius = radius * 0.85f
         val endRadius = radius * 0.95f
-        
+
         val startX = center.x + startRadius * cos(Math.toRadians(angle.toDouble())).toFloat()
         val startY = center.y + startRadius * sin(Math.toRadians(angle.toDouble())).toFloat()
         val endX = center.x + endRadius * cos(Math.toRadians(angle.toDouble())).toFloat()
@@ -690,7 +759,7 @@ private fun DrawScope.drawModernHourHand(
         strokeWidth = 8.dp.toPx(),
         cap = StrokeCap.Round,
     )
-    
+
     // Inner highlight
     drawLine(
         color = Color.White.copy(alpha = 0.3f),
@@ -720,7 +789,7 @@ private fun DrawScope.drawModernMinuteHand(
         strokeWidth = 6.dp.toPx(),
         cap = StrokeCap.Round,
     )
-    
+
     // Inner highlight
     drawLine(
         color = Color.White.copy(alpha = 0.3f),

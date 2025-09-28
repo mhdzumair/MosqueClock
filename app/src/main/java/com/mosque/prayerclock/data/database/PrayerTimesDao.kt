@@ -6,7 +6,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PrayerTimesDao {
-    @Query("SELECT * FROM prayer_times WHERE date = :date")
+    // Provider-specific queries
+    @Query("SELECT * FROM prayer_times WHERE date = :date AND providerKey = :providerKey")
+    suspend fun getPrayerTimesByDateAndProvider(date: String, providerKey: String): PrayerTimes?
+
+    @Query("SELECT * FROM prayer_times WHERE date = :date AND providerKey = :providerKey")
+    fun getPrayerTimesByDateAndProviderFlow(date: String, providerKey: String): Flow<PrayerTimes?>
+
+    // Legacy method for backward compatibility (gets first match by date)
+    @Query("SELECT * FROM prayer_times WHERE date = :date LIMIT 1")
     suspend fun getPrayerTimesByDate(date: String): PrayerTimes?
 
     @Query("SELECT * FROM prayer_times WHERE date = :date")

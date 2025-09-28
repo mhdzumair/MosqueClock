@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
     <uses-feature
         android:name="android.software.leanback"
@@ -81,6 +85,13 @@
             android:name=".AppStartService"
             android:enabled="true"
             android:exported="true"
+            android:stopWithTask="false" />
+
+        <!-- Prayer notification service for sound alerts -->
+        <service
+            android:name=".service.PrayerNotificationService"
+            android:enabled="true"
+            android:exported="false"
             android:stopWithTask="false" />
         
     </application>

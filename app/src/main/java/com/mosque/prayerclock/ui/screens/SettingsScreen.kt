@@ -147,6 +147,13 @@ fun SettingsScreen(
                         onShow24HourChange = viewModel::updateShow24HourFormat,
                     )
                 }
+
+                item {
+                    SoundSettings(
+                        soundEnabled = settings.soundEnabled,
+                        onSoundEnabledChange = viewModel::updateSoundEnabled,
+                    )
+                }
             }
         }
     }
@@ -650,6 +657,12 @@ private fun ManualPrayerTimesSettings(
             )
 
             PrayerTimeInput(
+                label = "Sunrise",
+                time = settings.manualSunrise,
+                onTimeChange = { onUpdateManualTime("sunrise", it) },
+            )
+
+            PrayerTimeInput(
                 label = "Dhuhr Azan",
                 time = settings.manualDhuhrAzan,
                 onTimeChange = { onUpdateManualTime("dhuhrAzan", it) },
@@ -1091,18 +1104,9 @@ private fun TimePickerField(
                         val newHour = (currentHour + 1) % 24
                         hours = String.format("%02d", newHour)
                     },
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(
-                                    alpha = 0.1f,
-                                ),
-                                RoundedCornerShape(8.dp),
-                            ),
                 ) {
                     Text(
-                        text = "▲",
+                        text = "+",
                         color = MaterialTheme.colorScheme.primary,
                         style =
                             MaterialTheme.typography.titleLarge.copy(
@@ -1136,18 +1140,9 @@ private fun TimePickerField(
                         val newHour = if (currentHour <= 0) 23 else currentHour - 1
                         hours = String.format("%02d", newHour)
                     },
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(
-                                    alpha = 0.1f,
-                                ),
-                                RoundedCornerShape(8.dp),
-                            ),
                 ) {
                     Text(
-                        text = "▼",
+                        text = "−",
                         color = MaterialTheme.colorScheme.primary,
                         style =
                             MaterialTheme.typography.titleLarge.copy(
@@ -1183,18 +1178,10 @@ private fun TimePickerField(
                         val newMin = (currentMin + 1) % 60
                         minutes = String.format("%02d", newMin)
                     },
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(
-                                    alpha = 0.1f,
-                                ),
-                                RoundedCornerShape(8.dp),
-                            ),
+
                 ) {
                     Text(
-                        text = "▲",
+                        text = "+",
                         color = MaterialTheme.colorScheme.primary,
                         style =
                             MaterialTheme.typography.titleLarge.copy(
@@ -1228,18 +1215,10 @@ private fun TimePickerField(
                         val newMin = if (currentMin <= 0) 59 else currentMin - 1
                         minutes = String.format("%02d", newMin)
                     },
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(
-                                    alpha = 0.1f,
-                                ),
-                                RoundedCornerShape(8.dp),
-                            ),
+
                 ) {
                     Text(
-                        text = "▼",
+                        text = "−",
                         color = MaterialTheme.colorScheme.primary,
                         style =
                             MaterialTheme.typography.titleLarge.copy(
@@ -1408,5 +1387,33 @@ private fun SelectableSettingsRow(
                 },
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         )
+    }
+}
+
+@Composable
+private fun SoundSettings(
+    soundEnabled: Boolean,
+    onSoundEnabledChange: (Boolean) -> Unit,
+) {
+    SettingsCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.sound_notifications),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.sound_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
+            Switch(checked = soundEnabled, onCheckedChange = onSoundEnabledChange)
+        }
     }
 }

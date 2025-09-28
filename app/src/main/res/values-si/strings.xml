@@ -3,7 +3,7 @@
     <string name="app_name">පල්ලියේ යාඥා ඔරලෝසුව</string>
 
     <!-- Prayer Names -->
-    <string name="fajr">ෆඩ්ර්</string>
+    <string name="fajr">ෆජ්ර්</string>
     <string name="dhuhr">ලුහර්</string>
     <string name="asr">අසර්</string>
     <string name="maghrib">මග්රිබ්</string>
@@ -13,11 +13,11 @@
 
     <!-- Time Labels -->
     <string name="azan">අදාන්</string>
-    <string name="iqamah">ඉකමාත්</string>
+    <string name="iqamah">ඉකාමත්</string>
     <string name="current_time">දැන් කාලය</string>
-    <string name="next_prayer">මීලඟ යාච්ඤාව</string>
+    <string name="next_prayer">මීලඟ</string>
     <string name="time_remaining">ඉතිරි කාලය</string>
-    <string name="current_prayer">දැන් යාච්ඤාව</string>
+    <string name="current_prayer">දැන්</string>
 
     <!-- Days and Dates -->
     <string name="today">අද</string>
@@ -75,6 +75,9 @@
     <string name="humidity_short">ඝනත්වය</string>
     <string name="feels_like_short">ඇහුම්කම්</string>
 
+    <!-- Prayer Buffer Period -->
+    <string name="silent_your_phone">ඔබේ දුරකථනය නිශ්ශබ්ද කරන්න</string>
+
     <!-- Day Names -->
     <string-array name="day_names">
         <item>සදුදා</item>
@@ -91,7 +94,7 @@
         <item>මුහර්රම්</item>
         <item>සෆර්</item>
         <item>රබියුල් අව්වාල්</item>
-        <item>රබියුල් අකීර්</item>
+        <item>රබියුල් ආහිර්</item>
         <item>ජමාදුල් අව්වාල්</item>
         <item>ජමාදුල් අකීර්</item>
         <item>රජබ්</item>
@@ -104,5 +107,6 @@
 
     <!-- Loading text -->
     <string name="loading_hijri">පූරණය වෙමින්...</string>
+    
+    <!-- Countdown type labels - removed as no longer used -->
 </resources>
-

@@ -13,9 +13,13 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -31,9 +35,10 @@ object NetworkModule {
         return OkHttpClient
             .Builder()
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)  // Reduced for limited connections
+            .readTimeout(15, TimeUnit.SECONDS)     // Reduced for limited connections
+            .writeTimeout(10, TimeUnit.SECONDS)    // Reduced for limited connections
+            .retryOnConnectionFailure(true)        // Enable retry on connection failure
             .build()
     }
 
@@ -50,9 +55,10 @@ object NetworkModule {
             .Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(apiKeyInterceptor) // Add API key interceptor for authentication
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)  // Reduced for limited connections
+            .readTimeout(15, TimeUnit.SECONDS)     // Reduced for limited connections
+            .writeTimeout(10, TimeUnit.SECONDS)    // Reduced for limited connections
+            .retryOnConnectionFailure(true)        // Enable retry on connection failure
             .build()
     }
 

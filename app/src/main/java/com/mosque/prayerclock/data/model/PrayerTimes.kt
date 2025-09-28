@@ -7,7 +7,9 @@ import com.google.gson.annotations.SerializedName
 @Entity(tableName = "prayer_times")
 data class PrayerTimes(
     @PrimaryKey
+    val id: String, // Composite ID: "2025-09-27_AL_ADHAN_API:Colombo"
     val date: String,
+    val providerKey: String? = null, // "AL_ADHAN_API:Colombo", "MOSQUE_CLOCK_API:1", null for manual
     @SerializedName("fajr_azan")
     val fajrAzan: String,
     @SerializedName("fajr_iqamah")
