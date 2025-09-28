@@ -1,6 +1,7 @@
 package com.mosque.prayerclock.data.repository
 
 import android.util.Log
+import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.data.model.CityCoordinatesMap
 import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.model.WeatherProvider
@@ -8,9 +9,20 @@ import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.WeatherApi
 import com.mosque.prayerclock.data.network.toWeatherInfo
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,16 +33,16 @@ class WeatherRepository
         private val weatherApi: WeatherApi, // Keep for backward compatibility
         private val mosqueClockApi: MosqueClockApi, // New MosqueClock API
     ) {
-    // Weather refresh job management - survives ViewModel recreation since Repository is Singleton
-    private val weatherRefreshJobs = mutableMapOf<Triple<String, String, WeatherProvider>, Job>()
-    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    // TODO: Add your WeatherAPI.com API key to local.properties file as:
-    // weather_api_key=your_actual_api_key_here
-    // You can get a free API key from: https://www.weatherapi.com/
-    private val apiKey = com.mosque.prayerclock.BuildConfig.WEATHER_API_KEY
+        // Weather refresh job management - survives ViewModel recreation since Repository is Singleton
+        private val weatherRefreshJobs = mutableMapOf<Triple<String, String, WeatherProvider>, Job>()
+        private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    fun getCurrentWeather(
+        // TODO: Add your WeatherAPI.com API key to local.properties file as:
+        // weather_api_key=your_actual_api_key_here
+        // You can get a free API key from: https://www.weatherapi.com/
+        private val apiKey = BuildConfig.WEATHER_API_KEY
+
+        fun getCurrentWeather(
             city: String,
             country: String,
         ): Flow<NetworkResult<WeatherInfo>> =
@@ -43,9 +55,15 @@ class WeatherRepository
                     // Check if we have coordinates for this city
                     val coordinates = CityCoordinatesMap.getCoordinates(city)
                     if (coordinates != null) {
-                        Log.d("WeatherRepository", "Using coordinates for $city: ${coordinates.latitude}, ${coordinates.longitude}")
+                        Log.d(
+                            "WeatherRepository",
+                            "Using coordinates for $city: ${coordinates.latitude}, ${coordinates.longitude}",
+                        )
                         // Use coordinates-based weather API call for better accuracy
-                        getCurrentWeatherByCoordinatesInternal(coordinates.latitude, coordinates.longitude).collect { result ->
+                        getCurrentWeatherByCoordinatesInternal(
+                            coordinates.latitude,
+                            coordinates.longitude,
+                        ).collect { result ->
                             emit(result)
                         }
                         return@flow
@@ -80,27 +98,39 @@ class WeatherRepository
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in getCurrentWeather: ${e.message}", e)
                     when {
-                        e.message?.contains("CertificateException") == true || 
-                        e.message?.contains("Trust anchor") == true -> {
-                            Log.w("WeatherRepository", "SSL Certificate error detected - falling back to mock data for limited connection")
+                        e.message?.contains("CertificateException") == true ||
+                            e.message?.contains("Trust anchor") == true -> {
+                            Log.w(
+                                "WeatherRepository",
+                                "SSL Certificate error detected - falling back to mock data for limited connection",
+                            )
                             val mockWeatherInfo = createMockWeatherData(city)
                             emit(NetworkResult.Success(mockWeatherInfo))
                             return@flow
                         }
                         e.message?.contains("UnknownHostException") == true -> {
-                            Log.w("WeatherRepository", "DNS resolution failed - falling back to mock data for limited connection")
+                            Log.w(
+                                "WeatherRepository",
+                                "DNS resolution failed - falling back to mock data for limited connection",
+                            )
                             val mockWeatherInfo = createMockWeatherData(city)
                             emit(NetworkResult.Success(mockWeatherInfo))
                             return@flow
                         }
                         e.message?.contains("SocketTimeoutException") == true -> {
-                            Log.w("WeatherRepository", "Connection timeout - falling back to mock data for limited connection")
+                            Log.w(
+                                "WeatherRepository",
+                                "Connection timeout - falling back to mock data for limited connection",
+                            )
                             val mockWeatherInfo = createMockWeatherData(city)
                             emit(NetworkResult.Success(mockWeatherInfo))
                             return@flow
                         }
                         e.message?.contains("ConnectException") == true -> {
-                            Log.w("WeatherRepository", "Connection failed - falling back to mock data for limited connection")
+                            Log.w(
+                                "WeatherRepository",
+                                "Connection failed - falling back to mock data for limited connection",
+                            )
                             val mockWeatherInfo = createMockWeatherData(city)
                             emit(NetworkResult.Success(mockWeatherInfo))
                             return@flow
@@ -172,21 +202,25 @@ class WeatherRepository
                         )
                         emit(NetworkResult.Success(weatherInfo))
                     } else {
-                        Log.e("WeatherRepository", "API call failed with code: ${response.code()}, message: ${response.message()}")
+                        Log.e(
+                            "WeatherRepository",
+                            "API call failed with code: ${response.code()}, message: ${response.message()}",
+                        )
                         emit(NetworkResult.Error("Failed to fetch weather data", response.code()))
                     }
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in getCurrentWeatherByCity: ${e.message}", e)
-                    val errorMessage = when {
-                        e.message?.contains("CertificateException") == true || 
-                        e.message?.contains("Trust anchor") == true -> 
-                            "SSL Certificate error with MosqueClock API. Please switch to OpenWeather provider in settings."
-                        e.message?.contains("UnknownHostException") == true -> 
-                            "Cannot connect to MosqueClock API. Please check your network or switch to OpenWeather provider."
-                        e.message?.contains("ConnectException") == true -> 
-                            "MosqueClock API server is not running. Please switch to OpenWeather provider."
-                        else -> "Failed to fetch weather data from MosqueClock API: ${e.message}"
-                    }
+                    val errorMessage =
+                        when {
+                            e.message?.contains("CertificateException") == true ||
+                                e.message?.contains("Trust anchor") == true ->
+                                "SSL Certificate error with MosqueClock API. Please switch to OpenWeather provider in settings."
+                            e.message?.contains("UnknownHostException") == true ->
+                                "Cannot connect to MosqueClock API. Please check your network or switch to OpenWeather provider."
+                            e.message?.contains("ConnectException") == true ->
+                                "MosqueClock API server is not running. Please switch to OpenWeather provider."
+                            else -> "Failed to fetch weather data from MosqueClock API: ${e.message}"
+                        }
                     emit(NetworkResult.Error(errorMessage))
                 }
             }
@@ -230,7 +264,7 @@ class WeatherRepository
                         emit(NetworkResult.Success(mockWeatherInfo))
                         return@flow
                     }
-                    
+
                     Log.d("WeatherRepository", "API Key available: ${apiKey.take(8)}... (${apiKey.length} chars)")
 
                     // Make API call using coordinates
@@ -252,115 +286,129 @@ class WeatherRepository
                     }
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in coordinates weather fetch: ${e.message}", e)
-                    val errorMessage = when {
-                        e.message?.contains("CertificateException") == true || 
-                        e.message?.contains("Trust anchor") == true -> {
-                            Log.w("WeatherRepository", "SSL Certificate error detected - falling back to mock data for limited connection")
-                            val mockWeatherInfo = createMockWeatherData("location")
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
+                    val errorMessage =
+                        when {
+                            e.message?.contains("CertificateException") == true ||
+                                e.message?.contains("Trust anchor") == true -> {
+                                Log.w(
+                                    "WeatherRepository",
+                                    "SSL Certificate error detected - falling back to mock data for limited connection",
+                                )
+                                val mockWeatherInfo = createMockWeatherData("location")
+                                emit(NetworkResult.Success(mockWeatherInfo))
+                                return@flow
+                            }
+                            e.message?.contains("UnknownHostException") == true -> {
+                                Log.w(
+                                    "WeatherRepository",
+                                    "DNS resolution failed - falling back to mock data for limited connection",
+                                )
+                                val mockWeatherInfo = createMockWeatherData("location")
+                                emit(NetworkResult.Success(mockWeatherInfo))
+                                return@flow
+                            }
+                            e.message?.contains("SocketTimeoutException") == true -> {
+                                Log.w(
+                                    "WeatherRepository",
+                                    "Connection timeout - falling back to mock data for limited connection",
+                                )
+                                val mockWeatherInfo = createMockWeatherData("location")
+                                emit(NetworkResult.Success(mockWeatherInfo))
+                                return@flow
+                            }
+                            e.message?.contains("ConnectException") == true -> {
+                                Log.w(
+                                    "WeatherRepository",
+                                    "Connection failed - falling back to mock data for limited connection",
+                                )
+                                val mockWeatherInfo = createMockWeatherData("location")
+                                emit(NetworkResult.Success(mockWeatherInfo))
+                                return@flow
+                            }
+                            else -> "Failed to fetch weather data: ${e.message}"
                         }
-                        e.message?.contains("UnknownHostException") == true -> {
-                            Log.w("WeatherRepository", "DNS resolution failed - falling back to mock data for limited connection")
-                            val mockWeatherInfo = createMockWeatherData("location")
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        e.message?.contains("SocketTimeoutException") == true -> {
-                            Log.w("WeatherRepository", "Connection timeout - falling back to mock data for limited connection")
-                            val mockWeatherInfo = createMockWeatherData("location")
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        e.message?.contains("ConnectException") == true -> {
-                            Log.w("WeatherRepository", "Connection failed - falling back to mock data for limited connection")
-                            val mockWeatherInfo = createMockWeatherData("location")
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        else -> "Failed to fetch weather data: ${e.message}"
-                    }
                     emit(NetworkResult.Error(errorMessage))
                 }
             }
 
-    // Weather refresh job management functions
-    fun startHourlyWeatherRefresh(
-        city: String,
-        country: String,
-        provider: WeatherProvider,
-        onWeatherUpdate: suspend (NetworkResult<WeatherInfo>) -> Unit
-    ) {
-        val params = Triple(city, country, provider)
-        
-        // Check if job already exists and is active
-        val existingJob = weatherRefreshJobs[params]
-        if (existingJob?.isActive == true) {
-            Log.d("WeatherRepository", "Weather refresh job already running for params $params - skipping")
-            return
-        }
-        
-        // Stop any existing jobs with different parameters
-        weatherRefreshJobs.entries.removeAll { (existingParams, job) ->
-            if (existingParams != params && job.isActive) {
-                job.cancel()
-                true
-            } else {
-                false
+        // Weather refresh job management functions
+        fun startHourlyWeatherRefresh(
+            city: String,
+            country: String,
+            provider: WeatherProvider,
+            onWeatherUpdate: suspend (NetworkResult<WeatherInfo>) -> Unit,
+        ) {
+            val params = Triple(city, country, provider)
+
+            // Check if job already exists and is active
+            val existingJob = weatherRefreshJobs[params]
+            if (existingJob?.isActive == true) {
+                Log.d("WeatherRepository", "Weather refresh job already running for params $params - skipping")
+                return
             }
-        }
-        
-        Log.d("WeatherRepository", "Starting hourly weather refresh for $city with $provider")
-        
-        val job = repositoryScope.launch {
-            try {
-                while (isActive) {
-                    // Fetch weather data based on provider
-                    when (provider) {
-                        WeatherProvider.OPEN_WEATHER -> {
-                            getCurrentWeather(city, country).collect { result ->
-                                onWeatherUpdate(result)
-                            }
-                        }
-                        WeatherProvider.MOSQUE_CLOCK -> {
-                            getCurrentWeatherByCity(city).collect { result ->
-                                if (result is NetworkResult.Error) {
-                                    // Fallback to OpenWeather
-                                    getCurrentWeather(city, country).collect { fallbackResult ->
-                                        onWeatherUpdate(fallbackResult)
+
+            // Stop any existing jobs with different parameters
+            weatherRefreshJobs.entries.removeAll { (existingParams, job) ->
+                if (existingParams != params && job.isActive) {
+                    job.cancel()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            Log.d("WeatherRepository", "Starting hourly weather refresh for $city with $provider")
+
+            val job =
+                repositoryScope.launch {
+                    try {
+                        while (isActive) {
+                            // Fetch weather data based on provider
+                            when (provider) {
+                                WeatherProvider.OPEN_WEATHER -> {
+                                    getCurrentWeather(city, country).collect { result ->
+                                        onWeatherUpdate(result)
                                     }
-                                } else {
-                                    onWeatherUpdate(result)
+                                }
+                                WeatherProvider.MOSQUE_CLOCK -> {
+                                    getCurrentWeatherByCity(city).collect { result ->
+                                        if (result is NetworkResult.Error) {
+                                            // Fallback to OpenWeather
+                                            getCurrentWeather(city, country).collect { fallbackResult ->
+                                                onWeatherUpdate(fallbackResult)
+                                            }
+                                        } else {
+                                            onWeatherUpdate(result)
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-                    
-                    Log.d("WeatherRepository", "Weather refresh completed. Next refresh in 30 minutes...")
-                    delay(1800000) // 30 minutes
-                }
-            } catch (e: CancellationException) {
-                Log.d("WeatherRepository", "Weather refresh job ($params) was cancelled")
-                throw e
-            } catch (e: Exception) {
-                Log.e("WeatherRepository", "Error in weather refresh job ($params)", e)
-            } finally {
-                weatherRefreshJobs.remove(params)
-                Log.d("WeatherRepository", "Weather refresh job ($params) finished and removed")
-            }
-        }
-        
-        weatherRefreshJobs[params] = job
-    }
 
-    fun stopAllWeatherRefreshJobs() {
-        Log.d("WeatherRepository", "Stopping all weather refresh jobs. Count: ${weatherRefreshJobs.size}")
-        weatherRefreshJobs.values.forEach { job ->
-            if (job.isActive) {
-                job.cancel()
-            }
+                            Log.d("WeatherRepository", "Weather refresh completed. Next refresh in 30 minutes...")
+                            delay(1800000) // 30 minutes
+                        }
+                    } catch (e: CancellationException) {
+                        Log.d("WeatherRepository", "Weather refresh job ($params) was cancelled")
+                        throw e
+                    } catch (e: Exception) {
+                        Log.e("WeatherRepository", "Error in weather refresh job ($params)", e)
+                    } finally {
+                        weatherRefreshJobs.remove(params)
+                        Log.d("WeatherRepository", "Weather refresh job ($params) finished and removed")
+                    }
+                }
+
+            weatherRefreshJobs[params] = job
         }
-        weatherRefreshJobs.clear()
-        Log.d("WeatherRepository", "All weather refresh jobs stopped")
+
+        fun stopAllWeatherRefreshJobs() {
+            Log.d("WeatherRepository", "Stopping all weather refresh jobs. Count: ${weatherRefreshJobs.size}")
+            weatherRefreshJobs.values.forEach { job ->
+                if (job.isActive) {
+                    job.cancel()
+                }
+            }
+            weatherRefreshJobs.clear()
+            Log.d("WeatherRepository", "All weather refresh jobs stopped")
+        }
     }
-}

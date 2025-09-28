@@ -7,29 +7,29 @@ import androidx.room.RoomDatabase
 import com.mosque.prayerclock.data.model.PrayerTimes
 
 @Database(
-    entities = [PrayerTimes::class],
-    version = 2, // Incremented for schema change
+    entities = [PrayerTimes::class, HijriDateEntity::class],
+    version = 3, // Incremented for Hijri date caching
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun prayerTimesDao(): PrayerTimesDao
+    abstract fun hijriDateDao(): HijriDateDao
 
     companion object {
         @Volatile
-        private var INSTANCE: AppDatabase? = null
+        private var instance: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase =
-            INSTANCE ?: synchronized(this) {
-                val instance =
+            instance ?: synchronized(this) {
+                val inst =
                     Room
                         .databaseBuilder(
                             context.applicationContext,
                             AppDatabase::class.java,
                             "mosque_clock_database",
-                        )
-                        .build()
-                INSTANCE = instance
-                instance
+                        ).build()
+                instance = inst
+                inst
             }
     }
 }

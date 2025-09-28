@@ -1,6 +1,10 @@
 package com.mosque.prayerclock.data.database
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import com.mosque.prayerclock.data.model.PrayerTimes
 import kotlinx.coroutines.flow.Flow
 
@@ -8,10 +12,16 @@ import kotlinx.coroutines.flow.Flow
 interface PrayerTimesDao {
     // Provider-specific queries
     @Query("SELECT * FROM prayer_times WHERE date = :date AND providerKey = :providerKey")
-    suspend fun getPrayerTimesByDateAndProvider(date: String, providerKey: String): PrayerTimes?
+    suspend fun getPrayerTimesByDateAndProvider(
+        date: String,
+        providerKey: String,
+    ): PrayerTimes?
 
     @Query("SELECT * FROM prayer_times WHERE date = :date AND providerKey = :providerKey")
-    fun getPrayerTimesByDateAndProviderFlow(date: String, providerKey: String): Flow<PrayerTimes?>
+    fun getPrayerTimesByDateAndProviderFlow(
+        date: String,
+        providerKey: String,
+    ): Flow<PrayerTimes?>
 
     // Legacy method for backward compatibility (gets first match by date)
     @Query("SELECT * FROM prayer_times WHERE date = :date LIMIT 1")

@@ -1,19 +1,42 @@
 package com.mosque.prayerclock
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.EaseInOutCubic
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,8 +68,18 @@ class SplashActivity : ComponentActivity() {
 
         // Configure window flags to wake up display immediately
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+        
+        // Use modern approach for showing over lock screen
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            // Fallback for older versions
+            @Suppress("DEPRECATION")
+            window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+            @Suppress("DEPRECATION")
+            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+        }
 
         setContent {
             MosqueClockTheme {
@@ -126,17 +159,11 @@ fun SplashScreen(
         // Start immediately without delay for faster perceived startup
         isVisible = true
 
-        // Simply wait for settings to be available (repository handles all caching)
-        Log.d("SplashActivity", "Loading initial data...")
-        viewModel.settings.first() // Wait for settings to be loaded
-        Log.d("SplashActivity", "Settings loaded - starting data fetch")
-
-        // Show animated content while loading data
-        delay(300) // Brief delay for smooth transition
+        // Show animated content immediately for better UX
+        delay(100) // Minimal delay for smooth transition
         showAnimatedContent = true
 
-        // Start loading initial data
-        Log.d("SplashActivity", "Starting initial data load in splash screen")
+        // Load data in background without blocking UI
         viewModel.loadPrayerTimes()
     }
 
@@ -145,20 +172,17 @@ fun SplashScreen(
         if (showAnimatedContent) {
             when (uiState) {
                 is MainUiState.Success -> {
-                    Log.d("SplashActivity", "Initial data loaded successfully - navigating to main screen")
                     // Brief delay to show success state
                     delay(500)
                     onSplashFinished()
                 }
                 is MainUiState.Error -> {
-                    Log.d("SplashActivity", "Initial data load failed - navigating to main screen anyway")
                     // Brief delay to show error state
                     delay(1000)
                     onSplashFinished()
                 }
                 is MainUiState.Loading -> {
                     // Keep waiting for loading to complete
-                    Log.d("SplashActivity", "Still loading initial data...")
                 }
             }
         }
@@ -207,19 +231,21 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Loading text based on current state
-            val loadingText = when (uiState) {
-                is MainUiState.Loading -> "Loading prayer times..."
-                is MainUiState.Success -> "Ready!"
-                is MainUiState.Error -> "Loading failed, continuing..."
-            }
-            
+            val loadingText =
+                when (uiState) {
+                    is MainUiState.Loading -> "Loading prayer times..."
+                    is MainUiState.Success -> "Ready!"
+                    is MainUiState.Error -> "Loading failed, continuing..."
+                }
+
             androidx.compose.material3.Text(
                 text = loadingText,
-                color = when (uiState) {
-                    is MainUiState.Success -> Color(0xFF4CAF50) // Green for success
-                    is MainUiState.Error -> Color(0xFFFF9800) // Orange for error
-                    else -> Color.White.copy(alpha = 0.8f) // White for loading
-                },
+                color =
+                    when (uiState) {
+                        is MainUiState.Success -> Color(0xFF4CAF50) // Green for success
+                        is MainUiState.Error -> Color(0xFFFF9800) // Orange for error
+                        else -> Color.White.copy(alpha = 0.8f) // White for loading
+                    },
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.alpha(logoAlpha),
             )

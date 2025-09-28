@@ -35,10 +35,10 @@ object NetworkModule {
         return OkHttpClient
             .Builder()
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(10, TimeUnit.SECONDS)  // Reduced for limited connections
-            .readTimeout(15, TimeUnit.SECONDS)     // Reduced for limited connections
-            .writeTimeout(10, TimeUnit.SECONDS)    // Reduced for limited connections
-            .retryOnConnectionFailure(true)        // Enable retry on connection failure
+            .connectTimeout(10, TimeUnit.SECONDS) // Reduced for limited connections
+            .readTimeout(15, TimeUnit.SECONDS) // Reduced for limited connections
+            .writeTimeout(10, TimeUnit.SECONDS) // Reduced for limited connections
+            .retryOnConnectionFailure(true) // Enable retry on connection failure
             .build()
     }
 
@@ -55,10 +55,10 @@ object NetworkModule {
             .Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(apiKeyInterceptor) // Add API key interceptor for authentication
-            .connectTimeout(10, TimeUnit.SECONDS)  // Reduced for limited connections
-            .readTimeout(15, TimeUnit.SECONDS)     // Reduced for limited connections
-            .writeTimeout(10, TimeUnit.SECONDS)    // Reduced for limited connections
-            .retryOnConnectionFailure(true)        // Enable retry on connection failure
+            .connectTimeout(10, TimeUnit.SECONDS) // Reduced for limited connections
+            .readTimeout(15, TimeUnit.SECONDS) // Reduced for limited connections
+            .writeTimeout(10, TimeUnit.SECONDS) // Reduced for limited connections
+            .retryOnConnectionFailure(true) // Enable retry on connection failure
             .build()
     }
 

@@ -1,15 +1,45 @@
 package com.mosque.prayerclock.ui.components
 
 import android.util.Log
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,11 +98,16 @@ fun WeatherCard(
             ) {
                 // Left: weather icon + temperature + description
                 Row(
-                    verticalAlignment = Alignment.CenterVertically, 
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // Log weather info only once when it changes, not on every recomposition
-                    LaunchedEffect(weatherInfo.icon, weatherInfo.temperature, weatherInfo.uvIndex, weatherInfo.windSpeed) {
+                    LaunchedEffect(
+                        weatherInfo.icon,
+                        weatherInfo.temperature,
+                        weatherInfo.uvIndex,
+                        weatherInfo.windSpeed,
+                    ) {
                         Log.d(
                             "WeatherCard",
                             "Weather info updated - Icon: '${weatherInfo.icon}', Temperature: ${weatherInfo.temperature} -> ${weatherInfo.temperature.toInt()}°C, UV: ${weatherInfo.uvIndex} -> UV ${weatherInfo.uvIndex?.toInt()}, Wind: ${weatherInfo.windSpeed} -> ${weatherInfo.windSpeed?.toInt()}km/h, FeelsLike: ${weatherInfo.feelsLike} -> ${weatherInfo.feelsLike.toInt()}°",
@@ -80,22 +115,26 @@ fun WeatherCard(
                     }
 
                     // Direct weather icon from API
-                    val iconUrl = if (weatherInfo.icon.startsWith("http")) {
-                        weatherInfo.icon
-                    } else {
-                        "https:${weatherInfo.icon}"
-                    }
+                    val iconUrl =
+                        if (weatherInfo.icon.startsWith("http")) {
+                            weatherInfo.icon
+                        } else {
+                            "https:${weatherInfo.icon}"
+                        }
 
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(iconUrl)
-                            .crossfade(true)
-                            .build(),
+                        model =
+                            ImageRequest
+                                .Builder(LocalContext.current)
+                                .data(iconUrl)
+                                .crossfade(true)
+                                .build(),
                         contentDescription = weatherInfo.description,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Fit
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit,
                     )
 
                     // Just show temperature - icon is self-explanatory
@@ -113,45 +152,45 @@ fun WeatherCard(
                 // Right: Weather details with icons in a compact grid
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     // Row 1: Feels like and Humidity
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         WeatherDetailRow(
                             icon = Icons.Filled.Thermostat,
                             value = "${weatherInfo.feelsLike}°",
-                            fontSize = detailsFontSize
+                            fontSize = detailsFontSize,
                         )
                         WeatherDetailRow(
                             icon = Icons.Filled.WaterDrop,
                             value = "${weatherInfo.humidity}%",
-                            fontSize = detailsFontSize
+                            fontSize = detailsFontSize,
                         )
                     }
-                    
+
                     // Row 2: Wind speed and UV Index
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         // Wind speed with air icon (if available)
                         weatherInfo.windSpeed?.let { wind ->
                             WeatherDetailRow(
                                 icon = Icons.Filled.Air,
                                 value = "${wind}km/h",
-                                fontSize = detailsFontSize
+                                fontSize = detailsFontSize,
                             )
                         }
-                        
+
                         // UV Index with sun icon (if available)
                         weatherInfo.uvIndex?.let { uv ->
                             WeatherDetailRow(
                                 icon = Icons.Filled.WbSunny,
-                                value = "UV ${uv}",
-                                fontSize = detailsFontSize
+                                value = "UV $uv",
+                                fontSize = detailsFontSize,
                             )
                         }
                     }
@@ -166,18 +205,18 @@ private fun WeatherDetailRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     value: String,
     fontSize: androidx.compose.ui.unit.TextUnit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
         Text(
             text = value,

@@ -10,16 +10,28 @@ import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.*
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class PrayerNotificationService : Service() {
     companion object {
         private const val TAG = "PrayerNotificationService"
-        private const val CHECK_INTERVAL_MS = 1_000L // Check every 1 second for countdown beeps
+        private const val CHECK_INTERVAL_MS = 10_000L // Check every 10 seconds (much more efficient)
+        private const val COUNTDOWN_CHECK_INTERVAL_MS = 1_000L // Only use 1-second interval during countdown
+        private const val COUNTDOWN_START_MINUTES = 1 // Start countdown 1 minute before prayer
     }
 
     @Inject
@@ -30,9 +42,20 @@ class PrayerNotificationService : Service() {
 
     private lateinit var soundManager: SoundManager
 
-    private val serviceScope = CoroutineScope(SupervisorJob())
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var monitoringJob: Job? = null
     private var lastCheckedSecond = -1
+    
+    // Caching to reduce expensive operations
+    private var cachedSettings: AppSettings? = null
+    private var cachedPrayerTimes: PrayerTimes? = null
+    private var lastSettingsUpdate = 0L
+    private var lastPrayerTimesUpdate = 0L
+    private val cacheValidityMs = 60_000L // Cache for 1 minute
+    
+    // Smart polling state
+    private var isInCountdownMode = false
+    private var countdownStartTime = 0L
 
     override fun onStartCommand(
         intent: Intent?,
@@ -62,6 +85,38 @@ class PrayerNotificationService : Service() {
     override fun onBind(intent: Intent): IBinder? = null
 
     /**
+     * Get settings with caching to reduce database queries
+     */
+    private suspend fun getCachedSettings(): AppSettings {
+        val currentTime = System.currentTimeMillis()
+        
+        if (cachedSettings == null || currentTime - lastSettingsUpdate > cacheValidityMs) {
+            cachedSettings = settingsRepository.getSettings().first()
+            lastSettingsUpdate = currentTime
+        }
+        
+        return cachedSettings!!
+    }
+
+    /**
+     * Get prayer times with caching to reduce API calls
+     */
+    private suspend fun getCachedPrayerTimes(): PrayerTimes? {
+        val currentTime = System.currentTimeMillis()
+        
+        if (cachedPrayerTimes == null || currentTime - lastPrayerTimesUpdate > cacheValidityMs) {
+            prayerTimesRepository.getTodayPrayerTimesFromSettings().collect { result ->
+                if (result is com.mosque.prayerclock.data.network.NetworkResult.Success) {
+                    cachedPrayerTimes = result.data
+                    lastPrayerTimesUpdate = currentTime
+                }
+            }
+        }
+        
+        return cachedPrayerTimes
+    }
+
+    /**
      * Start monitoring for prayer times
      */
     private fun startPrayerMonitoring() {
@@ -71,33 +126,90 @@ class PrayerNotificationService : Service() {
             serviceScope.launch {
                 Log.d(TAG, "Starting prayer monitoring coroutine")
 
-                // Start the monitoring loop that will check settings each iteration
+                // Start the monitoring loop with smart polling
                 while (isActive) {
                     try {
-                        // Get current settings
-                        val settings = settingsRepository.getSettings().first()
-                        Log.d(TAG, "Settings check: soundEnabled=${settings.soundEnabled}")
-
+                        // Get cached settings (reduces database queries)
+                        val settings = getCachedSettings()
+                        
                         if (settings.soundEnabled) {
                             val now = Clock.System.now()
                             val currentDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
-                            val currentSecond = currentDateTime.hour * 3600 + currentDateTime.minute * 60 + currentDateTime.second
-
-                            // Check every second for countdown beeps
-                            if (currentSecond != lastCheckedSecond) {
-                                lastCheckedSecond = currentSecond
-
-                                checkPrayerTime(currentDateTime, settings)
+                            
+                            // Get cached prayer times (reduces API calls)
+                            val prayerTimes = getCachedPrayerTimes()
+                            
+                            if (prayerTimes != null) {
+                                // Check if we're approaching prayer time (within 1 minute)
+                                val isApproachingPrayer = isApproachingAnyPrayerTime(currentDateTime, prayerTimes)
+                                
+                                if (isApproachingPrayer && !isInCountdownMode) {
+                                    // Switch to high-frequency polling for countdown
+                                    isInCountdownMode = true
+                                    countdownStartTime = System.currentTimeMillis()
+                                } else if (!isApproachingPrayer && isInCountdownMode) {
+                                    // Switch back to low-frequency polling
+                                    isInCountdownMode = false
+                                }
+                                
+                                // Only do expensive checks if needed
+                                if (isInCountdownMode) {
+                                    val currentSecond =
+                                        currentDateTime.hour * 3600 + currentDateTime.minute * 60 + currentDateTime.second
+                                    
+                                    if (currentSecond != lastCheckedSecond) {
+                                        lastCheckedSecond = currentSecond
+                                        checkPrayerTime(currentDateTime, settings, prayerTimes)
+                                    }
+                                }
                             }
+                        } else {
+                            // If sound is disabled, use longer intervals
+                            isInCountdownMode = false
                         }
 
-                        delay(CHECK_INTERVAL_MS)
+                        // Use smart delay based on current mode
+                        val delayMs = if (isInCountdownMode) COUNTDOWN_CHECK_INTERVAL_MS else CHECK_INTERVAL_MS
+                        delay(delayMs)
+                        
                     } catch (e: Exception) {
                         Log.e(TAG, "Error in monitoring loop", e)
                         delay(CHECK_INTERVAL_MS)
                     }
                 }
             }
+    }
+
+    /**
+     * Check if current time is approaching any prayer time (within COUNTDOWN_START_MINUTES)
+     */
+    private fun isApproachingAnyPrayerTime(currentDateTime: LocalDateTime, prayerTimes: PrayerTimes): Boolean {
+        val prayerTimeStrings = listOf(
+            prayerTimes.fajrAzan,
+            prayerTimes.dhuhrAzan,
+            prayerTimes.asrAzan,
+            prayerTimes.maghribAzan,
+            prayerTimes.ishaAzan
+        )
+        
+        return prayerTimeStrings.any { prayerTimeString ->
+            try {
+                val parts = prayerTimeString.split(":")
+                if (parts.size >= 2) {
+                    val prayerHour = parts[0].toInt()
+                    val prayerMinute = parts[1].toInt()
+                    
+                    val currentMinutes = currentDateTime.hour * 60 + currentDateTime.minute
+                    val prayerMinutes = prayerHour * 60 + prayerMinute
+                    
+                    // Check if we're within COUNTDOWN_START_MINUTES of prayer time
+                    val timeDiff = prayerMinutes - currentMinutes
+                    timeDiff in 0..COUNTDOWN_START_MINUTES
+                } else false
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 
     /**
@@ -112,43 +224,95 @@ class PrayerNotificationService : Service() {
      * Check if current time matches any prayer time and trigger sound
      */
     private suspend fun checkPrayerTime(
-        currentDateTime: kotlinx.datetime.LocalDateTime,
+        currentDateTime: LocalDateTime,
         settings: AppSettings,
+        prayerTimes: PrayerTimes,
     ) {
         if (!settings.soundEnabled) return
 
         try {
-            // Get prayer times (repository now handles manual mode properly)
-            prayerTimesRepository.getTodayPrayerTimesFromSettings().collect { result ->
-                when (result) {
-                    is com.mosque.prayerclock.data.network.NetworkResult.Success -> {
-                        val prayerTimes = result.data
-
-                        // Check all azan times for 5-second countdown ticking
-                        checkAndPlayCountdownTicking(PrayerType.FAJR, prayerTimes.fajrAzan, currentDateTime, settings, "Azan")
-                        checkAndPlayCountdownTicking(PrayerType.DHUHR, prayerTimes.dhuhrAzan, currentDateTime, settings, "Azan")
-                        checkAndPlayCountdownTicking(PrayerType.ASR, prayerTimes.asrAzan, currentDateTime, settings, "Azan")
-                        checkAndPlayCountdownTicking(PrayerType.MAGHRIB, prayerTimes.maghribAzan, currentDateTime, settings, "Azan")
-                        checkAndPlayCountdownTicking(PrayerType.ISHA, prayerTimes.ishaAzan, currentDateTime, settings, "Azan")
+            // Check all azan times for 5-second countdown ticking
+                        checkAndPlayCountdownTicking(
+                            PrayerType.FAJR,
+                            prayerTimes.fajrAzan,
+                            currentDateTime,
+                            settings,
+                            "Azan",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.DHUHR,
+                            prayerTimes.dhuhrAzan,
+                            currentDateTime,
+                            settings,
+                            "Azan",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.ASR,
+                            prayerTimes.asrAzan,
+                            currentDateTime,
+                            settings,
+                            "Azan",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.MAGHRIB,
+                            prayerTimes.maghribAzan,
+                            currentDateTime,
+                            settings,
+                            "Azan",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.ISHA,
+                            prayerTimes.ishaAzan,
+                            currentDateTime,
+                            settings,
+                            "Azan",
+                        )
 
                         // Check sunrise time for 5-second countdown ticking
-                        checkAndPlayCountdownTicking(PrayerType.SUNRISE, prayerTimes.sunrise, currentDateTime, settings, "Sunrise")
+                        checkAndPlayCountdownTicking(
+                            PrayerType.SUNRISE,
+                            prayerTimes.sunrise,
+                            currentDateTime,
+                            settings,
+                            "Sunrise",
+                        )
 
                         // Check all iqamah times for 5-second countdown ticking
-                        checkAndPlayCountdownTicking(PrayerType.FAJR, prayerTimes.fajrIqamah, currentDateTime, settings, "Iqamah")
-                        checkAndPlayCountdownTicking(PrayerType.DHUHR, prayerTimes.dhuhrIqamah, currentDateTime, settings, "Iqamah")
-                        checkAndPlayCountdownTicking(PrayerType.ASR, prayerTimes.asrIqamah, currentDateTime, settings, "Iqamah")
-                        checkAndPlayCountdownTicking(PrayerType.MAGHRIB, prayerTimes.maghribIqamah, currentDateTime, settings, "Iqamah")
-                        checkAndPlayCountdownTicking(PrayerType.ISHA, prayerTimes.ishaIqamah, currentDateTime, settings, "Iqamah")
-                    }
-                    is com.mosque.prayerclock.data.network.NetworkResult.Error -> {
-                        Log.e(TAG, "Error loading prayer times: ${result.message}")
-                    }
-                    is com.mosque.prayerclock.data.network.NetworkResult.Loading -> {
-                        // Don't log loading every second
-                    }
-                }
-            }
+                        checkAndPlayCountdownTicking(
+                            PrayerType.FAJR,
+                            prayerTimes.fajrIqamah,
+                            currentDateTime,
+                            settings,
+                            "Iqamah",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.DHUHR,
+                            prayerTimes.dhuhrIqamah,
+                            currentDateTime,
+                            settings,
+                            "Iqamah",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.ASR,
+                            prayerTimes.asrIqamah,
+                            currentDateTime,
+                            settings,
+                            "Iqamah",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.MAGHRIB,
+                            prayerTimes.maghribIqamah,
+                            currentDateTime,
+                            settings,
+                            "Iqamah",
+                        )
+                        checkAndPlayCountdownTicking(
+                            PrayerType.ISHA,
+                            prayerTimes.ishaIqamah,
+                            currentDateTime,
+                            settings,
+                            "Iqamah",
+                        )
         } catch (e: Exception) {
             Log.e(TAG, "Error checking prayer times", e)
         }
@@ -160,7 +324,7 @@ class PrayerNotificationService : Service() {
     private fun checkAndPlayCountdownTicking(
         prayerType: PrayerType,
         prayerTime: String,
-        currentDateTime: kotlinx.datetime.LocalDateTime,
+        currentDateTime: LocalDateTime,
         settings: AppSettings,
         eventType: String,
     ) {
@@ -193,13 +357,19 @@ class PrayerNotificationService : Service() {
 
             // Debug: Log timing for prayers that are close
             if (actualSecondsUntilPrayer <= 10 && actualSecondsUntilPrayer > 0) {
-                Log.d(TAG, "Close to $prayerType $eventType: ${actualSecondsUntilPrayer}s remaining (time: $prayerTime)")
+                Log.d(
+                    TAG,
+                    "Close to $prayerType $eventType: ${actualSecondsUntilPrayer}s remaining (time: $prayerTime)",
+                )
             }
 
             // Start 5-second countdown ticking when exactly 6 seconds remain
             // This ensures the 5-second audio finishes exactly when prayer time arrives
             if (actualSecondsUntilPrayer == 5) {
-                Log.d(TAG, "TRIGGERING 5-second countdown for $prayerType $eventType at $prayerTime (5s remaining for perfect sync)")
+                Log.d(
+                    TAG,
+                    "TRIGGERING 5-second countdown for $prayerType $eventType at $prayerTime (5s remaining for perfect sync)",
+                )
                 soundManager.playCountdownTicking(5, prayerType, settings)
             }
         } catch (e: Exception) {

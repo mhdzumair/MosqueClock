@@ -1,8 +1,21 @@
 package com.mosque.prayerclock.data.repository
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
-import com.mosque.prayerclock.data.model.*
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.mosque.prayerclock.data.model.AppSettings
+import com.mosque.prayerclock.data.model.AppTheme
+import com.mosque.prayerclock.data.model.ClockType
+import com.mosque.prayerclock.data.model.FontSize
+import com.mosque.prayerclock.data.model.HijriProvider
+import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.WeatherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -105,15 +118,15 @@ class SettingsRepository
                         preferences[PreferencesKeys.REFRESH_INTERVAL]
                             ?: 24 * 60 * 60 * 1000L,
                     showWeather = preferences[PreferencesKeys.SHOW_WEATHER] ?: false,
-                    weatherCity = preferences[PreferencesKeys.WEATHER_CITY] ?: "Colombo",
+                    weatherCity = preferences[PreferencesKeys.WEATHER_CITY] ?: "",
                     weatherCountry =
                         preferences[PreferencesKeys.WEATHER_COUNTRY]
                             ?: "Sri Lanka",
-                weatherProvider =
-                    WeatherProvider.values().find {
-                        it.name == preferences[PreferencesKeys.WEATHER_PROVIDER]
-                    }
-                        ?: WeatherProvider.OPEN_WEATHER,
+                    weatherProvider =
+                        WeatherProvider.values().find {
+                            it.name == preferences[PreferencesKeys.WEATHER_PROVIDER]
+                        }
+                            ?: WeatherProvider.OPEN_WEATHER,
                     hijriProvider =
                         HijriProvider.values().find {
                             it.name == preferences[PreferencesKeys.HIJRI_PROVIDER]

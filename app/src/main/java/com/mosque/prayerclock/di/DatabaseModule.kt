@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.mosque.prayerclock.data.database.AppDatabase
+import com.mosque.prayerclock.data.database.HijriDateDao
 import com.mosque.prayerclock.data.database.PrayerTimesDao
 import dagger.Module
 import dagger.Provides
@@ -33,6 +34,9 @@ object DatabaseModule {
 
     @Provides
     fun providePrayerTimesDao(database: AppDatabase): PrayerTimesDao = database.prayerTimesDao()
+
+    @Provides
+    fun provideHijriDateDao(database: AppDatabase): HijriDateDao = database.hijriDateDao()
 
     @Provides
     @Singleton

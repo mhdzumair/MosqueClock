@@ -1,12 +1,23 @@
 package com.mosque.prayerclock.data.repository
 
+import android.util.Log
+import com.mosque.prayerclock.data.database.HijriDateDao
+import com.mosque.prayerclock.data.database.HijriDateEntity
 import com.mosque.prayerclock.data.model.AppSettings
+import com.mosque.prayerclock.data.model.HijriProvider
 import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.NetworkResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.days
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +28,7 @@ class HijriDateRepository
         private val settingsRepository: SettingsRepository,
         private val mosqueClockApi: MosqueClockApi,
         private val prayerTimesApi: com.mosque.prayerclock.data.network.PrayerTimesApi,
+        private val hijriDateDao: HijriDateDao,
     ) {
         data class HijriDate(
             val day: Int,
@@ -26,61 +38,188 @@ class HijriDateRepository
 
         suspend fun getCurrentHijriDate(): HijriDate {
             val settings = settingsRepository.getSettings().first()
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val todayString = today.toString()
 
             return when (settings.hijriProvider) {
-                com.mosque.prayerclock.data.model.HijriProvider.MOSQUE_CLOCK_API -> {
-                    try {
-                        val response = mosqueClockApi.getTodayBothCalendars()
-                        if (response.isSuccessful && response.body()?.success == true) {
-                            val hijriInfo = response.body()?.data?.hijriDate
-                            if (hijriInfo != null) {
-                                return HijriDate(
-                                    day = hijriInfo.day,
-                                    month = hijriInfo.month,
-                                    year = hijriInfo.year,
-                                )
-                            }
-                        }
-                        // If API call fails, fall back to manual calculation
-                        calculateCurrentHijriDate(settings)
-                    } catch (e: Exception) {
-                        // If there's an error, fall back to manual calculation
-                        calculateCurrentHijriDate(settings)
-                    }
+                HijriProvider.MOSQUE_CLOCK_API -> {
+                    getHijriDateWithCaching(
+                        provider = "MOSQUE_CLOCK_API",
+                        gregorianDate = todayString,
+                        settings = settings
+                    )
                 }
-                com.mosque.prayerclock.data.model.HijriProvider.AL_ADHAN_API -> {
-                    try {
-                        val response =
-                            prayerTimesApi.getPrayerTimesByCity(
-                                city = settings.selectedRegion,
-                                country = getCountryForRegion(settings.selectedRegion),
-                            )
-                        if (response.isSuccessful && response.body()?.code == 200) {
-                            val hijriData =
-                                response
-                                    .body()
-                                    ?.data
-                                    ?.date
-                                    ?.hijri
-                            if (hijriData != null) {
-                                return HijriDate(
-                                    day = hijriData.day.toInt(),
-                                    month = hijriData.month.number,
-                                    year = hijriData.year.toInt(),
-                                )
-                            }
-                        }
-                        // If API call fails, fall back to manual calculation
-                        calculateCurrentHijriDate(settings)
-                    } catch (e: Exception) {
-                        // If there's an error, fall back to manual calculation
-                        calculateCurrentHijriDate(settings)
-                    }
+                HijriProvider.AL_ADHAN_API -> {
+                    getHijriDateWithCaching(
+                        provider = "AL_ADHAN_API",
+                        gregorianDate = todayString,
+                        settings = settings,
+                        region = settings.selectedRegion
+                    )
                 }
-                com.mosque.prayerclock.data.model.HijriProvider.MANUAL -> {
+                HijriProvider.MANUAL -> {
                     calculateCurrentHijriDate(settings)
                 }
             }
+        }
+
+        /**
+         * Intelligent caching strategy for Hijri dates:
+         * 1. Check if we have cached data for today
+         * 2. If not, check if we can calculate from recent cached data
+         * 3. Only make API calls when necessary (month-end or no recent cache)
+         */
+        private suspend fun getHijriDateWithCaching(
+            provider: String,
+            gregorianDate: String,
+            settings: AppSettings,
+            region: String? = null
+        ): HijriDate {
+            val cacheId = generateCacheId(provider, gregorianDate, region)
+            
+            // Step 1: Check if we have exact cached data for today
+            val cachedToday = hijriDateDao.getHijriDateById(cacheId)
+            if (cachedToday != null) {
+                Log.d("HijriDateRepository", "📅 Using cached Hijri date for $gregorianDate")
+                return HijriDate(cachedToday.hijriDay, cachedToday.hijriMonth, cachedToday.hijriYear)
+            }
+
+            // Step 2: Check if we can calculate from recent cached data
+            val calculatedDate = tryCalculateFromCache(provider, gregorianDate, region)
+            if (calculatedDate != null) {
+                // Cache the calculated result
+                cacheHijriDate(provider, gregorianDate, calculatedDate, region, isCalculated = true)
+                return calculatedDate
+            }
+
+            // Step 3: Need to make API call
+            Log.d("HijriDateRepository", "🌐 Making API call for Hijri date: $gregorianDate")
+            return when (provider) {
+                "MOSQUE_CLOCK_API" -> fetchFromMosqueClockApi(gregorianDate, settings)
+                "AL_ADHAN_API" -> fetchFromAlAdhanApi(gregorianDate, settings, region!!)
+                else -> calculateCurrentHijriDate(settings)
+            }
+        }
+
+        /**
+         * Try to calculate Hijri date from cached data instead of making API call
+         * Only calculate if we have recent data and it's not near month-end
+         */
+        private suspend fun tryCalculateFromCache(
+            provider: String,
+            targetDate: String,
+            region: String?
+        ): HijriDate? {
+            val targetLocalDate = LocalDate.parse(targetDate)
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            
+            // Don't calculate if target date is in the future
+            if (targetLocalDate > today) return null
+
+            // Find the most recent cached date before target
+            val recentCache = hijriDateDao.getLatestHijriDateBefore(provider, targetDate, region)
+                ?: return null
+
+            val cachedDate = LocalDate.parse(recentCache.gregorianDate)
+            val daysDifference = targetLocalDate.toEpochDays() - cachedDate.toEpochDays()
+
+            // Only calculate if:
+            // 1. Difference is reasonable (< 7 days)
+            // 2. We're not near month-end (day < 28) to avoid month transition errors
+            if (daysDifference > 7 || recentCache.hijriDay >= 28) {
+                Log.d("HijriDateRepository", "⚠️ Cannot calculate: daysDiff=$daysDifference, hijriDay=${recentCache.hijriDay}")
+                return null
+            }
+
+            Log.d("HijriDateRepository", "🧮 Calculating Hijri date from cache: +$daysDifference days from ${recentCache.gregorianDate}")
+            
+            val baseHijriDate = HijriDate(recentCache.hijriDay, recentCache.hijriMonth, recentCache.hijriYear)
+            return addDaysToHijriDate(baseHijriDate, daysDifference.toInt())
+        }
+
+        private suspend fun fetchFromMosqueClockApi(gregorianDate: String, settings: AppSettings): HijriDate {
+            return try {
+                val response = mosqueClockApi.getTodayBothCalendars()
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val hijriInfo = response.body()?.data?.hijriDate
+                    if (hijriInfo != null) {
+                        val hijriDate = HijriDate(hijriInfo.day, hijriInfo.month, hijriInfo.year)
+                        // Cache the API result
+                        cacheHijriDate("MOSQUE_CLOCK_API", gregorianDate, hijriDate, null, isCalculated = false)
+                        return hijriDate
+                    }
+                }
+                // Fallback to manual calculation
+                calculateCurrentHijriDate(settings)
+            } catch (e: Exception) {
+                Log.e("HijriDateRepository", "MosqueClock API error: ${e.message}")
+                calculateCurrentHijriDate(settings)
+            }
+        }
+
+        private suspend fun fetchFromAlAdhanApi(gregorianDate: String, settings: AppSettings, region: String): HijriDate {
+            return try {
+                val response = prayerTimesApi.getPrayerTimesByCity(
+                    city = region,
+                    country = getCountryForRegion(region)
+                )
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    val hijriData = response.body()?.data?.date?.hijri
+                    if (hijriData != null) {
+                        val hijriDate = HijriDate(
+                            day = hijriData.day.toInt(),
+                            month = hijriData.month.number,
+                            year = hijriData.year.toInt()
+                        )
+                        // Cache the API result
+                        cacheHijriDate("AL_ADHAN_API", gregorianDate, hijriDate, region, isCalculated = false)
+                        return hijriDate
+                    }
+                }
+                // Fallback to manual calculation
+                calculateCurrentHijriDate(settings)
+            } catch (e: Exception) {
+                Log.e("HijriDateRepository", "Al-Adhan API error: ${e.message}")
+                calculateCurrentHijriDate(settings)
+            }
+        }
+
+        private suspend fun cacheHijriDate(
+            provider: String,
+            gregorianDate: String,
+            hijriDate: HijriDate,
+            region: String?,
+            isCalculated: Boolean
+        ) {
+            val entity = HijriDateEntity(
+                id = generateCacheId(provider, gregorianDate, region),
+                gregorianDate = gregorianDate,
+                hijriDay = hijriDate.day,
+                hijriMonth = hijriDate.month,
+                hijriYear = hijriDate.year,
+                provider = provider,
+                region = region,
+                isCalculated = isCalculated
+            )
+            hijriDateDao.insertHijriDate(entity)
+            Log.d("HijriDateRepository", "💾 Cached Hijri date: $gregorianDate -> ${hijriDate.day}/${hijriDate.month}/${hijriDate.year}")
+        }
+
+        private fun generateCacheId(provider: String, gregorianDate: String, region: String?): String {
+            return if (region != null) {
+                "${provider}_${region}_$gregorianDate"
+            } else {
+                "${provider}_$gregorianDate"
+            }
+        }
+
+        /**
+         * Clean up old cached data (older than 30 days)
+         */
+        suspend fun cleanOldHijriCache() {
+            val thirtyDaysAgo = (Clock.System.now() - 30.days).toEpochMilliseconds()
+            hijriDateDao.deleteOldHijriDates(thirtyDaysAgo)
+            Log.d("HijriDateRepository", "🧹 Cleaned old Hijri cache data")
         }
 
         private fun getCountryForRegion(region: String): String =
@@ -241,51 +380,4 @@ class HijriDateRepository
             return yearInCycle in listOf(2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29)
         }
 
-        suspend fun updateManualHijriDate(
-            day: Int,
-            month: Int,
-            year: Int,
-        ) {
-            val today =
-                Clock.System
-                    .now()
-                    .toLocalDateTime(TimeZone.currentSystemDefault())
-                    .date
-                    .toString()
-
-            settingsRepository.updateHijriDate(day, month, year, today)
-        }
-
-        fun getHijriMonthNames(isEnglish: Boolean): List<String> =
-            if (isEnglish) {
-                listOf(
-                    "Muharram",
-                    "Safar",
-                    "Rabi al-Awwal",
-                    "Rabi al-Thani",
-                    "Jumada al-Awwal",
-                    "Jumada al-Thani",
-                    "Rajab",
-                    "Shaban",
-                    "Ramadan",
-                    "Shawwal",
-                    "Dhul Qidah",
-                    "Dhul Hijjah",
-                )
-            } else {
-                listOf(
-                    "முஹர்ரம்",
-                    "ஸபர்",
-                    "ரபீ அவ்வல்",
-                    "ரபீ ஆகிர்",
-                    "ஜுமாதா அவ்வல்",
-                    "ஜுமாதா ஆகிர்",
-                    "ரஜப்",
-                    "ஷக்பான்",
-                    "ரமலான்",
-                    "ஷவ்வல்",
-                    "துல் க்வித்தா",
-                    "துல் ஹிஜ்ஜா",
-                )
-            }
     }

@@ -1,11 +1,38 @@
 package com.mosque.prayerclock.ui.components
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,9 +49,13 @@ import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.utils.LocaleManager
 import kotlinx.coroutines.delay
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import kotlin.math.floor
 
 @Composable
@@ -49,12 +80,14 @@ fun DigitalClock(
             localCurrentTime
         }
 
-    val localDateTime = timeToUse.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    val localDateTime = timeToUse.toLocalDateTime(TimeZone.currentSystemDefault())
 
     val date = Date(timeToUse.toEpochMilliseconds())
 
     // Get Hijri date from repository or fallback
-    var hijriDate by remember { mutableStateOf<com.mosque.prayerclock.data.repository.HijriDateRepository.HijriDate?>(null) }
+    var hijriDate by remember {
+        mutableStateOf<com.mosque.prayerclock.data.repository.HijriDateRepository.HijriDate?>(null)
+    }
 
     LaunchedEffect(localDateTime.date) {
         hijriDate = hijriDateRepository?.getCurrentHijriDate()
@@ -118,9 +151,24 @@ fun DigitalClock(
                 } else {
                     localDateTime.hour
                 }
-            val ampm = if (localDateTime.hour < 12) localizedStringResource(R.string.am) else localizedStringResource(R.string.pm)
+            val ampm =
+                if (localDateTime.hour <
+                    12
+                ) {
+                    localizedStringResource(R.string.am)
+                } else {
+                    localizedStringResource(R.string.pm)
+                }
             val timeStr = String.format("%d:%02d", hour12, localDateTime.minute)
-            val timeWithSeconds = if (showSeconds) "$timeStr:${String.format("%02d", localDateTime.second)}" else timeStr
+            val timeWithSeconds =
+                if (showSeconds) {
+                    "$timeStr:${String.format(
+                        "%02d",
+                        localDateTime.second,
+                    )}"
+                } else {
+                    timeStr
+                }
             "$timeWithSeconds $ampm"
         }
 

@@ -2,7 +2,13 @@ package com.mosque.prayerclock.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mosque.prayerclock.data.model.*
+import com.mosque.prayerclock.data.model.AppSettings
+import com.mosque.prayerclock.data.model.AppTheme
+import com.mosque.prayerclock.data.model.ClockType
+import com.mosque.prayerclock.data.model.HijriProvider
+import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.WeatherProvider
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted

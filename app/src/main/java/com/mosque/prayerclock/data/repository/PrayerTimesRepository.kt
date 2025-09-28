@@ -5,15 +5,26 @@ import com.mosque.prayerclock.data.database.PrayerTimesDao
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerTimes
-import com.mosque.prayerclock.data.network.*
+import com.mosque.prayerclock.data.network.AlAdhanData
+import com.mosque.prayerclock.data.network.MosqueClockApi
+import com.mosque.prayerclock.data.network.NetworkResult
+import com.mosque.prayerclock.data.network.PrayerTimesApi
+import com.mosque.prayerclock.data.network.toPrayerTimes
 import com.mosque.prayerclock.utils.TimeUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.days
 
 @Singleton
 class PrayerTimesRepository
@@ -24,215 +35,257 @@ class PrayerTimesRepository
         private val dao: PrayerTimesDao,
         private val settingsRepository: SettingsRepository,
     ) {
-    
-    // Smart caching to prevent unnecessary API calls
-    // Tracks what was fetched for today to avoid refetching on non-prayer-related settings changes
-    // Repository-level in-memory cache for instant access (no DB queries)
-    @Volatile private var cachedPrayerTimes: PrayerTimes? = null
-    @Volatile private var cacheDate: String? = null
-    @Volatile private var cacheProviderKey: String? = null // "MANUAL", "AL_ADHAN_API:Colombo", "MOSQUE_CLOCK_API:1"
-    @Volatile private var isCurrentlyFetching: Boolean = false
-    
-    /**
-     * Get cached prayer times instantly without any DB queries
-     * Returns null if cache is invalid (different date/provider)
-     */
-    suspend fun getCachedPrayerTimes(): PrayerTimes? {
-        val today = Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date.toString()
-        val currentProviderKey = getCurrentProviderKey()
-        
-        return if (cacheDate == today && cacheProviderKey == currentProviderKey) {
-            Log.d("PrayerTimesRepository", "⚡ INSTANT CACHE HIT - Returning cached prayer times (no DB query)")
-            cachedPrayerTimes
-        } else {
-            Log.d("PrayerTimesRepository", "❌ CACHE MISS - Date: $cacheDate->$today, Provider: $cacheProviderKey->$currentProviderKey")
-            null
-        }
-    }
-    
-    /**
-     * Generate provider-specific cache key
-     */
-    private suspend fun getCurrentProviderKey(): String {
-        val settings = settingsRepository.getSettings().first()
-        return when (settings.prayerServiceType) {
-            PrayerServiceType.MANUAL -> "MANUAL"
-            PrayerServiceType.AL_ADHAN_API -> "AL_ADHAN_API:${settings.selectedRegion}"
-            PrayerServiceType.MOSQUE_CLOCK_API -> "MOSQUE_CLOCK_API:${settings.selectedZone}"
-        }
-    }
-    
-    /**
-     * Generate composite database ID: "date_providerKey"
-     */
-    private fun generateDatabaseId(date: String, providerKey: String): String {
-        return "${date}_${providerKey}"
-    }
-    
-    /**
-     * Get prayer times from database using provider-specific lookup
-     */
-    private suspend fun getPrayerTimesFromDatabase(date: String, providerKey: String): PrayerTimes? {
-        return dao.getPrayerTimesByDateAndProvider(date, providerKey)
-    }
-    
-    /**
-     * Manually invalidate the prayer times cache
-     * Call this when you want to force a fresh fetch regardless of cache state
-     */
-    fun invalidatePrayerTimesCache() {
-        Log.d("PrayerTimesRepository", "Prayer times cache manually invalidated")
-        cachedPrayerTimes = null
-        cacheDate = null
-        cacheProviderKey = null
-    }
-    
-    /**
-     * Check if we have valid cached data for the current settings
-     */
-    suspend fun hasCachedPrayerTimesForCurrentSettings(): Boolean {
-        return getCachedPrayerTimes() != null
-    }
-    
-    // Main method that chooses service based on settings with intelligent caching
-    fun getTodayPrayerTimesFromSettings(): Flow<NetworkResult<PrayerTimes>> =
-        flow {
-            Log.d("PrayerTimesRepository", "🚀 getTodayPrayerTimesFromSettings() called - checking repository cache")
-            emit(NetworkResult.Loading())
+        // Smart caching to prevent unnecessary API calls
+        // Tracks what was fetched for today to avoid refetching on non-prayer-related settings changes
+        // Repository-level in-memory cache for instant access (no DB queries)
+        @Volatile private var cachedPrayerTimes: PrayerTimes? = null
 
-            try {
-                // First check: Repository-level instant cache (no DB queries)
-                val cachedData = getCachedPrayerTimes()
-                if (cachedData != null) {
-                    Log.d("PrayerTimesRepository", "⚡ REPOSITORY CACHE HIT - Returning instantly (no DB/API calls)")
-                    emit(NetworkResult.Success(cachedData))
-                    return@flow
-                }
-                
-                val settings = settingsRepository.getSettings().first()
-                val today = Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date.toString()
-                val currentProviderKey = getCurrentProviderKey()
-                Log.d("PrayerTimesRepository", "📅 Today: $today, Provider: $currentProviderKey")
-                
-                // Check if another thread is already fetching the same data
-                if (isCurrentlyFetching) {
-                    Log.d("PrayerTimesRepository", "⏳ ALREADY FETCHING - Another thread is fetching, waiting...")
-                    while (isCurrentlyFetching) {
-                        kotlinx.coroutines.delay(100) // Wait 100ms
-                        val freshCache = getCachedPrayerTimes()
-                        if (freshCache != null) {
-                            Log.d("PrayerTimesRepository", "✅ OTHER THREAD COMPLETED - Using fresh cache")
-                            emit(NetworkResult.Success(freshCache))
-                            return@flow
-                        }
-                    }
-                }
-                
-                // Set fetching flag
-                isCurrentlyFetching = true
-                
-                Log.d("PrayerTimesRepository", "🔄 CACHE MISS - Fetching fresh data (Provider: $currentProviderKey)")
-            
-            // Fetch data based on service type and emit results
-            when (settings.prayerServiceType) {
-                PrayerServiceType.MOSQUE_CLOCK_API -> {
-                    // Use MosqueClock API with selected zone
-                    getTodayPrayerTimesByZone(settings.selectedZone).collect { result ->
-                        emit(result)
-                        // Cache successful results
-                        if (result is NetworkResult.Success) {
-                            Log.d("PrayerTimesRepository", "💾 Caching MOSQUE_CLOCK_API data")
-                            Log.d("PrayerTimesRepository", "📋 Original API data: date='${result.data.date}', fajr='${result.data.fajrAzan}', dhuhr='${result.data.dhuhrAzan}'")
-                            
-                            // FIX: Normalize date format and add provider context
-                            val databaseId = generateDatabaseId(today, currentProviderKey)
-                            val normalizedPrayerTimes = result.data.copy(
-                                id = databaseId,
-                                date = today,
-                                providerKey = currentProviderKey
-                            )
-                            Log.d("PrayerTimesRepository", "🔧 Normalized: '${result.data.date}' -> '$today', Provider: '$currentProviderKey', ID: '$databaseId'")
-                            
-                            // Update repository cache for instant access
-                            cachedPrayerTimes = normalizedPrayerTimes
-                            cacheDate = today
-                            cacheProviderKey = currentProviderKey
-                            Log.d("PrayerTimesRepository", "⚡ Repository cache updated - instant access enabled")
-                            
-                            // Save API data to database for persistence across app restarts (provider-specific)
-                            try {
-                                dao.insertPrayerTimes(normalizedPrayerTimes)
-                                Log.d("PrayerTimesRepository", "💾 MOSQUE_CLOCK_API data saved to database with provider context")
-                            } catch (e: Exception) {
-                                Log.e("PrayerTimesRepository", "❌ Database save failed: ${e.message}", e)
-                            }
-                        }
-                    }
-                }
-                PrayerServiceType.AL_ADHAN_API -> {
-                    // Use Al-Adhan API with selected region
-                    getTodayPrayerTimesByRegion(settings.selectedRegion).collect { result ->
-                        emit(result)
-                        // Cache successful results
-                        if (result is NetworkResult.Success) {
-                            Log.d("PrayerTimesRepository", "💾 Caching AL_ADHAN_API data")
-                            Log.d("PrayerTimesRepository", "📋 Original API data: date='${result.data.date}', fajr='${result.data.fajrAzan}', dhuhr='${result.data.dhuhrAzan}'")
-                            
-                            // FIX: Normalize date format and add provider context
-                            val databaseId = generateDatabaseId(today, currentProviderKey)
-                            val normalizedPrayerTimes = result.data.copy(
-                                id = databaseId,
-                                date = today,
-                                providerKey = currentProviderKey
-                            )
-                            Log.d("PrayerTimesRepository", "🔧 Normalized: '${result.data.date}' -> '$today', Provider: '$currentProviderKey', ID: '$databaseId'")
-                            
-                            // Update repository cache for instant access
-                            cachedPrayerTimes = normalizedPrayerTimes
-                            cacheDate = today
-                            cacheProviderKey = currentProviderKey
-                            Log.d("PrayerTimesRepository", "⚡ Repository cache updated - instant access enabled")
-                            
-                            // Save API data to database for persistence across app restarts (provider-specific)
-                            try {
-                                dao.insertPrayerTimes(normalizedPrayerTimes)
-                                Log.d("PrayerTimesRepository", "💾 AL_ADHAN_API data saved to database with provider context")
-                            } catch (e: Exception) {
-                                Log.e("PrayerTimesRepository", "❌ Database save failed: ${e.message}", e)
-                            }
-                        }
-                    }
-                }
-                PrayerServiceType.MANUAL -> {
-                    // Create manual prayer times from settings
-                    val basePrayerTimes = createManualPrayerTimes(settings, today)
-                    val databaseId = generateDatabaseId(today, currentProviderKey)
-                    val manualPrayerTimes = basePrayerTimes.copy(
-                        id = databaseId,
-                        providerKey = null // Manual entries don't have provider context
-                    )
-                    Log.d("PrayerTimesRepository", "⚡ Caching MANUAL data (memory only - no database)")
-                    Log.d("PrayerTimesRepository", "📋 Manual data: date='${manualPrayerTimes.date}', fajr='${manualPrayerTimes.fajrAzan}', dhuhr='${manualPrayerTimes.dhuhrAzan}'")
-                    
-                    // Update repository cache for instant access (MANUAL entries stay in memory only)
-                    cachedPrayerTimes = manualPrayerTimes
-                    cacheDate = today
-                    cacheProviderKey = currentProviderKey
-                    Log.d("PrayerTimesRepository", "⚡ Repository cache updated - MANUAL data cached in memory only")
-                    
-                    emit(NetworkResult.Success(manualPrayerTimes))
-                }
-            }
-            
-            // Clear fetching flag
-            isCurrentlyFetching = false
-            Log.d("PrayerTimesRepository", "Prayer times fetch completed - repository cache updated")
-            } catch (e: Exception) {
-                Log.e("PrayerTimesRepository", "Error in getTodayPrayerTimesFromSettings", e)
-                isCurrentlyFetching = false // Clear flag on error
-                emit(NetworkResult.Error("Failed to get prayer times: ${e.message}"))
+        @Volatile private var cacheDate: String? = null
+
+        @Volatile private var cacheProviderKey: String? = null
+
+        // "MANUAL", "AL_ADHAN_API:Colombo", "MOSQUE_CLOCK_API:1"
+        @Volatile private var isCurrentlyFetching: Boolean = false
+
+        /**
+         * Get cached prayer times instantly without any DB queries
+         * Returns null if cache is invalid (different date/provider)
+         */
+        suspend fun getCachedPrayerTimes(): PrayerTimes? {
+            val today =
+                Clock.System
+                    .now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+                    .toString()
+            val currentProviderKey = getCurrentProviderKey()
+
+            return if (cacheDate == today && cacheProviderKey == currentProviderKey) {
+                cachedPrayerTimes
+            } else {
+                null
             }
         }
+
+        /**
+         * Generate provider-specific cache key
+         */
+        private suspend fun getCurrentProviderKey(): String {
+            val settings = settingsRepository.getSettings().first()
+            return when (settings.prayerServiceType) {
+                PrayerServiceType.MANUAL -> "MANUAL"
+                PrayerServiceType.AL_ADHAN_API -> "AL_ADHAN_API:${settings.selectedRegion}"
+                PrayerServiceType.MOSQUE_CLOCK_API -> "MOSQUE_CLOCK_API:${settings.selectedZone}"
+            }
+        }
+
+        /**
+         * Generate composite database ID: "date_providerKey"
+         */
+        private fun generateDatabaseId(
+            date: String,
+            providerKey: String,
+        ): String = "${date}_$providerKey"
+
+        /**
+         * Get prayer times from database using provider-specific lookup
+         */
+        private suspend fun getPrayerTimesFromDatabase(
+            date: String,
+            providerKey: String,
+        ): PrayerTimes? = dao.getPrayerTimesByDateAndProvider(date, providerKey)
+
+        /**
+         * Manually invalidate the prayer times cache
+         * Call this when you want to force a fresh fetch regardless of cache state
+         */
+        fun invalidatePrayerTimesCache() {
+            Log.d("PrayerTimesRepository", "Prayer times cache manually invalidated")
+            cachedPrayerTimes = null
+            cacheDate = null
+            cacheProviderKey = null
+        }
+
+        /**
+         * Check if we have valid cached data for the current settings
+         */
+        suspend fun hasCachedPrayerTimesForCurrentSettings(): Boolean = getCachedPrayerTimes() != null
+
+        // Main method that chooses service based on settings with intelligent caching
+        fun getTodayPrayerTimesFromSettings(): Flow<NetworkResult<PrayerTimes>> =
+            flow {
+                Log.d(
+                    "PrayerTimesRepository",
+                    "🚀 getTodayPrayerTimesFromSettings() called - checking repository cache",
+                )
+                emit(NetworkResult.Loading())
+
+                try {
+                    // First check: Repository-level instant cache (no DB queries)
+                    val cachedData = getCachedPrayerTimes()
+                    if (cachedData != null) {
+                        emit(NetworkResult.Success(cachedData))
+                        return@flow
+                    }
+
+                    val settings = settingsRepository.getSettings().first()
+                    val today =
+                        Clock.System
+                            .now()
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                            .date
+                            .toString()
+                    val currentProviderKey = getCurrentProviderKey()
+
+                    // Check if another thread is already fetching the same data
+                    if (isCurrentlyFetching) {
+                        while (isCurrentlyFetching) {
+                            kotlinx.coroutines.delay(100) // Wait 100ms
+                            val freshCache = getCachedPrayerTimes()
+                            if (freshCache != null) {
+                                emit(NetworkResult.Success(freshCache))
+                                return@flow
+                            }
+                        }
+                    }
+
+                    // Set fetching flag
+                    isCurrentlyFetching = true
+
+
+                    // Fetch data based on service type and emit results
+                    when (settings.prayerServiceType) {
+                        PrayerServiceType.MOSQUE_CLOCK_API -> {
+                            // Use MosqueClock API with selected zone
+                            getTodayPrayerTimesByZone(settings.selectedZone).collect { result ->
+                                emit(result)
+                                // Cache successful results
+                                if (result is NetworkResult.Success) {
+                                    Log.d("PrayerTimesRepository", "💾 Caching MOSQUE_CLOCK_API data")
+                                    Log.d(
+                                        "PrayerTimesRepository",
+                                        "📋 Original API data: date='${result.data.date}', fajr='${result.data.fajrAzan}', dhuhr='${result.data.dhuhrAzan}'",
+                                    )
+
+                                    // FIX: Normalize date format and add provider context
+                                    val databaseId = generateDatabaseId(today, currentProviderKey)
+                                    val normalizedPrayerTimes =
+                                        result.data.copy(
+                                            id = databaseId,
+                                            date = today,
+                                            providerKey = currentProviderKey,
+                                        )
+                                    Log.d(
+                                        "PrayerTimesRepository",
+                                        "🔧 Normalized: '${result.data.date}' -> '$today', Provider: '$currentProviderKey', ID: '$databaseId'",
+                                    )
+
+                                    // Update repository cache for instant access
+                                    cachedPrayerTimes = normalizedPrayerTimes
+                                    cacheDate = today
+                                    cacheProviderKey = currentProviderKey
+                                    Log.d(
+                                        "PrayerTimesRepository",
+                                        "⚡ Repository cache updated - instant access enabled",
+                                    )
+
+                                    // Save API data to database for persistence across app restarts (provider-specific)
+                                    try {
+                                        dao.insertPrayerTimes(normalizedPrayerTimes)
+                                        Log.d(
+                                            "PrayerTimesRepository",
+                                            "💾 MOSQUE_CLOCK_API data saved to database with provider context",
+                                        )
+                                    } catch (e: Exception) {
+                                        Log.e("PrayerTimesRepository", "❌ Database save failed: ${e.message}", e)
+                                    }
+                                }
+                            }
+                        }
+                        PrayerServiceType.AL_ADHAN_API -> {
+                            // Use Al-Adhan API with selected region
+                            getTodayPrayerTimesByRegion(settings.selectedRegion).collect { result ->
+                                emit(result)
+                                // Cache successful results
+                                if (result is NetworkResult.Success) {
+                                    Log.d("PrayerTimesRepository", "💾 Caching AL_ADHAN_API data")
+                                    Log.d(
+                                        "PrayerTimesRepository",
+                                        "📋 Original API data: date='${result.data.date}', fajr='${result.data.fajrAzan}', dhuhr='${result.data.dhuhrAzan}'",
+                                    )
+
+                                    // FIX: Normalize date format and add provider context
+                                    val databaseId = generateDatabaseId(today, currentProviderKey)
+                                    val normalizedPrayerTimes =
+                                        result.data.copy(
+                                            id = databaseId,
+                                            date = today,
+                                            providerKey = currentProviderKey,
+                                        )
+                                    Log.d(
+                                        "PrayerTimesRepository",
+                                        "🔧 Normalized: '${result.data.date}' -> '$today', Provider: '$currentProviderKey', ID: '$databaseId'",
+                                    )
+
+                                    // Update repository cache for instant access
+                                    cachedPrayerTimes = normalizedPrayerTimes
+                                    cacheDate = today
+                                    cacheProviderKey = currentProviderKey
+                                    Log.d(
+                                        "PrayerTimesRepository",
+                                        "⚡ Repository cache updated - instant access enabled",
+                                    )
+
+                                    // Save API data to database for persistence across app restarts (provider-specific)
+                                    try {
+                                        dao.insertPrayerTimes(normalizedPrayerTimes)
+                                        Log.d(
+                                            "PrayerTimesRepository",
+                                            "💾 AL_ADHAN_API data saved to database with provider context",
+                                        )
+                                    } catch (e: Exception) {
+                                        Log.e("PrayerTimesRepository", "❌ Database save failed: ${e.message}", e)
+                                    }
+                                }
+                            }
+                        }
+                        PrayerServiceType.MANUAL -> {
+                            // Create manual prayer times from settings
+                            val basePrayerTimes = createManualPrayerTimes(settings, today)
+                            val databaseId = generateDatabaseId(today, currentProviderKey)
+                            val manualPrayerTimes =
+                                basePrayerTimes.copy(
+                                    id = databaseId,
+                                    providerKey = null, // Manual entries don't have provider context
+                                )
+                            Log.d("PrayerTimesRepository", "⚡ Caching MANUAL data (memory only - no database)")
+                            Log.d(
+                                "PrayerTimesRepository",
+                                "📋 Manual data: date='${manualPrayerTimes.date}', fajr='${manualPrayerTimes.fajrAzan}', dhuhr='${manualPrayerTimes.dhuhrAzan}'",
+                            )
+
+                            // Update repository cache for instant access (MANUAL entries stay in memory only)
+                            cachedPrayerTimes = manualPrayerTimes
+                            cacheDate = today
+                            cacheProviderKey = currentProviderKey
+                            Log.d(
+                                "PrayerTimesRepository",
+                                "⚡ Repository cache updated - MANUAL data cached in memory only",
+                            )
+
+                            emit(NetworkResult.Success(manualPrayerTimes))
+                        }
+                    }
+
+                    // Clear fetching flag
+                    isCurrentlyFetching = false
+                    Log.d("PrayerTimesRepository", "Prayer times fetch completed - repository cache updated")
+                } catch (e: Exception) {
+                    Log.e("PrayerTimesRepository", "Error in getTodayPrayerTimesFromSettings", e)
+                    isCurrentlyFetching = false // Clear flag on error
+                    emit(NetworkResult.Error("Failed to get prayer times: ${e.message}"))
+                }
+            }
 
         // Method to get tomorrow's prayer times based on settings
         fun getTomorrowPrayerTimesFromSettings(): Flow<NetworkResult<PrayerTimes>> =
@@ -240,8 +293,18 @@ class PrayerTimesRepository
                 emit(NetworkResult.Loading())
 
                 val settings = settingsRepository.getSettings().first()
-                val tomorrow = Clock.System.now().plus(1, DateTimeUnit.DAY, kotlinx.datetime.TimeZone.currentSystemDefault())
-                val tomorrowDate = tomorrow.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date.toString()
+                val tomorrow =
+                    Clock.System.now().plus(
+                        1,
+                        DateTimeUnit.DAY,
+                        TimeZone.currentSystemDefault(),
+                    )
+                val tomorrowDate =
+                    tomorrow
+                        .toLocalDateTime(
+                            TimeZone.currentSystemDefault(),
+                        ).date
+                        .toString()
 
                 when (settings.prayerServiceType) {
                     PrayerServiceType.MOSQUE_CLOCK_API -> {
@@ -267,7 +330,7 @@ class PrayerTimesRepository
                 val today =
                     Clock.System
                         .now()
-                        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
                         .date
                         .toString()
 
@@ -301,8 +364,18 @@ class PrayerTimesRepository
             flow {
                 emit(NetworkResult.Loading())
 
-                val tomorrow = Clock.System.now().plus(1, DateTimeUnit.DAY, kotlinx.datetime.TimeZone.currentSystemDefault())
-                val tomorrowDate = tomorrow.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date.toString()
+                val tomorrow =
+                    Clock.System.now().plus(
+                        1,
+                        DateTimeUnit.DAY,
+                        TimeZone.currentSystemDefault(),
+                    )
+                val tomorrowDate =
+                    tomorrow
+                        .toLocalDateTime(
+                            TimeZone.currentSystemDefault(),
+                        ).date
+                        .toString()
 
                 // Check cache first for tomorrow's date
                 val cachedPrayerTimes = dao.getPrayerTimesByDate(tomorrowDate)
@@ -313,7 +386,11 @@ class PrayerTimesRepository
 
                 try {
                     // Format tomorrow's date for Al-Adhan API (dd-MM-yyyy format)
-                    val tomorrowLocalDate = tomorrow.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
+                    val tomorrowLocalDate =
+                        tomorrow
+                            .toLocalDateTime(
+                                TimeZone.currentSystemDefault(),
+                            ).date
                     val tomorrowFormatted = "${tomorrowLocalDate.dayOfMonth.toString().padStart(
                         2,
                         '0',
@@ -348,7 +425,7 @@ class PrayerTimesRepository
                 val today =
                     Clock.System
                         .now()
-                        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
                         .date
                         .toString()
 
@@ -409,9 +486,7 @@ class PrayerTimesRepository
 
         suspend fun cleanOldPrayerTimes() {
             val thirtyDaysAgo =
-                Clock.System
-                    .now()
-                    .minus(30, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
+                (Clock.System.now() - 30.days)
                     .toLocalDateTime(TimeZone.currentSystemDefault())
                     .date
                     .toString()
@@ -426,7 +501,7 @@ class PrayerTimesRepository
                 val today =
                     Clock.System
                         .now()
-                        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
                         .date
                         .toString()
 
@@ -541,7 +616,6 @@ class PrayerTimesRepository
             return time.split(" ").first() // Remove timezone if present
         }
 
-
         private fun getCountryForRegion(region: String): String =
             when (region) {
                 "Colombo", "Kandy", "Galle", "Jaffna" -> "Sri Lanka"
@@ -592,7 +666,7 @@ class PrayerTimesRepository
             val currentDate =
                 date ?: Clock.System
                     .now()
-                    .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
                     .date
                     .toString()
 
@@ -615,5 +689,4 @@ class PrayerTimesRepository
                 location = "Manual",
             )
         }
-
     }

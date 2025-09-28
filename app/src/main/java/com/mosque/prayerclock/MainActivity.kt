@@ -9,11 +9,25 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
@@ -23,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.service.PrayerNotificationService
 import com.mosque.prayerclock.ui.LocalizedApp
 import com.mosque.prayerclock.ui.localizedStringResource
@@ -31,6 +46,7 @@ import com.mosque.prayerclock.ui.screens.SettingsScreen
 import com.mosque.prayerclock.ui.theme.MosqueClockTheme
 import com.mosque.prayerclock.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlin.system.exitProcess
 
 @AndroidEntryPoint
@@ -125,12 +141,18 @@ class MainActivity : ComponentActivity() {
         try {
             // Keep screen on and prevent sleep
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
-            window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-
-            // Additional flags for TV/kiosk mode
+            
+            // Use modern approach for showing over lock screen
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+            } else {
+                // Fallback for older versions
+                @Suppress("DEPRECATION")
                 window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+                @Suppress("DEPRECATION")
+                window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+                @Suppress("DEPRECATION")
                 window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
             }
 
@@ -225,7 +247,6 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
             composable("settings") {
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onExitApp = { showExitDialog = true },
                 )
             }
         }

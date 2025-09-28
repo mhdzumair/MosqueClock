@@ -25,7 +25,7 @@ data class AppSettings(
     val ishaIqamahGap: Int = 10,
     val refreshInterval: Long = 24 * 60 * 60 * 1000L, // 24 hours in milliseconds
     val showWeather: Boolean = false,
-    val weatherCity: String = "Colombo",
+    val weatherCity: String = "",
     val weatherCountry: String = "Sri Lanka",
     val weatherProvider: WeatherProvider = WeatherProvider.OPEN_WEATHER,
     val hijriProvider: HijriProvider = HijriProvider.MANUAL,

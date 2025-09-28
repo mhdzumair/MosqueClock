@@ -71,9 +71,9 @@
     <string name="weather_city_description">කාලගුණ තොරතුරු සඳහා නගරය</string>
     <string name="weather_placeholder">නගර නාමය ඇතුල් කරන්න</string>
 
-    <!-- Weather Details -->
-    <string name="humidity_short">ඝනත්වය</string>
-    <string name="feels_like_short">ඇහුම්කම්</string>
+    <!-- Prayer Time Letters (for highlighting) -->
+    <string name="azan_letter">අදාන්</string>
+    <string name="iqamah_letter">ඉකාමත්</string>
 
     <!-- Prayer Buffer Period -->
     <string name="silent_your_phone">ඔබේ දුරකථනය නිශ්ශබ්ද කරන්න</string>

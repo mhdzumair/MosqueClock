@@ -1,19 +1,51 @@
 package com.mosque.prayerclock.ui.components
 
-import android.graphics.Paint
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import android.graphics.Typeface
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -31,15 +63,21 @@ import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.utils.LocaleManager
 import kotlinx.coroutines.delay
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.math.*
+import java.util.Date
+import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import android.graphics.Paint as AndroidPaint
 
 @Composable
 fun AnalogClock(
     modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 200.dp,
     currentTime: Instant? = null,
     hijriDateRepository: com.mosque.prayerclock.data.repository.HijriDateRepository? = null,
 ) {
@@ -56,7 +94,7 @@ fun AnalogClock(
             localCurrentTime
         }
 
-    val localDateTime = timeToUse.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    val localDateTime = timeToUse.toLocalDateTime(TimeZone.currentSystemDefault())
     val hour = localDateTime.hour % 12
     val minute = localDateTime.minute
     val second = localDateTime.second
@@ -64,7 +102,9 @@ fun AnalogClock(
     val date = Date(timeToUse.toEpochMilliseconds())
 
     // Get Hijri date from repository or fallback
-    var hijriDate by remember { mutableStateOf<com.mosque.prayerclock.data.repository.HijriDateRepository.HijriDate?>(null) }
+    var hijriDate by remember {
+        mutableStateOf<com.mosque.prayerclock.data.repository.HijriDateRepository.HijriDate?>(null)
+    }
 
     LaunchedEffect(localDateTime.date) {
         hijriDate = hijriDateRepository?.getCurrentHijriDate()
@@ -172,9 +212,11 @@ fun AnalogClock(
                     .width(100.dp),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp),  // Reduced padding for more space
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(6.dp),
+                // Reduced padding for more space
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 hijriDate?.let { hDate ->
@@ -203,7 +245,7 @@ fun AnalogClock(
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
-                            modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                            modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                         )
                     }
 
@@ -219,7 +261,7 @@ fun AnalogClock(
                             ),
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                     )
 
                     Spacer(modifier = Modifier.height(2.dp))
@@ -233,7 +275,7 @@ fun AnalogClock(
                             ),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                     )
                 }
             }
@@ -257,7 +299,7 @@ fun AnalogClock(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(6.dp),  // Reduced padding for more space
+                        .padding(6.dp), // Reduced padding for more space
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -287,7 +329,7 @@ fun AnalogClock(
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
-                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                     )
                 }
 
@@ -303,7 +345,7 @@ fun AnalogClock(
                         ),
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                    modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -331,7 +373,7 @@ fun AnalogClock(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center,
                         maxLines = 2, // Allow wrapping for long month names
-                        modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                     )
                 }
 
@@ -346,7 +388,7 @@ fun AnalogClock(
                         ),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()  // Ensure full width for centering
+                    modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
                 )
             }
         }
@@ -422,10 +464,10 @@ private fun DrawScope.drawEnhancedClockNumbers(
 
     drawIntoCanvas { canvas ->
         val paint =
-            Paint().apply {
+            AndroidPaint().apply {
                 this.color = color.toArgb()
                 textSize = 42f
-                textAlign = Paint.Align.CENTER
+                textAlign = AndroidPaint.Align.CENTER
                 isAntiAlias = true
                 isFakeBoldText = true
             }
@@ -449,10 +491,10 @@ private fun DrawScope.drawEnhancedClockNumbers(
 
             // Draw shadow for the text
             val shadowPaint =
-                Paint().apply {
+                AndroidPaint().apply {
                     this.color = Color.Black.copy(alpha = 0.2f).toArgb()
                     textSize = 42f
-                    textAlign = Paint.Align.CENTER
+                    textAlign = AndroidPaint.Align.CENTER
                     isAntiAlias = true
                     isFakeBoldText = true
                 }
@@ -672,13 +714,14 @@ private fun DrawScope.drawModernNumbers(
 
     drawIntoCanvas { canvas ->
         val paint =
-            Paint().apply {
+            AndroidPaint().apply {
                 this.color = color.toArgb()
                 textSize = 48f
-                textAlign = Paint.Align.CENTER
+                textAlign = AndroidPaint.Align.CENTER
                 isAntiAlias = true
                 isFakeBoldText = true
-                typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                typeface =
+                    android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             }
 
         numbers.forEach { (number, position) ->

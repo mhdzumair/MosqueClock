@@ -96,7 +96,6 @@
     <string name="manual_prayer_times">Manual Prayer Times</string>
     <string name="manual_prayer_times_description">Use manual times instead of API</string>
     <string name="prayer_times_setup">Prayer Times Setup</string>
-    <string name="iqamah_gaps">Iqamah Time Gaps (minutes after Azan)</string>
     
     <!-- App Control -->
     <string name="app_control">App Control</string>
@@ -108,10 +107,6 @@
     
     <!-- Clock Format -->
     <string name="clock_format">Clock Format</string>
-    
-    <!-- Weather Details -->
-    <string name="humidity_short">Humidity</string>
-    <string name="feels_like_short">Feels Like</string>
     
     <!-- Prayer Buffer Period -->
     <string name="silent_your_phone">Silent Your Phone</string>
@@ -127,8 +122,8 @@
     <string name="time_format_seconds">%1$ds remaining</string>
     
     <!-- Prayer Time Letters (for highlighting) -->
-    <string name="azan_letter">A</string>
-    <string name="iqamah_letter">I</string>
+    <string name="azan_letter">Azan</string>
+    <string name="iqamah_letter">Iqamah</string>
     
     <!-- Day Names -->
     <string-array name="day_names">

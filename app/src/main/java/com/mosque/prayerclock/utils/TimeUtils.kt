@@ -1,14 +1,13 @@
 package com.mosque.prayerclock.utils
 
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 /**
  * Centralized time utility functions to avoid code duplication
  * All time-related calculations should use these functions
  */
 object TimeUtils {
-
     /**
      * Add minutes to a time string (HH:MM format)
      * Most robust implementation with proper validation

@@ -96,7 +96,6 @@
     <string name="manual_prayer_times">கைமுறை தொழுகை நேரங்கள்</string>
     <string name="manual_prayer_times_description">API க்கு பதிலாக கைமுறை நேரங்களைப் பயன்படுத்தவும்</string>
     <string name="prayer_times_setup">தொழுகை நேர அமைப்பு</string>
-    <string name="iqamah_gaps">இகாமத் நேர இடைவெளிகள் (அதானுக்குப் பிறகு நிமிடங்கள்)</string>
     
     <!-- App Control -->
     <string name="app_control">ஆப் கட்டுப்பாடு</string>
@@ -108,11 +107,7 @@
     
     <!-- Clock Format -->
     <string name="clock_format">கடிகார வடிவம்</string>
-    
-    <!-- Weather Details -->
-    <string name="humidity_short">ஈரப்பதம்</string>
-    <string name="feels_like_short">உணர்வு</string>
-    
+
     <!-- Prayer Buffer Period -->
     <string name="silent_your_phone">உங்கள் தொலைபேசியை அமைதியாக்கவும்</string>
     
@@ -127,8 +122,8 @@
     <string name="time_format_seconds">%1$dவி எஞ்சியுள்ளது</string>
     
     <!-- Prayer Time Letters (for highlighting) -->
-    <string name="azan_letter">அ</string>
-    <string name="iqamah_letter">இ</string>
+    <string name="azan_letter">அதான்</string>
+    <string name="iqamah_letter">இகாமத்</string>
     
     <!-- Day Names -->
     <string-array name="day_names">
