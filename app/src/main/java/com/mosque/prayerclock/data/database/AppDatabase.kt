@@ -8,7 +8,7 @@ import com.mosque.prayerclock.data.model.PrayerTimes
 
 @Database(
     entities = [PrayerTimes::class, HijriDateEntity::class],
-    version = 3, // Incremented for Hijri date caching
+    version = 3, // Back to version 3 - using existing PrayerTimes for monthly caching
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

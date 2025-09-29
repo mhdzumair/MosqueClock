@@ -174,18 +174,12 @@ class MainViewModel
         ) {
             viewModelScope.launch(Dispatchers.IO) {
                 when (provider) {
-                    WeatherProvider.MOSQUE_CLOCK -> {
-                        weatherRepository.getCurrentWeatherByCity(city).collect { result ->
-                            if (result is NetworkResult.Error) {
-                                weatherRepository.getCurrentWeather(city, country).collect { fallbackResult ->
-                                    handleWeatherResult(fallbackResult)
-                                }
-                            } else {
-                                handleWeatherResult(result)
-                            }
+                    WeatherProvider.WEATHER_API -> {
+                        weatherRepository.getCurrentWeather(city, country).collect { result ->
+                            handleWeatherResult(result)
                         }
                     }
-                    WeatherProvider.OPEN_WEATHER -> {
+                    WeatherProvider.OPEN_WEATHER_MAP -> {
                         weatherRepository.getCurrentWeather(city, country).collect { result ->
                             handleWeatherResult(result)
                         }

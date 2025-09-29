@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.mosque.prayerclock.data.cache.PrayerTimesCacheInvalidator
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.AppTheme
 import com.mosque.prayerclock.data.model.ClockType
@@ -19,6 +20,7 @@ import com.mosque.prayerclock.data.model.WeatherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
@@ -26,6 +28,7 @@ class SettingsRepository
     @Inject
     constructor(
         private val dataStore: DataStore<Preferences>,
+        private val prayerTimesCacheInvalidatorProvider: Provider<PrayerTimesCacheInvalidator>,
     ) {
         private object PreferencesKeys {
             val LANGUAGE = stringPreferencesKey("language")
@@ -112,7 +115,7 @@ class SettingsRepository
                     fajrIqamahGap = preferences[PreferencesKeys.FAJR_IQAMAH_GAP] ?: 20,
                     dhuhrIqamahGap = preferences[PreferencesKeys.DHUHR_IQAMAH_GAP] ?: 10,
                     asrIqamahGap = preferences[PreferencesKeys.ASR_IQAMAH_GAP] ?: 10,
-                    maghribIqamahGap = preferences[PreferencesKeys.MAGHRIB_IQAMAH_GAP] ?: 5,
+                    maghribIqamahGap = preferences[PreferencesKeys.MAGHRIB_IQAMAH_GAP] ?: 10,
                     ishaIqamahGap = preferences[PreferencesKeys.ISHA_IQAMAH_GAP] ?: 10,
                     refreshInterval =
                         preferences[PreferencesKeys.REFRESH_INTERVAL]
@@ -126,7 +129,7 @@ class SettingsRepository
                         WeatherProvider.values().find {
                             it.name == preferences[PreferencesKeys.WEATHER_PROVIDER]
                         }
-                            ?: WeatherProvider.OPEN_WEATHER,
+                            ?: WeatherProvider.WEATHER_API,
                     hijriProvider =
                         HijriProvider.values().find {
                             it.name == preferences[PreferencesKeys.HIJRI_PROVIDER]
@@ -207,6 +210,8 @@ class SettingsRepository
                     "ishaAzan" -> preferences[PreferencesKeys.MANUAL_ISHA_AZAN] = time
                 }
             }
+            // Invalidate prayer times cache when manual times are updated
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
 
         suspend fun updateIqamahGap(
@@ -222,6 +227,8 @@ class SettingsRepository
                     "isha" -> preferences[PreferencesKeys.ISHA_IQAMAH_GAP] = gap
                 }
             }
+            // Invalidate prayer times cache when iqamah gaps are updated
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
 
         suspend fun updateHijriDate(
@@ -272,17 +279,24 @@ class SettingsRepository
             dataStore.edit { preferences ->
                 preferences[PreferencesKeys.PRAYER_SERVICE_TYPE] = serviceType.name
             }
+            // Invalidate prayer times cache when prayer service type changes
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
 
         suspend fun updateSelectedZone(zone: Int) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SELECTED_ZONE] = zone }
+            // Invalidate prayer times cache when zone changes (affects cache key)
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
 
         suspend fun updateSelectedRegion(region: String) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SELECTED_REGION] = region }
+            // Invalidate prayer times cache when region changes (affects cache key)
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
 
         suspend fun updateSoundEnabled(soundEnabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SOUND_ENABLED] = soundEnabled }
         }
+
     }

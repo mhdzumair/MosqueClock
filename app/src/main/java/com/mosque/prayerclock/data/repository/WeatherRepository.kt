@@ -9,6 +9,7 @@ import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.WeatherApi
 import com.mosque.prayerclock.data.network.toWeatherInfo
+import com.mosque.prayerclock.data.service.OpenWeatherMapService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,8 +31,9 @@ import javax.inject.Singleton
 class WeatherRepository
     @Inject
     constructor(
-        private val weatherApi: WeatherApi, // Keep for backward compatibility
-        private val mosqueClockApi: MosqueClockApi, // New MosqueClock API
+        private val weatherApi: WeatherApi, // Primary weather provider (WeatherAPI.com)
+        private val mosqueClockApi: MosqueClockApi, // MosqueClock API (for backend fallback)
+        private val openWeatherMapService: OpenWeatherMapService, // Secondary weather provider
     ) {
         // Weather refresh job management - survives ViewModel recreation since Repository is Singleton
         private val weatherRefreshJobs = mutableMapOf<Triple<String, String, WeatherProvider>, Job>()
@@ -267,11 +269,12 @@ class WeatherRepository
 
                     Log.d("WeatherRepository", "API Key available: ${apiKey.take(8)}... (${apiKey.length} chars)")
 
-                    // Make API call using coordinates
+                    // Try primary weather provider (WeatherAPI.com) first
+                    Log.d("WeatherRepository", "🌤️ Trying primary weather provider (WeatherAPI.com)")
                     val response = weatherApi.getCurrentWeather(apiKey, "$latitude,$longitude")
 
                     if (response.isSuccessful && response.body() != null) {
-                        Log.d("WeatherRepository", "Coordinates API call successful")
+                        Log.d("WeatherRepository", "✅ Primary weather provider successful")
                         val rawResponse = response.body()!!
                         Log.d("WeatherRepository", "Full API Response: $rawResponse")
                         val weatherInfo = rawResponse.toWeatherInfo()
@@ -280,10 +283,35 @@ class WeatherRepository
                             "Weather info from coordinates: Icon=${weatherInfo.icon}, Description=${weatherInfo.description}, Temp=${weatherInfo.temperature}",
                         )
                         emit(NetworkResult.Success(weatherInfo))
+                        return@flow
                     } else {
-                        Log.e("WeatherRepository", "Coordinates API call failed. Code: ${response.code()}")
-                        emit(NetworkResult.Error("Failed to fetch weather data: ${response.code()}", response.code()))
+                        Log.w("WeatherRepository", "⚠️ Primary weather provider failed. Code: ${response.code()}")
                     }
+
+                    // Try secondary weather provider (OpenWeatherMap)
+                    if (openWeatherMapService.isConfigured()) {
+                        Log.d("WeatherRepository", "🌤️ Trying secondary weather provider (OpenWeatherMap)")
+                        val openWeatherResult = openWeatherMapService.getCurrentWeatherByCoordinates(latitude, longitude)
+                        
+                        when (openWeatherResult) {
+                            is NetworkResult.Success -> {
+                                Log.d("WeatherRepository", "✅ Secondary weather provider successful")
+                                emit(openWeatherResult)
+                                return@flow
+                            }
+                            is NetworkResult.Error -> {
+                                Log.w("WeatherRepository", "⚠️ Secondary weather provider failed: ${openWeatherResult.message}")
+                            }
+                            else -> {
+                                Log.w("WeatherRepository", "⚠️ Secondary weather provider returned unexpected result")
+                            }
+                        }
+                    } else {
+                        Log.w("WeatherRepository", "⚠️ OpenWeatherMap key not configured")
+                    }
+
+                    // All weather providers failed
+                    emit(NetworkResult.Error("All weather providers failed", response.code()))
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in coordinates weather fetch: ${e.message}", e)
                     val errorMessage =
@@ -340,16 +368,17 @@ class WeatherRepository
         ) {
             val params = Triple(city, country, provider)
 
-            // Check if job already exists and is active
+            // Check if job already exists and is active for the same parameters
             val existingJob = weatherRefreshJobs[params]
             if (existingJob?.isActive == true) {
                 Log.d("WeatherRepository", "Weather refresh job already running for params $params - skipping")
                 return
             }
 
-            // Stop any existing jobs with different parameters
-            weatherRefreshJobs.entries.removeAll { (existingParams, job) ->
-                if (existingParams != params && job.isActive) {
+            // Stop any existing jobs (including different providers for same city or different cities)
+            val stoppedJobs = weatherRefreshJobs.entries.removeAll { (existingParams, job) ->
+                if (job.isActive) {
+                    Log.d("WeatherRepository", "Stopping existing weather job for $existingParams")
                     job.cancel()
                     true
                 } else {
@@ -357,7 +386,32 @@ class WeatherRepository
                 }
             }
 
+            if (stoppedJobs) {
+                Log.d("WeatherRepository", "Stopped ${if (stoppedJobs) "existing" else "no"} weather refresh jobs")
+            }
+
             Log.d("WeatherRepository", "Starting hourly weather refresh for $city with $provider")
+
+            // Immediately fetch weather data when starting the job (don't wait 30 minutes)
+            repositoryScope.launch {
+                Log.d("WeatherRepository", "Immediate fetch for new provider: $provider")
+                try {
+                    when (provider) {
+                        WeatherProvider.WEATHER_API -> {
+                            getCurrentWeather(city, country).collect { result ->
+                                onWeatherUpdate(result)
+                            }
+                        }
+                        WeatherProvider.OPEN_WEATHER_MAP -> {
+                            val openWeatherResult = openWeatherMapService.getCurrentWeather(city, country)
+                            onWeatherUpdate(openWeatherResult)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("WeatherRepository", "Error in immediate weather fetch", e)
+                    onWeatherUpdate(NetworkResult.Error("Failed to fetch weather: ${e.message}"))
+                }
+            }
 
             val job =
                 repositoryScope.launch {
@@ -365,22 +419,15 @@ class WeatherRepository
                         while (isActive) {
                             // Fetch weather data based on provider
                             when (provider) {
-                                WeatherProvider.OPEN_WEATHER -> {
+                                WeatherProvider.WEATHER_API -> {
                                     getCurrentWeather(city, country).collect { result ->
                                         onWeatherUpdate(result)
                                     }
                                 }
-                                WeatherProvider.MOSQUE_CLOCK -> {
-                                    getCurrentWeatherByCity(city).collect { result ->
-                                        if (result is NetworkResult.Error) {
-                                            // Fallback to OpenWeather
-                                            getCurrentWeather(city, country).collect { fallbackResult ->
-                                                onWeatherUpdate(fallbackResult)
-                                            }
-                                        } else {
-                                            onWeatherUpdate(result)
-                                        }
-                                    }
+                                WeatherProvider.OPEN_WEATHER_MAP -> {
+                                    // Use OpenWeatherMap service directly
+                                    val openWeatherResult = openWeatherMapService.getCurrentWeather(city, country)
+                                    onWeatherUpdate(openWeatherResult)
                                 }
                             }
 

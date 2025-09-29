@@ -32,6 +32,23 @@ android {
             "WEATHER_API_KEY",
             localProperties.getProperty("weather_api_key", "\"\""),
         )
+        buildConfigField(
+            "String",
+            "OPENWEATHERMAP_API_KEY",
+            localProperties.getProperty("openweathermap_api_key", "\"\""),
+        )
+
+        buildConfigField(
+            "String",
+            "MOSQUE_CLOCK_API_URL",
+            localProperties.getProperty("mosque_clock_api_url", "\"http://10.0.2.2:8000/\""),
+        )
+
+        buildConfigField(
+            "String",
+            "MOSQUE_CLOCK_API_KEY",
+            localProperties.getProperty("mosque_clock_api_key", "\"mosque-clock-api-key-2025\""),
+        )
     }
 
     buildTypes {
@@ -100,6 +117,10 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // PDF Processing & Web Scraping
+    implementation("com.itextpdf:itextg:5.5.10")
+    implementation("org.jsoup:jsoup:1.17.2")
 
     // Hilt Dependency Injection
     implementation("com.google.dagger:hilt-android:2.48")

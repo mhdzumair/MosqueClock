@@ -27,13 +27,13 @@ data class AppSettings(
     val showWeather: Boolean = false,
     val weatherCity: String = "",
     val weatherCountry: String = "Sri Lanka",
-    val weatherProvider: WeatherProvider = WeatherProvider.OPEN_WEATHER,
-    val hijriProvider: HijriProvider = HijriProvider.MANUAL,
+    val weatherProvider: WeatherProvider = WeatherProvider.WEATHER_API,
+    val hijriProvider: HijriProvider = HijriProvider.ACJU_DIRECT,
     val manualHijriDay: Int = 7,
     val manualHijriMonth: Int = 2, // Safar
     val manualHijriYear: Int = 1447,
     val lastUpdatedGregorianDate: String = "2025-08-01", // Track when Hijri date was last set
-    val prayerServiceType: PrayerServiceType = PrayerServiceType.MANUAL,
+    val prayerServiceType: PrayerServiceType = PrayerServiceType.ACJU_DIRECT,
     val selectedZone: Int = 1, // For MosqueClock backend zones
     val selectedRegion: String = "Colombo", // For third-party prayer time services
     val soundEnabled: Boolean = true, // Enable/disable beep countdown sound
@@ -49,15 +49,20 @@ enum class Language(
     SINHALA("si", "Sinhala"),
 }
 
-enum class WeatherProvider {
-    MOSQUE_CLOCK,
-    OPEN_WEATHER,
+enum class WeatherProvider(
+    val displayName: String,
+) {
+    WEATHER_API("WeatherAPI.com"),
+    OPEN_WEATHER_MAP("OpenWeatherMap"),
 }
 
-enum class HijriProvider {
-    MOSQUE_CLOCK_API,
-    AL_ADHAN_API,
-    MANUAL,
+enum class HijriProvider(
+    val displayName: String,
+) {
+    ACJU_DIRECT("ACJU Direct Scraping"),
+    MOSQUE_CLOCK_API("MosqueClock API"),
+    AL_ADHAN_API("Al-Adhan API"),
+    MANUAL("Manual Entry"),
 }
 
 enum class ClockType {
@@ -84,6 +89,7 @@ enum class FontSize {
 enum class PrayerServiceType(
     val displayName: String,
 ) {
+    ACJU_DIRECT("ACJU Direct Scraping"),
     MOSQUE_CLOCK_API("MosqueClock API"),
     AL_ADHAN_API("Al-Adhan API"),
     MANUAL("Manual Prayer Times"),

@@ -342,12 +342,7 @@ private fun PrayerServiceSettings(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Service Type Selection (Manual handled separately below)
-            val serviceOptions =
-                listOf(
-                    PrayerServiceType.MOSQUE_CLOCK_API,
-                    PrayerServiceType.AL_ADHAN_API,
-                    PrayerServiceType.MANUAL,
-                )
+            val serviceOptions = PrayerServiceType.values().toList()
             serviceOptions.forEach { serviceType ->
                 SelectableSettingsRow(
                     selected = selectedServiceType == serviceType,
@@ -358,8 +353,8 @@ private fun PrayerServiceSettings(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Zone selection only for MosqueClock backend
-            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API) {
+            // Zone selection for MosqueClock backend and ACJU Direct (both use Sri Lankan zones)
+            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API || selectedServiceType == PrayerServiceType.ACJU_DIRECT) {
                 ZoneSelection(
                     selectedZone = selectedZone,
                     onZoneChange = onZoneChange,
@@ -685,11 +680,7 @@ private fun WeatherSettings(
                         SelectableSettingsRow(
                             selected = provider == p,
                             onClick = { onProviderChange(p) },
-                            text =
-                                when (p) {
-                                    WeatherProvider.MOSQUE_CLOCK -> "MosqueClock API"
-                                    WeatherProvider.OPEN_WEATHER -> "OpenWeatherMap"
-                                },
+                            text = p.displayName,
                         )
                     }
                 }
@@ -1006,25 +997,13 @@ private fun HijriDateSettings(
 
             // Hijri Provider Selection
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SelectableSettingsRow(
-                    selected = hijriProvider == com.mosque.prayerclock.data.model.HijriProvider.MOSQUE_CLOCK_API,
-                    onClick = {
-                        onHijriProviderChange(
-                            com.mosque.prayerclock.data.model.HijriProvider.MOSQUE_CLOCK_API,
-                        )
-                    },
-                    text = "Mosque Clock API",
-                )
-                SelectableSettingsRow(
-                    selected = hijriProvider == com.mosque.prayerclock.data.model.HijriProvider.AL_ADHAN_API,
-                    onClick = { onHijriProviderChange(com.mosque.prayerclock.data.model.HijriProvider.AL_ADHAN_API) },
-                    text = "Al-Adhan API",
-                )
-                SelectableSettingsRow(
-                    selected = hijriProvider == com.mosque.prayerclock.data.model.HijriProvider.MANUAL,
-                    onClick = { onHijriProviderChange(com.mosque.prayerclock.data.model.HijriProvider.MANUAL) },
-                    text = "Manual Input",
-                )
+                com.mosque.prayerclock.data.model.HijriProvider.values().forEach { provider ->
+                    SelectableSettingsRow(
+                        selected = hijriProvider == provider,
+                        onClick = { onHijriProviderChange(provider) },
+                        text = provider.displayName,
+                    )
+                }
             }
 
             if (hijriProvider == com.mosque.prayerclock.data.model.HijriProvider.MANUAL) {

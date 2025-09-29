@@ -1,7 +1,9 @@
 package com.mosque.prayerclock.di
 
+import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.data.network.ApiKeyInterceptor
 import com.mosque.prayerclock.data.network.MosqueClockApi
+import com.mosque.prayerclock.data.network.OpenWeatherMapApi
 import com.mosque.prayerclock.data.network.PrayerTimesApi
 import com.mosque.prayerclock.data.network.WeatherApi
 import com.mosque.prayerclock.data.repository.WeatherRepository
@@ -90,14 +92,25 @@ object NetworkModule {
     fun provideMosqueClockRetrofit(
         @Named("mosque_clock") okHttpClient: OkHttpClient,
     ): Retrofit {
-        // Use 10.0.2.2 for Android emulator to access host machine's localhost
+        // Use configurable API URL from local.properties
         return Retrofit
             .Builder()
-            .baseUrl("http://10.0.2.2:8000/")
+            .baseUrl(BuildConfig.MOSQUE_CLOCK_API_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
+
+    @Provides
+    @Singleton
+    @Named("openweathermap")
+    fun provideOpenWeatherMapRetrofit(okHttpClient: OkHttpClient): Retrofit =
+        Retrofit
+            .Builder()
+            .baseUrl("https://api.openweathermap.org/data/2.5/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
     @Provides
     @Singleton
@@ -116,4 +129,10 @@ object NetworkModule {
     fun provideMosqueClockApi(
         @Named("mosque_clock") retrofit: Retrofit,
     ): MosqueClockApi = retrofit.create(MosqueClockApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideOpenWeatherMapApi(
+        @Named("openweathermap") retrofit: Retrofit,
+    ): OpenWeatherMapApi = retrofit.create(OpenWeatherMapApi::class.java)
 }

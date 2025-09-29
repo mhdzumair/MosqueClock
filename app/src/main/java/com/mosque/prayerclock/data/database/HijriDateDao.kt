@@ -71,4 +71,7 @@ interface HijriDateDao {
         provider: String,
         region: String? = null,
     ): Int
+
+    @Query("SELECT * FROM hijri_dates WHERE provider = :provider ORDER BY gregorianDate DESC")
+    suspend fun getHijriDatesByProvider(provider: String): List<HijriDateEntity>
 }

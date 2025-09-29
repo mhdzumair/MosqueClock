@@ -1,5 +1,6 @@
 package com.mosque.prayerclock.data.network
 
+import com.mosque.prayerclock.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -10,7 +11,6 @@ class ApiKeyInterceptor
     @Inject
     constructor() : Interceptor {
         companion object {
-            private const val API_KEY = "mosque-clock-api-key-2025"
             private const val HEADER_AUTHORIZATION = "Authorization"
             private const val BEARER_PREFIX = "Bearer "
         }
@@ -18,11 +18,11 @@ class ApiKeyInterceptor
         override fun intercept(chain: Interceptor.Chain): Response {
             val originalRequest = chain.request()
 
-            // Add API key to all requests
+            // Add API key to all requests using configurable value from local.properties
             val request =
                 originalRequest
                     .newBuilder()
-                    .header(HEADER_AUTHORIZATION, "$BEARER_PREFIX$API_KEY")
+                    .header(HEADER_AUTHORIZATION, "$BEARER_PREFIX${BuildConfig.MOSQUE_CLOCK_API_KEY}")
                     .build()
 
             return chain.proceed(request)
