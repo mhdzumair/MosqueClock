@@ -291,8 +291,12 @@ class WeatherRepository
                     // Try secondary weather provider (OpenWeatherMap)
                     if (openWeatherMapService.isConfigured()) {
                         Log.d("WeatherRepository", "🌤️ Trying secondary weather provider (OpenWeatherMap)")
-                        val openWeatherResult = openWeatherMapService.getCurrentWeatherByCoordinates(latitude, longitude)
-                        
+                        val openWeatherResult =
+                            openWeatherMapService.getCurrentWeatherByCoordinates(
+                                latitude,
+                                longitude,
+                            )
+
                         when (openWeatherResult) {
                             is NetworkResult.Success -> {
                                 Log.d("WeatherRepository", "✅ Secondary weather provider successful")
@@ -300,7 +304,10 @@ class WeatherRepository
                                 return@flow
                             }
                             is NetworkResult.Error -> {
-                                Log.w("WeatherRepository", "⚠️ Secondary weather provider failed: ${openWeatherResult.message}")
+                                Log.w(
+                                    "WeatherRepository",
+                                    "⚠️ Secondary weather provider failed: ${openWeatherResult.message}",
+                                )
                             }
                             else -> {
                                 Log.w("WeatherRepository", "⚠️ Secondary weather provider returned unexpected result")
@@ -376,15 +383,16 @@ class WeatherRepository
             }
 
             // Stop any existing jobs (including different providers for same city or different cities)
-            val stoppedJobs = weatherRefreshJobs.entries.removeAll { (existingParams, job) ->
-                if (job.isActive) {
-                    Log.d("WeatherRepository", "Stopping existing weather job for $existingParams")
-                    job.cancel()
-                    true
-                } else {
-                    false
+            val stoppedJobs =
+                weatherRefreshJobs.entries.removeAll { (existingParams, job) ->
+                    if (job.isActive) {
+                        Log.d("WeatherRepository", "Stopping existing weather job for $existingParams")
+                        job.cancel()
+                        true
+                    } else {
+                        false
+                    }
                 }
-            }
 
             if (stoppedJobs) {
                 Log.d("WeatherRepository", "Stopped ${if (stoppedJobs) "existing" else "no"} weather refresh jobs")

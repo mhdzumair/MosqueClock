@@ -307,21 +307,17 @@ data class ProcessedForecastItem(
 )
 
 // Extension functions to convert to existing models
+// Note: Iqamah times are no longer stored, they will be calculated dynamically from settings
 fun MosquePrayerTimes.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerTimes =
     com.mosque.prayerclock.data.model.PrayerTimes(
         id = "", // Will be set later with proper composite ID
         date = this.date,
         providerKey = null, // Will be set later with provider context
         fajrAzan = this.fajrAzan,
-        fajrIqamah = this.fajrIqamah,
         dhuhrAzan = this.dhuhrAzan,
-        dhuhrIqamah = this.dhuhrIqamah,
         asrAzan = this.asrAzan,
-        asrIqamah = this.asrIqamah,
         maghribAzan = this.maghribAzan,
-        maghribIqamah = this.maghribIqamah,
         ishaAzan = this.ishaAzan,
-        ishaIqamah = this.ishaIqamah,
         sunrise = this.sunrise,
         hijriDate = this.hijriDate,
         location = this.location,
@@ -345,15 +341,10 @@ fun BackendPrayerTime.toPrayerTimes(): com.mosque.prayerclock.data.model.PrayerT
         date = this.date,
         providerKey = null, // Will be set later with provider context
         fajrAzan = this.fajr,
-        fajrIqamah = this.fajr, // Backend doesn't provide separate iqamah times
         dhuhrAzan = this.dhuhr,
-        dhuhrIqamah = this.dhuhr,
         asrAzan = this.asr,
-        asrIqamah = this.asr,
         maghribAzan = this.magrib, // Backend uses "magrib"
-        maghribIqamah = this.magrib,
         ishaAzan = this.isha,
-        ishaIqamah = this.isha,
         sunrise = this.sunrise,
         hijriDate = null, // Backend doesn't include hijri date in prayer times
         location = "Zone from MosqueClock Backend",

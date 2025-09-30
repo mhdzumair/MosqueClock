@@ -203,22 +203,23 @@ fun AnalogClock(
                 targetState = hijriMonth,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
-                            fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                        fadeOut(animationSpec = tween(40, easing = LinearEasing))
                 },
                 label = "hijri_month_transition",
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 0.dp, top = 16.dp)
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 0.dp, top = 16.dp),
             ) { animatedMonth ->
                 Surface(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                     shape = RoundedCornerShape(12.dp),
-                    shadowElevation = 4.dp
+                    shadowElevation = 4.dp,
                 ) {
                     Text(
                         text = animatedMonth,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 18.sp, // Reduced from 22.sp to make it smaller
-                            fontWeight = FontWeight.Bold,
-                        ),
+                        style =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 18.sp, // Reduced from 22.sp to make it smaller
+                                fontWeight = FontWeight.Bold,
+                            ),
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
@@ -234,14 +235,15 @@ fun AnalogClock(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 6.dp,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 0.dp)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 0.dp),
             ) {
                 Text(
                     text = hDate.day.toString(),
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = 52.sp, // Much larger for TV viewing
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style =
+                        MaterialTheme.typography.headlineLarge.copy(
+                            fontSize = 52.sp, // Much larger for TV viewing
+                            fontWeight = FontWeight.Bold,
+                        ),
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Reduced inner padding
@@ -255,14 +257,15 @@ fun AnalogClock(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(12.dp),
                 shadowElevation = 4.dp,
-                modifier = Modifier.align(Alignment.BottomStart).padding(start = 0.dp, bottom = 16.dp)
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 0.dp, bottom = 16.dp),
             ) {
                 Text(
                     text = hDate.year.toString(),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = 26.sp, // Increased from 22.sp to make year larger
-                        fontWeight = FontWeight.Medium,
-                    ),
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 26.sp, // Increased from 22.sp to make year larger
+                            fontWeight = FontWeight.Medium,
+                        ),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
@@ -276,22 +279,23 @@ fun AnalogClock(
             targetState = monthName,
             transitionSpec = {
                 fadeIn(animationSpec = tween(60, easing = LinearEasing)) togetherWith
-                        fadeOut(animationSpec = tween(30, easing = LinearEasing))
+                    fadeOut(animationSpec = tween(30, easing = LinearEasing))
             },
             label = "month_name_transition",
-            modifier = Modifier.align(Alignment.TopEnd).padding(end = 0.dp, top = 16.dp)
+            modifier = Modifier.align(Alignment.TopEnd).padding(end = 0.dp, top = 16.dp),
         ) { animatedMonthName ->
             Surface(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(12.dp),
-                shadowElevation = 4.dp
+                shadowElevation = 4.dp,
             ) {
                 Text(
                     text = animatedMonthName,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = 18.sp, // Consistent with Hijri month size
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 18.sp, // Consistent with Hijri month size
+                            fontWeight = FontWeight.Bold,
+                        ),
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
@@ -305,14 +309,15 @@ fun AnalogClock(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
             shape = RoundedCornerShape(16.dp),
             shadowElevation = 6.dp,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 0.dp)
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 0.dp),
         ) {
             Text(
                 text = localDateTime.dayOfMonth.toString(),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 52.sp, // Much larger for TV viewing
-                    fontWeight = FontWeight.Bold,
-                ),
+                style =
+                    MaterialTheme.typography.headlineLarge.copy(
+                        fontSize = 52.sp, // Much larger for TV viewing
+                        fontWeight = FontWeight.Bold,
+                    ),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Reduced inner padding
@@ -324,14 +329,15 @@ fun AnalogClock(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
             shape = RoundedCornerShape(12.dp),
             shadowElevation = 4.dp,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 16.dp)
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 16.dp),
         ) {
             Text(
                 text = localDateTime.year.toString(),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 26.sp, // Increased to match Hijri year size
-                    fontWeight = FontWeight.Medium,
-                ),
+                style =
+                    MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 26.sp, // Increased to match Hijri year size
+                        fontWeight = FontWeight.Medium,
+                    ),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding

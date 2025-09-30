@@ -159,7 +159,10 @@ class PrayerTimesRepository
                     // Fetch data based on service type and emit results
                     when (settings.prayerServiceType) {
                         PrayerServiceType.ACJU_DIRECT -> {
-                            Log.d("PrayerTimesRepository", "🔄 Using ACJU DIRECT SCRAPING for prayer times (Zone: ${settings.selectedZone})")
+                            Log.d(
+                                "PrayerTimesRepository",
+                                "🔄 Using ACJU DIRECT SCRAPING for prayer times (Zone: ${settings.selectedZone})",
+                            )
                             // Use direct PDF scraping
                             getTodayPrayerTimesByDirectScraping(settings.selectedZone).collect { result ->
                                 emit(result)
@@ -198,13 +201,20 @@ class PrayerTimesRepository
                                         dao.insertPrayerTimes(normalizedPrayerTimes)
                                         Log.d("PrayerTimesRepository", "💾 ACJU_DIRECT data saved to database")
                                     } catch (e: Exception) {
-                                        Log.e("PrayerTimesRepository", "❌ Failed to save ACJU_DIRECT data to database", e)
+                                        Log.e(
+                                            "PrayerTimesRepository",
+                                            "❌ Failed to save ACJU_DIRECT data to database",
+                                            e,
+                                        )
                                     }
                                 }
                             }
                         }
                         PrayerServiceType.MOSQUE_CLOCK_API -> {
-                            Log.d("PrayerTimesRepository", "🔄 Using MOSQUE CLOCK API for prayer times (Zone: ${settings.selectedZone})")
+                            Log.d(
+                                "PrayerTimesRepository",
+                                "🔄 Using MOSQUE CLOCK API for prayer times (Zone: ${settings.selectedZone})",
+                            )
                             // Use MosqueClock backend API
                             getTodayPrayerTimesByZone(settings.selectedZone).collect { result ->
                                 emit(result)
@@ -564,9 +574,10 @@ class PrayerTimesRepository
                             if (fallbackResult is NetworkResult.Success) {
                                 Log.d("PrayerTimesRepository", "✅ Fallback API successful, marking as backend data")
                                 // Create a copy with backend provider context for proper caching
-                                val backendData = fallbackResult.data.copy(
-                                    providerKey = "MOSQUE_CLOCK_API:$zone"
-                                )
+                                val backendData =
+                                    fallbackResult.data.copy(
+                                        providerKey = "MOSQUE_CLOCK_API:$zone",
+                                    )
                                 emit(NetworkResult.Success(backendData))
                             } else {
                                 emit(fallbackResult)
@@ -580,9 +591,10 @@ class PrayerTimesRepository
                         if (fallbackResult is NetworkResult.Success) {
                             Log.d("PrayerTimesRepository", "✅ Fallback API successful, marking as backend data")
                             // Create a copy with backend provider context for proper caching
-                            val backendData = fallbackResult.data.copy(
-                                providerKey = "MOSQUE_CLOCK_API:$zone"
-                            )
+                            val backendData =
+                                fallbackResult.data.copy(
+                                    providerKey = "MOSQUE_CLOCK_API:$zone",
+                                )
                             emit(NetworkResult.Success(backendData))
                         } else {
                             emit(fallbackResult)
@@ -602,18 +614,28 @@ class PrayerTimesRepository
                         Log.d("PrayerTimesRepository", "✅ Direct scraping successful for tomorrow")
                         emit(NetworkResult.Success(prayerTimes))
                     } else {
-                        Log.w("PrayerTimesRepository", "⚠️ Direct scraping failed for tomorrow, falling back to backend API")
+                        Log.w(
+                            "PrayerTimesRepository",
+                            "⚠️ Direct scraping failed for tomorrow, falling back to backend API",
+                        )
                         // Fallback to backend API
-                        val tomorrow = Clock.System.now()
-                            .plus(1, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                            .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                        val tomorrow =
+                            Clock.System
+                                .now()
+                                .plus(1, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                                .date
                         getPrayerTimesByZoneAndDate(zone, tomorrow.toString()).collect { fallbackResult ->
                             if (fallbackResult is NetworkResult.Success) {
-                                Log.d("PrayerTimesRepository", "✅ Fallback API successful for tomorrow, marking as backend data")
-                                // Create a copy with backend provider context for proper caching
-                                val backendData = fallbackResult.data.copy(
-                                    providerKey = "MOSQUE_CLOCK_API:$zone"
+                                Log.d(
+                                    "PrayerTimesRepository",
+                                    "✅ Fallback API successful for tomorrow, marking as backend data",
                                 )
+                                // Create a copy with backend provider context for proper caching
+                                val backendData =
+                                    fallbackResult.data.copy(
+                                        providerKey = "MOSQUE_CLOCK_API:$zone",
+                                    )
                                 emit(NetworkResult.Success(backendData))
                             } else {
                                 emit(fallbackResult)
@@ -621,18 +643,28 @@ class PrayerTimesRepository
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("PrayerTimesRepository", "❌ Direct scraping error for tomorrow, falling back to backend API: ${e.message}")
+                    Log.e(
+                        "PrayerTimesRepository",
+                        "❌ Direct scraping error for tomorrow, falling back to backend API: ${e.message}",
+                    )
                     // Fallback to backend API
-                    val tomorrow = Clock.System.now()
-                        .plus(1, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                        .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    val tomorrow =
+                        Clock.System
+                            .now()
+                            .plus(1, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                            .date
                     getPrayerTimesByZoneAndDate(zone, tomorrow.toString()).collect { fallbackResult ->
                         if (fallbackResult is NetworkResult.Success) {
-                            Log.d("PrayerTimesRepository", "✅ Fallback API successful for tomorrow, marking as backend data")
-                            // Create a copy with backend provider context for proper caching
-                            val backendData = fallbackResult.data.copy(
-                                providerKey = "MOSQUE_CLOCK_API:$zone"
+                            Log.d(
+                                "PrayerTimesRepository",
+                                "✅ Fallback API successful for tomorrow, marking as backend data",
                             )
+                            // Create a copy with backend provider context for proper caching
+                            val backendData =
+                                fallbackResult.data.copy(
+                                    providerKey = "MOSQUE_CLOCK_API:$zone",
+                                )
                             emit(NetworkResult.Success(backendData))
                         } else {
                             emit(fallbackResult)
@@ -739,20 +771,16 @@ class PrayerTimesRepository
             val date = alAdhanData.date.gregorian.date
             val hijriDate = alAdhanData.date.hijri.date
 
+            // Note: Iqamah times are no longer stored, they will be calculated dynamically from settings
             return PrayerTimes(
                 id = "", // Will be set later with proper composite ID
                 date = date,
                 providerKey = null, // Will be set later with provider context
                 fajrAzan = formatTime(timings.fajr),
-                fajrIqamah = TimeUtils.calculateIqamahTime(timings.fajr, 20), // 20 minutes after Azan
                 dhuhrAzan = formatTime(timings.dhuhr),
-                dhuhrIqamah = TimeUtils.calculateIqamahTime(timings.dhuhr, 10), // 10 minutes after Azan
                 asrAzan = formatTime(timings.asr),
-                asrIqamah = TimeUtils.calculateIqamahTime(timings.asr, 10), // 10 minutes after Azan
                 maghribAzan = formatTime(timings.maghrib),
-                maghribIqamah = TimeUtils.calculateIqamahTime(timings.maghrib, 5), // 5 minutes after Azan
                 ishaAzan = formatTime(timings.isha),
-                ishaIqamah = TimeUtils.calculateIqamahTime(timings.isha, 10), // 10 minutes after Azan
                 sunrise = formatTime(timings.sunrise),
                 hijriDate = hijriDate,
                 location = "${alAdhanData.meta.latitude}, ${alAdhanData.meta.longitude}",
@@ -804,13 +832,7 @@ class PrayerTimesRepository
             settings: AppSettings,
             date: String? = null,
         ): PrayerTimes {
-            // Calculate iqamah times by adding gaps to azan times
-            val fajrIqamah = TimeUtils.addMinutesToTime(settings.manualFajrAzan, settings.fajrIqamahGap)
-            val dhuhrIqamah = TimeUtils.addMinutesToTime(settings.manualDhuhrAzan, settings.dhuhrIqamahGap)
-            val asrIqamah = TimeUtils.addMinutesToTime(settings.manualAsrAzan, settings.asrIqamahGap)
-            val maghribIqamah = TimeUtils.addMinutesToTime(settings.manualMaghribAzan, settings.maghribIqamahGap)
-            val ishaIqamah = TimeUtils.addMinutesToTime(settings.manualIshaAzan, settings.ishaIqamahGap)
-
+            // Note: Iqamah times are no longer stored, they will be calculated dynamically from settings
             val currentDate =
                 date ?: Clock.System
                     .now()
@@ -823,15 +845,10 @@ class PrayerTimesRepository
                 date = currentDate,
                 providerKey = null, // Manual entries don't have provider context
                 fajrAzan = settings.manualFajrAzan,
-                fajrIqamah = fajrIqamah,
                 dhuhrAzan = settings.manualDhuhrAzan,
-                dhuhrIqamah = dhuhrIqamah,
                 asrAzan = settings.manualAsrAzan,
-                asrIqamah = asrIqamah,
                 maghribAzan = settings.manualMaghribAzan,
-                maghribIqamah = maghribIqamah,
                 ishaAzan = settings.manualIshaAzan,
-                ishaIqamah = ishaIqamah,
                 sunrise = "06:00", // Default sunrise time for manual mode
                 hijriDate = null,
                 location = "Manual",

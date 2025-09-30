@@ -16,27 +16,20 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ScrapingModule {
+    @Provides
+    @Singleton
+    fun providePdfParser(): PdfParser = PdfParser()
 
     @Provides
     @Singleton
-    fun providePdfParser(): PdfParser {
-        return PdfParser()
-    }
-
-    @Provides
-    @Singleton
-    fun provideACJUScraper(okHttpClient: OkHttpClient): ACJUScraper {
-        return ACJUScraper(okHttpClient)
-    }
+    fun provideACJUScraper(okHttpClient: OkHttpClient): ACJUScraper = ACJUScraper(okHttpClient)
 
     @Provides
     @Singleton
     fun provideHijriDateScraper(
         okHttpClient: OkHttpClient,
-        gson: Gson
-    ): HijriDateScraper {
-        return HijriDateScraper(okHttpClient, gson)
-    }
+        gson: Gson,
+    ): HijriDateScraper = HijriDateScraper(okHttpClient, gson)
 
     @Provides
     @Singleton
@@ -44,15 +37,10 @@ object ScrapingModule {
         acjuScraper: ACJUScraper,
         pdfParser: PdfParser,
         hijriDateScraper: HijriDateScraper,
-        prayerTimesDao: PrayerTimesDao
-    ): DirectScrapingService {
-        return DirectScrapingService(acjuScraper, pdfParser, hijriDateScraper, prayerTimesDao)
-    }
+        prayerTimesDao: PrayerTimesDao,
+    ): DirectScrapingService = DirectScrapingService(acjuScraper, pdfParser, hijriDateScraper, prayerTimesDao)
 
     @Provides
     @Singleton
-    fun provideGson(): Gson {
-        return Gson()
-    }
+    fun provideGson(): Gson = Gson()
 }
-

@@ -11,4 +11,3 @@ interface PrayerTimesCacheInvalidator {
      */
     fun invalidatePrayerTimesCache()
 }
-

@@ -52,14 +52,18 @@ interface PrayerTimesDao {
     ): Int
 
     // Monthly caching queries for ACJU Direct
-    @Query("SELECT * FROM prayer_times WHERE providerKey = :providerKey AND date >= :startDate AND date <= :endDate ORDER BY date ASC")
+    @Query(
+        "SELECT * FROM prayer_times WHERE providerKey = :providerKey AND date >= :startDate AND date <= :endDate ORDER BY date ASC",
+    )
     suspend fun getMonthlyPrayerTimes(
         providerKey: String,
         startDate: String,
         endDate: String,
     ): List<PrayerTimes>
 
-    @Query("SELECT COUNT(*) FROM prayer_times WHERE providerKey = :providerKey AND date >= :startDate AND date <= :endDate")
+    @Query(
+        "SELECT COUNT(*) FROM prayer_times WHERE providerKey = :providerKey AND date >= :startDate AND date <= :endDate",
+    )
     suspend fun getMonthlyPrayerTimesCount(
         providerKey: String,
         startDate: String,

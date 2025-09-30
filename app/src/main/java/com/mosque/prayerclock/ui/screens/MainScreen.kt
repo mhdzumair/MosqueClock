@@ -63,6 +63,7 @@ import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerTimes
+import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
 import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.repository.HijriDateRepository
@@ -338,9 +339,11 @@ fun MainLayout(
 
             // Right column - Next Prayer and Weather section
             Column(
-                modifier = Modifier
-                    .weight(1.0f)
-                    .fillMaxHeight(), // Fill available height for proper scaling
+                modifier =
+                    Modifier
+                        .weight(1.0f)
+                        .fillMaxHeight(),
+                // Fill available height for proper scaling
                 verticalArrangement = Arrangement.spacedBy(4.dp), // Reduced spacing to give more room
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -348,9 +351,11 @@ fun MainLayout(
                 when (uiState) {
                     is MainUiState.Loading -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(if (settings.showWeather) 2f else 1f), // Adjust weight based on weather visibility
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .weight(if (settings.showWeather) 2f else 1f),
+                            // Adjust weight based on weather visibility
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(
@@ -365,9 +370,11 @@ fun MainLayout(
                             nextPrayer = uiState.nextPrayer,
                             nextDayFajr = uiState.nextDayFajr,
                             show24Hour = settings.show24HourFormat,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(if (settings.showWeather) 2f else 1f), // Dynamic weight
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .weight(if (settings.showWeather) 2f else 1f),
+                            // Dynamic weight
                             onPrayerTransition = { viewModel.updateNextPrayer() },
                             showCountdown = isCountdownVisibleForWeight,
                             currentTime = currentTimeGlobal,
@@ -377,9 +384,10 @@ fun MainLayout(
                     }
                     is MainUiState.Error -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(if (settings.showWeather) 2f else 1f),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .weight(if (settings.showWeather) 2f else 1f),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -397,9 +405,11 @@ fun MainLayout(
                     when (weatherState) {
                         is WeatherUiState.Loading -> {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f), // Takes proportional space
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                // Takes proportional space
                                 contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(
@@ -411,9 +421,11 @@ fun MainLayout(
                         is WeatherUiState.Success -> {
                             WeatherCard(
                                 weatherInfo = weatherState.weatherInfo,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f), // Takes proportional space
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                // Takes proportional space
                             )
                         }
                         is WeatherUiState.Error -> {
@@ -935,9 +947,9 @@ private fun CountdownUnit(
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun NextPrayerCountdownSection(
-    prayerTimes: PrayerTimes,
+    prayerTimes: PrayerTimesWithIqamah,
     nextPrayer: PrayerType?,
-    nextDayFajr: PrayerTimes? = null,
+    nextDayFajr: PrayerTimesWithIqamah? = null,
     show24Hour: Boolean = false,
     modifier: Modifier = Modifier,
     onPrayerTransition: () -> Unit = {},
@@ -1041,11 +1053,12 @@ fun NextPrayerCountdownSection(
                         Column(
                             modifier = Modifier.fillMaxSize().padding(paddingSize),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = if (showCountdown) {
-                                Arrangement.SpaceEvenly // Distribute space evenly when countdown is visible
-                            } else {
-                                Arrangement.SpaceBetween // Use space between when no countdown
-                            }
+                            verticalArrangement =
+                                if (showCountdown) {
+                                    Arrangement.SpaceEvenly // Distribute space evenly when countdown is visible
+                                } else {
+                                    Arrangement.SpaceBetween // Use space between when no countdown
+                                },
                         ) {
                             // Top section - Next/Current Prayer text (if not sunrise)
                             if (nextPrayerInfo.type != PrayerType.SUNRISE) {
@@ -1155,8 +1168,9 @@ private fun SilentPhoneSection() {
         Image(
             painter = painterResource(id = R.drawable.silent_phone),
             contentDescription = "Silent Phone",
-            modifier = Modifier
-                .fillMaxSize(0.9f),
+            modifier =
+                Modifier
+                    .fillMaxSize(0.9f),
             contentScale = ContentScale.Fit,
         )
 
@@ -1176,7 +1190,7 @@ private fun SilentPhoneSection() {
 
 @Composable
 fun AnimatedPrayerTimesSection(
-    prayerTimes: PrayerTimes,
+    prayerTimes: PrayerTimesWithIqamah,
     nextPrayer: PrayerType?,
     show24Hour: Boolean = false,
     currentTime: Instant = Clock.System.now(),
@@ -1340,7 +1354,7 @@ fun CompactPrayerTimeCard(
 
 @Composable
 private fun createPrayerInfoList(
-    prayerTimes: PrayerTimes,
+    prayerTimes: PrayerTimesWithIqamah,
     currentTime: Instant = Clock.System.now(),
 ): List<PrayerInfo> {
     val currentDate = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())

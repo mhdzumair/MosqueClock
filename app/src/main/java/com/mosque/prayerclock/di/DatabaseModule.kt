@@ -30,7 +30,8 @@ object DatabaseModule {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "mosque_clock_database",
-            ).build()
+            ).fallbackToDestructiveMigration() // Recreate DB on schema changes
+            .build()
 
     @Provides
     fun providePrayerTimesDao(database: AppDatabase): PrayerTimesDao = database.prayerTimesDao()

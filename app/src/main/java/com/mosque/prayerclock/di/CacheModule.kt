@@ -11,11 +11,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class CacheModule {
-
     @Binds
     @Singleton
     abstract fun bindPrayerTimesCacheInvalidator(
-        prayerTimesRepository: PrayerTimesRepository
+        prayerTimesRepository: PrayerTimesRepository,
     ): PrayerTimesCacheInvalidator
 }
-

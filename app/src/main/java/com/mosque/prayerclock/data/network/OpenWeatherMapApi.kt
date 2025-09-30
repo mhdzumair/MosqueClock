@@ -11,7 +11,7 @@ interface OpenWeatherMapApi {
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String,
-        @Query("units") units: String = "metric"
+        @Query("units") units: String = "metric",
     ): Response<OpenWeatherMapResponse>
 
     @GET("forecast")
@@ -20,7 +20,7 @@ interface OpenWeatherMapApi {
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String,
         @Query("units") units: String = "metric",
-        @Query("cnt") count: Int = 5
+        @Query("cnt") count: Int = 5,
     ): Response<OpenWeatherMapForecastResponse>
 }
 
@@ -37,7 +37,7 @@ data class OpenWeatherMapResponse(
     val timezone: Int,
     val id: Long,
     val name: String,
-    val cod: Int
+    val cod: Int,
 )
 
 data class OpenWeatherMapForecastResponse(
@@ -45,19 +45,19 @@ data class OpenWeatherMapForecastResponse(
     val message: Int,
     val cnt: Int,
     val list: List<ForecastItem>,
-    val city: CityInfo
+    val city: CityInfo,
 )
 
 data class Coordinates(
     val lon: Double,
-    val lat: Double
+    val lat: Double,
 )
 
 data class WeatherDescription(
     val id: Int,
     val main: String,
     val description: String,
-    val icon: String
+    val icon: String,
 )
 
 data class MainWeatherData(
@@ -68,17 +68,17 @@ data class MainWeatherData(
     val pressure: Int,
     val humidity: Int,
     val sea_level: Int? = null,
-    val grnd_level: Int? = null
+    val grnd_level: Int? = null,
 )
 
 data class WindData(
     val speed: Double,
     val deg: Int,
-    val gust: Double? = null
+    val gust: Double? = null,
 )
 
 data class CloudData(
-    val all: Int
+    val all: Int,
 )
 
 data class SystemData(
@@ -86,7 +86,7 @@ data class SystemData(
     val id: Long? = null,
     val country: String,
     val sunrise: Long,
-    val sunset: Long
+    val sunset: Long,
 )
 
 data class ForecastItem(
@@ -98,11 +98,11 @@ data class ForecastItem(
     val visibility: Int,
     val pop: Double,
     val sys: ForecastSystemData,
-    val dt_txt: String
+    val dt_txt: String,
 )
 
 data class ForecastSystemData(
-    val pod: String
+    val pod: String,
 )
 
 data class CityInfo(
@@ -113,7 +113,7 @@ data class CityInfo(
     val population: Long,
     val timezone: Int,
     val sunrise: Long,
-    val sunset: Long
+    val sunset: Long,
 )
 
 fun OpenWeatherMapResponse.toWeatherInfo(): WeatherInfo {
@@ -126,7 +126,6 @@ fun OpenWeatherMapResponse.toWeatherInfo(): WeatherInfo {
         feelsLike = main.feels_like,
         visibility = visibility / 1000.0, // Convert meters to kilometers
         uvIndex = 0.0, // UV index not available in current weather endpoint
-        windSpeed = wind.speed * 3.6 // Convert m/s to km/h
+        windSpeed = wind.speed * 3.6, // Convert m/s to km/h
     )
 }
-

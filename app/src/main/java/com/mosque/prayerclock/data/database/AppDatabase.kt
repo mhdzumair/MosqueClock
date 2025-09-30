@@ -8,7 +8,7 @@ import com.mosque.prayerclock.data.model.PrayerTimes
 
 @Database(
     entities = [PrayerTimes::class, HijriDateEntity::class],
-    version = 3, // Back to version 3 - using existing PrayerTimes for monthly caching
+    version = 4, // Version 4 - Removed iqamah time fields, calculated dynamically from settings
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,7 +28,8 @@ abstract class AppDatabase : RoomDatabase() {
                             context.applicationContext,
                             AppDatabase::class.java,
                             "mosque_clock_database",
-                        ).build()
+                        ).fallbackToDestructiveMigration() // Recreate DB on schema changes
+                        .build()
                 instance = inst
                 inst
             }

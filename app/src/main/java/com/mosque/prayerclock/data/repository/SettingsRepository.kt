@@ -298,5 +298,4 @@ class SettingsRepository
         suspend fun updateSoundEnabled(soundEnabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SOUND_ENABLED] = soundEnabled }
         }
-
     }

@@ -230,7 +230,7 @@ private fun LongPressIconButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier,
-        interactionSource = interactionSource
+        interactionSource = interactionSource,
     ) {
         content()
     }
@@ -354,7 +354,9 @@ private fun PrayerServiceSettings(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Zone selection for MosqueClock backend and ACJU Direct (both use Sri Lankan zones)
-            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API || selectedServiceType == PrayerServiceType.ACJU_DIRECT) {
+            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API ||
+                selectedServiceType == PrayerServiceType.ACJU_DIRECT
+            ) {
                 ZoneSelection(
                     selectedZone = selectedZone,
                     onZoneChange = onZoneChange,

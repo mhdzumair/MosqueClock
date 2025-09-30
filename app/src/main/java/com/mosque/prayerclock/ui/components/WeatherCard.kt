@@ -166,7 +166,7 @@ fun WeatherCard(
                             value = "${weatherInfo.feelsLike}°",
                             fontSize = detailsFontSize,
                         )
-                        
+
                         WeatherDetailRow(
                             icon = Icons.Filled.WaterDrop,
                             value = "${weatherInfo.humidity}%",
@@ -230,10 +230,11 @@ private fun WeatherDetailRow(
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = fontSize,
-                fontWeight = FontWeight.Medium // Added medium weight for better readability
-            ),
+            style =
+                MaterialTheme.typography.bodySmall.copy(
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Medium, // Added medium weight for better readability
+                ),
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Increased alpha from 0.7f to 0.8f
         )
     }
