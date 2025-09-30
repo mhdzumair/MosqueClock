@@ -1,18 +1,41 @@
 # Mosque Prayer Clock - Android TV Application
 
-A comprehensive Android TV application designed for mosques to display prayer times, digital/analog clocks, weather information, and provide multilingual support. The app features multiple prayer time sources, intelligent caching systems, and performance optimizations for seamless operation.
+A comprehensive Android TV application designed for mosques to display prayer times, digital/analog clocks, weather information, and provide multilingual support. The app features direct ACJU web scraping, multiple weather providers, intelligent caching systems, and performance optimizations for seamless operation.
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/screenshot1.png" width="45%" alt="Main Clock Display" />
+  <img src="docs/screenshot2.png" width="45%" alt="Prayer Times View" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshot3.png" width="45%" alt="Digital Clock with Weather" />
+  <img src="docs/screenshot4.png" width="45%" alt="Analog Clock Display" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshot5.png" width="45%" alt="Multi-language Support" />
+</p>
 
 ## 🌟 Features
 
 ### 🕌 Prayer Times Display
 - **Multiple Prayer Time Sources**: 
-  - **MosqueClock API**: Custom backend with 13 Sri Lankan zones
-  - **Al-Adhan API**: International prayer times service
+  - **Direct ACJU Scraping**: Real-time web scraping from ACJU.lk with PDF parsing
+  - **MosqueClock Backend API**: Custom backend with 13 Sri Lankan zones
+  - **PrayerTimes.co.uk API**: UK-based international prayer times service
   - **Manual Entry**: Custom prayer times with configurable Iqamah gaps
+- **Web Scraping Technology**:
+  - **PDF Parser**: iTextPDF integration for extracting prayer times from PDF documents
+  - **Jsoup HTML Parser**: Automated web scraping from ACJU website
+  - **Apartment Adjustments**: Automatic time adjustments for apartment dwellers
+  - **Offline Caching**: Stores scraped data for offline access
 - **Five Daily Prayers**: Fajr, Dhuhr, Asr, Maghrib, Isha with Sunrise
 - **Azan & Iqamah Times**: Synchronized animated display for all prayers
-- **Next Prayer Highlight**: Automatically highlights upcoming prayer
+- **Next Prayer Highlight**: Automatically highlights upcoming prayer with countdown
 - **Smart Caching**: Intelligent prayer times caching with provider-specific storage
+- **13 Sri Lankan Zones**: Complete coverage of all prayer time zones in Sri Lanka
 
 ### 🕐 Clock Features
 - **Digital Clock**: Large, customizable digital time display
@@ -24,11 +47,25 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 
 ### 🌤️ Weather Integration
 - **Multiple Weather Providers**:
-  - **MosqueClock Weather API**: Custom weather service
-  - **OpenWeatherMap**: International weather data
-- **Real-time Weather**: Temperature, humidity, UV index, wind speed
-- **Location-based**: Accurate weather for Sri Lankan cities
-- **Smart Coordinates**: Automatic coordinate mapping for precise data
+  - **WeatherAPI.com**: Primary weather service with comprehensive data
+  - **OpenWeatherMap**: Secondary provider for redundancy
+  - **MosqueClock Backend Weather**: Custom weather aggregation service
+- **Real-time Weather Data**: 
+  - Temperature (Celsius/Fahrenheit)
+  - Weather conditions with icons
+  - Humidity levels
+  - UV index
+  - Wind speed
+  - Visibility
+  - Feels-like temperature
+- **Location-based**: 
+  - City name search
+  - GPS coordinates support
+  - Accurate weather for Sri Lankan cities
+  - International city support
+- **Smart Fallback**: Automatic provider switching if primary fails
+- **Weather Icons**: Dynamic weather condition icons from provider APIs
+- **Offline Support**: Caches last known weather data
 
 ### 🌍 Multilingual Support
 - **English**: Full English language support
@@ -57,13 +94,18 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 ### Built With
 - **Kotlin**: Modern Android development language
 - **Jetpack Compose**: Modern UI toolkit for native Android
-- **Android TV**: Optimized for TV devices
+- **Android TV**: Optimized for TV devices with Leanback support
 - **Hilt**: Dependency injection framework
 - **Room Database**: Local data persistence with intelligent caching
 - **DataStore**: Settings and preferences storage
 - **Retrofit**: REST API communication with multiple endpoints
 - **Coroutines**: Asynchronous programming with performance optimizations
 - **Material Design 3**: Modern UI components
+- **iTextPDF**: PDF parsing for ACJU prayer time extraction
+- **Jsoup**: HTML parsing and web scraping
+- **Coil**: Image loading for weather icons
+- **Kotlinx DateTime**: Cross-platform date/time handling
+- **Gson**: JSON serialization/deserialization
 
 ### Architecture Pattern
 - **MVVM**: Model-View-ViewModel architecture
@@ -74,9 +116,11 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 ### 🚀 Performance Optimizations
 
 #### Intelligent Caching System
-- **Prayer Times Caching**: Provider-specific caching (MANUAL, AL_ADHAN_API, MOSQUE_CLOCK_API)
+- **Prayer Times Caching**: Provider-specific caching (MANUAL, ACJU_SCRAPING, PRAYERTIMES_UK, MOSQUE_CLOCK_API)
+- **Web Scraping Cache**: Stores scraped PDF data to minimize repeated downloads
 - **Hijri Date Caching**: Smart database caching with calculation fallbacks
 - **Repository-level Cache**: In-memory caching for instant access
+- **Weather Caching**: Caches weather data to reduce API calls
 - **Auto-cleanup**: Removes old data after 30 days
 
 #### Smart API Management
@@ -84,19 +128,56 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 - **Concurrent Protection**: Prevents duplicate API calls while allowing legitimate updates
 - **Provider Isolation**: Separate caching per prayer time provider
 - **Fallback Strategies**: Graceful degradation when APIs are unavailable
+- **PDF Download Optimization**: Downloads prayer time PDFs only when needed
+- **Network Retry Logic**: Automatic retry with exponential backoff
 
 #### Database Optimizations
 - **Composite Keys**: Provider-specific database IDs for accurate caching
 - **Hijri Date Intelligence**: Calculates dates from cache when safe (non-month-end)
 - **Background Threading**: All database operations on IO dispatcher
 - **Smart Queries**: Efficient database lookups with provider context
+- **Scraped Data Storage**: Efficient storage of PDF-extracted prayer times
+
+#### Release Build Optimizations
+- **ProGuard/R8 Minification**: Code obfuscation and optimization enabled
+- **Resource Shrinking**: Removes unused resources automatically
+- **APK Size**: ~10MB (optimized from ~15-20MB)
+- **Debug Log Removal**: All debug logs stripped in production
+- **Generic Type Preservation**: Properly configured for Retrofit APIs
 
 ## 📦 Installation & Setup
 
 ### Prerequisites
 - Android Studio Arctic Fox or later
-- Android SDK API 21 or higher
+- Android SDK API 21 or higher (Android 5.0+)
+- Target SDK: API 34 (Android 14)
 - Android TV device or emulator
+- Java 8 or higher
+- Gradle 8.0+
+
+### Quick Start
+```bash
+# Clone the repository
+git clone <repository-url>
+cd MosqueClock
+
+# Create local.properties file
+cp local.properties.example local.properties
+
+# Add your API keys to local.properties
+weather_api_key="your-weatherapi-key"
+openweathermap_api_key="your-openweathermap-key"
+mosque_clock_api_url="your-backend-url"
+
+# Build debug APK
+./gradlew assembleDebug
+
+# Or build optimized release APK
+./gradlew assembleRelease
+
+# Install on connected device
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
 
 ### Build Instructions
 
