@@ -95,47 +95,16 @@ fun DigitalClock(
                 .HijriDate(7, 2, 1447) // Default fallback
     }
 
-    val dayNames = localizedStringArrayResource(R.array.day_names)
     val hijriMonthNames = localizedStringArrayResource(R.array.hijri_months)
 
-    // Helper to add ordinal suffix to day of month (English only)
+    // Helper to get current locale for date formatting
     val currentLocale =
         LocaleManager.getCurrentLocale(
             com.mosque.prayerclock.ui.LocalLocalizedContext.current,
         )
 
-    fun addOrdinalLocalized(day: Int): String =
-        if (currentLocale.language.equals("en", ignoreCase = true)) {
-            if (day in 11..13) {
-                "${day}th"
-            } else {
-                when (day % 10) {
-                    1 -> "${day}st"
-                    2 -> "${day}nd"
-                    3 -> "${day}rd"
-                    else -> "${day}th"
-                }
-            }
-        } else {
-            // For non-English, just return the number; month/year are localized separately
-            day.toString()
-        }
-
-    // Format Gregorian as: 8th August 2025
+    // Format Gregorian month and year for the cards
     val monthYear = SimpleDateFormat("MMMM yyyy", currentLocale).format(date)
-    val gregorianPretty = "${addOrdinalLocalized(localDateTime.dayOfMonth)} $monthYear"
-
-    val formattedDate =
-        hijriDate?.let { hDate ->
-            val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
-            val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
-            // Show day name + Hijri date + pretty Gregorian date
-            "$dayName, $hijriMonth ${hDate.day}, ${hDate.year}\n$gregorianPretty"
-        } ?: run {
-            // Fallback if hijriDate is not loaded yet
-            val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
-            "$dayName, ${localizedStringResource(R.string.loading_hijri)}\n$gregorianPretty"
-        }
 
     // Format time manually for better 12/24 hour control
     val formattedTime =
@@ -172,71 +141,162 @@ fun DigitalClock(
             "$timeWithSeconds $ampm"
         }
 
-    // Clean, elegant digital clock with subtle styling
-    Card(
-        modifier = modifier.padding(8.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), // Clean, subtle background
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        shape = RoundedCornerShape(20.dp),
+    // Clean, elegant digital clock without outer card (already inside ClockSection card)
+    Column(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly, // Even distribution of space
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // Clean time display with elegant brass color
-            Text(
-                text = formattedTime,
-                style =
-                    MaterialTheme.typography.displayLarge.copy(
-                        fontSize = fontSize,
-                        fontWeight = FontWeight.Bold,
-                        shadow =
-                            Shadow(
-                                color =
-                                    androidx.compose.ui.graphics
-                                        .Color(0xFFB08D57)
-                                        .copy(alpha = 0.3f),
-                                offset = Offset(0f, 2f),
-                                blurRadius = 8f,
-                            ),
-                    ),
-                color =
-                    androidx.compose.ui.graphics
-                        .Color(0xFFB08D57),
-                // Elegant brass color
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                softWrap = false,
-            )
-
-            Spacer(modifier = Modifier.height((fontSize.value * 0.1f).dp))
-
-            // Clean date display - animated for language transitions
-            AnimatedContent(
-                targetState = formattedDate,
-                transitionSpec = {
-                    fadeIn(
-                        animationSpec = tween(80, easing = LinearEasing),
-                    ) togetherWith
-                        fadeOut(
-                            animationSpec = tween(40, easing = LinearEasing),
-                        )
-                },
-                label = "digital_date_transition",
-            ) { animatedDate ->
-                Text(
-                    text = animatedDate,
-                    style =
-                        MaterialTheme.typography.headlineLarge.copy(
-                            fontSize = fontSize * 0.28f,
-                            fontWeight = FontWeight.Medium,
+        // Clean time display with elegant brass color
+        Text(
+            text = formattedTime,
+            style =
+                MaterialTheme.typography.displayLarge.copy(
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Bold,
+                    shadow =
+                        Shadow(
+                            color =
+                                androidx.compose.ui.graphics
+                                    .Color(0xFFB08D57)
+                                    .copy(alpha = 0.3f),
+                            offset = Offset(0f, 2f),
+                            blurRadius = 8f,
                         ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Subtle text color
-                    textAlign = TextAlign.Center,
-                )
+                ),
+            color =
+                androidx.compose.ui.graphics
+                    .Color(0xFFB08D57),
+            // Elegant brass color
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+        )
+
+        // Side-by-side date cards layout
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Hijri Date Card (Left)
+            hijriDate?.let { hDate ->
+                val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
+                
+                AnimatedContent(
+                    targetState = hijriMonth to hDate,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
+                                fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                    },
+                    label = "hijri_date_transition",
+                    modifier = Modifier.weight(1f)
+                ) { (animatedMonth, animatedDate) ->
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = animatedMonth,
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontSize = fontSize * 0.32f, // Much larger month name
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                            )
+                            
+                            Text(
+                                text = animatedDate.day.toString(),
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontSize = fontSize * 0.55f, // Much larger day number
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                            )
+                            
+                            Text(
+                                text = animatedDate.year.toString(),
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontSize = fontSize * 0.28f, // Larger year
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Gregorian Date Card (Right)
+            AnimatedContent(
+                targetState = localDateTime.dayOfMonth to monthYear,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
+                            fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                },
+                label = "gregorian_date_transition",
+                modifier = Modifier.weight(1f)
+            ) { (dayOfMonth, monthYearStr) ->
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = monthYearStr.split(" ")[0], // Month name
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontSize = fontSize * 0.32f, // Much larger month name
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            color = MaterialTheme.colorScheme.secondary,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                        )
+                        
+                        Text(
+                            text = dayOfMonth.toString(),
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                fontSize = fontSize * 0.55f, // Much larger day number
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                        )
+                        
+                        Text(
+                            text = monthYearStr.split(" ")[1], // Year
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = fontSize * 0.28f, // Larger year
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
             }
         }
     }

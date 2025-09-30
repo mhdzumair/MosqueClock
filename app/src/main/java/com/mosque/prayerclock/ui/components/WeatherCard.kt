@@ -63,14 +63,14 @@ fun WeatherCard(
     weatherInfo: WeatherInfo,
     modifier: Modifier = Modifier,
 ) {
-    val cardPadding = 12.dp
-    val temperatureFontSize = 28.sp
-    val detailsFontSize = 11.sp
+    val cardPadding = 6.dp // Balanced padding for proper spacing
+    val temperatureFontSize = 32.sp // Readable temperature size
+    val detailsFontSize = 20.sp // Readable detail text that fits properly
 
     Card(
         modifier =
             modifier
-                .height(75.dp)
+                .fillMaxSize() // Remove fixed height to allow auto-scaling
                 .padding(2.dp),
         colors =
             CardDefaults.cardColors(
@@ -88,18 +88,18 @@ fun WeatherCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = RoundedCornerShape(9.dp),
         ) {
-            Row(
+            Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .padding(cardPadding),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Left: weather icon + temperature + description
+                // Top row: weather icon + temperature
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp), // Increased spacing for larger elements
                 ) {
                     // Log weather info only once when it changes, not on every recomposition
                     LaunchedEffect(
@@ -149,14 +149,16 @@ fun WeatherCard(
                     )
                 }
 
-                // Right: Weather details with icons in a compact grid
+                // Bottom: Weather details in a 2x2 grid for better space utilization
                 Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     // Row 1: Feels like and Humidity
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         WeatherDetailRow(
@@ -164,6 +166,7 @@ fun WeatherCard(
                             value = "${weatherInfo.feelsLike}°",
                             fontSize = detailsFontSize,
                         )
+                        
                         WeatherDetailRow(
                             icon = Icons.Filled.WaterDrop,
                             value = "${weatherInfo.humidity}%",
@@ -173,25 +176,32 @@ fun WeatherCard(
 
                     // Row 2: Wind speed and UV Index
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // Wind speed with air icon (if available)
+                        // Wind speed (if available, otherwise show placeholder)
                         weatherInfo.windSpeed?.let { wind ->
                             WeatherDetailRow(
                                 icon = Icons.Filled.Air,
                                 value = "${wind}km/h",
                                 fontSize = detailsFontSize,
                             )
+                        } ?: run {
+                            // Placeholder to maintain layout balance
+                            Spacer(modifier = Modifier.weight(1f))
                         }
 
-                        // UV Index with sun icon (if available)
+                        // UV Index (if available, otherwise show placeholder)
                         weatherInfo.uvIndex?.let { uv ->
                             WeatherDetailRow(
                                 icon = Icons.Filled.WbSunny,
                                 value = "UV $uv",
                                 fontSize = detailsFontSize,
                             )
+                        } ?: run {
+                            // Placeholder to maintain layout balance
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -215,13 +225,16 @@ private fun WeatherDetailRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(22.dp), // Slightly larger to match text size
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = fontSize),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = fontSize,
+                fontWeight = FontWeight.Medium // Added medium weight for better readability
+            ),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Increased alpha from 0.7f to 0.8f
         )
     }
 }

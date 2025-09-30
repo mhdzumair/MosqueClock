@@ -112,7 +112,6 @@ fun AnalogClock(
                 .HijriDate(7, 2, 1447) // Default fallback
     }
 
-    val dayNames = localizedStringArrayResource(R.array.day_names)
     val hijriMonthNames = localizedStringArrayResource(R.array.hijri_months)
 
     // Helper to add ordinal suffix to day of month (English only)
@@ -130,7 +129,7 @@ fun AnalogClock(
         Canvas(
             modifier = Modifier.fillMaxSize(),
         ) {
-            val radius = this.size.minDimension * 0.47f
+            val radius = this.size.minDimension * 0.5f // Increased from 0.47f for larger clock face
             val center = this.size.center
 
             // Elegant forest green gradient background
@@ -197,200 +196,146 @@ fun AnalogClock(
             )
         }
 
-        // Left side - Hijri date info (compact overlay)
-        Card(
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            shape = RoundedCornerShape(12.dp),
-            modifier =
-                Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 12.dp, top = 12.dp)
-                    .width(100.dp),
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(6.dp),
-                // Reduced padding for more space
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                hijriDate?.let { hDate ->
-                    val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
-
-                    // Month name (slightly larger) - animated for language transitions
-                    AnimatedContent(
-                        targetState = hijriMonth,
-                        transitionSpec = {
-                            fadeIn(
-                                animationSpec = tween(80, easing = LinearEasing),
-                            ) togetherWith
-                                fadeOut(
-                                    animationSpec = tween(40, easing = LinearEasing),
-                                )
-                        },
-                        label = "hijri_month_transition",
-                    ) { animatedMonth ->
-                        Text(
-                            text = animatedMonth,
-                            style =
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                            modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(3.dp))
-
-                    // Day (more prominent)
+        // Hijri Month Name - Top Left
+        hijriDate?.let { hDate ->
+            val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
+            AnimatedContent(
+                targetState = hijriMonth,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
+                            fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                },
+                label = "hijri_month_transition",
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 0.dp, top = 16.dp)
+            ) { animatedMonth ->
+                Surface(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(12.dp),
+                    shadowElevation = 4.dp
+                ) {
                     Text(
-                        text = hDate.day.toString(),
-                        style =
-                            MaterialTheme.typography.headlineSmall.copy(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = animatedMonth,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 18.sp, // Reduced from 22.sp to make it smaller
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    // Year (slightly larger)
-                    Text(
-                        text = hDate.year.toString(),
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 14.sp,
-                            ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                        maxLines = 1,
                     )
                 }
             }
         }
 
-        // Right side - Gregorian date info (compact overlay)
-        Card(
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            shape = RoundedCornerShape(12.dp),
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 12.dp, top = 12.dp)
-                    .width(100.dp),
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(6.dp), // Reduced padding for more space
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+        // Hijri Day Number - Center Left
+        hijriDate?.let { hDate ->
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 6.dp,
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 0.dp)
             ) {
-                val dayName = dayNames[localDateTime.dayOfWeek.ordinal % 7]
-                val monthName = SimpleDateFormat("MMMM", currentLocale).format(date)
-
-                // Day name (slightly larger) - animated for language transitions
-                AnimatedContent(
-                    targetState = dayName,
-                    transitionSpec = {
-                        fadeIn(
-                            animationSpec = tween(70, easing = LinearEasing),
-                        ) togetherWith
-                            fadeOut(
-                                animationSpec = tween(35, easing = LinearEasing),
-                            )
-                    },
-                    label = "day_name_transition",
-                ) { animatedDayName ->
-                    Text(
-                        text = animatedDayName,
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                // Day number (more prominent)
                 Text(
-                    text = localDateTime.dayOfMonth.toString(),
-                    style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                        ),
+                    text = hDate.day.toString(),
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontSize = 52.sp, // Much larger for TV viewing
+                        fontWeight = FontWeight.Bold,
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Month name (larger for readability) - animated for language transitions
-                AnimatedContent(
-                    targetState = monthName,
-                    transitionSpec = {
-                        fadeIn(
-                            animationSpec = tween(60, easing = LinearEasing),
-                        ) togetherWith
-                            fadeOut(
-                                animationSpec = tween(30, easing = LinearEasing),
-                            )
-                    },
-                    label = "month_name_transition",
-                ) { animatedMonthName ->
-                    Text(
-                        text = animatedMonthName,
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2, // Allow wrapping for long month names
-                        modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Year (slightly larger)
-                Text(
-                    text = localDateTime.year.toString(),
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 14.sp,
-                        ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(), // Ensure full width for centering
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Reduced inner padding
                 )
             }
+        }
+
+        // Hijri Year - Bottom Left
+        hijriDate?.let { hDate ->
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 4.dp,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 0.dp, bottom = 16.dp)
+            ) {
+                Text(
+                    text = hDate.year.toString(),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 26.sp, // Increased from 22.sp to make year larger
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                )
+            }
+        }
+
+        // Gregorian Month Name - Top Right
+        val monthName = SimpleDateFormat("MMMM", currentLocale).format(date)
+        AnimatedContent(
+            targetState = monthName,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(60, easing = LinearEasing)) togetherWith
+                        fadeOut(animationSpec = tween(30, easing = LinearEasing))
+            },
+            label = "month_name_transition",
+            modifier = Modifier.align(Alignment.TopEnd).padding(end = 0.dp, top = 16.dp)
+        ) { animatedMonthName ->
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 4.dp
+            ) {
+                Text(
+                    text = animatedMonthName,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 18.sp, // Consistent with Hijri month size
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                    maxLines = 1,
+                )
+            }
+        }
+
+        // Gregorian Day Number - Center Right
+        Surface(
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+            shape = RoundedCornerShape(16.dp),
+            shadowElevation = 6.dp,
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 0.dp)
+        ) {
+            Text(
+                text = localDateTime.dayOfMonth.toString(),
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 52.sp, // Much larger for TV viewing
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Reduced inner padding
+            )
+        }
+
+        // Gregorian Year - Bottom Right
+        Surface(
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+            shape = RoundedCornerShape(12.dp),
+            shadowElevation = 4.dp,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 16.dp)
+        ) {
+            Text(
+                text = localDateTime.year.toString(),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 26.sp, // Increased to match Hijri year size
+                    fontWeight = FontWeight.Medium,
+                ),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+            )
         }
     }
 }
