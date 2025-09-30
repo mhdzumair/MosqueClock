@@ -19,6 +19,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Generate universal APKs for all screen densities and ABIs
+        vectorDrawables.useSupportLibrary = true
 
         // Read API key from local.properties
         val localProperties = Properties()
@@ -134,6 +137,36 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
+    
+    // Split configuration - Generate multiple APK variants for different architectures
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            // Include all major CPU architectures
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            // Also generate a universal APK that works on all devices
+            isUniversalApk = true
+        }
+        density {
+            isEnable = false  // Disable density splits - not needed for TV
+        }
+    }
+    
+    // Product flavors for different deployment scenarios (optional - comment out if not needed)
+    // flavorDimensions += "deployment"
+    // productFlavors {
+    //     create("production") {
+    //         dimension = "deployment"
+    //         applicationIdSuffix = ""
+    //         versionNameSuffix = ""
+    //     }
+    //     create("mosque") {
+    //         dimension = "deployment"
+    //         applicationIdSuffix = ".mosque"
+    //         versionNameSuffix = "-mosque"
+    //     }
+    // }
 }
 
 dependencies {
