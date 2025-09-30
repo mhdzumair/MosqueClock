@@ -25,6 +25,7 @@ object LocaleManager {
         AppCompatDelegate.setApplicationLocales(localeList)
     }
 
+    @Suppress("DEPRECATION")
     private fun updateResources(
         context: Context,
         languageCode: String,
@@ -33,8 +34,12 @@ object LocaleManager {
         Locale.setDefault(locale)
 
         val configuration = Configuration(context.resources.configuration)
-        configuration.setLocale(locale)
-        configuration.setLocales(android.os.LocaleList(locale))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            configuration.setLocale(locale)
+            configuration.setLocales(android.os.LocaleList(locale))
+        } else {
+            configuration.locale = locale
+        }
 
         return context.createConfigurationContext(configuration)
     }

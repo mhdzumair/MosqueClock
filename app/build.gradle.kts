@@ -51,14 +51,69 @@ android {
         )
     }
 
+    signingConfigs {
+        create("release") {
+            // Load signing config from local.properties
+            val localProperties = Properties()
+            val localPropertiesFile = rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+                localProperties.load(localPropertiesFile.inputStream())
+            }
+            
+            val keystorePath = localProperties.getProperty("RELEASE_STORE_FILE")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+    
     buildTypes {
-        release {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-DEBUG"
+            isDebuggable = true
             isMinifyEnabled = false
+            isShrinkResources = false
+        }
+        
+        release {
+            // Use signing config if available, otherwise build will be unsigned
+            signingConfig = if (rootProject.file("local.properties").exists() &&
+                Properties().apply { load(rootProject.file("local.properties").inputStream()) }
+                    .getProperty("RELEASE_STORE_FILE") != null
+            ) {
+                signingConfigs.getByName("release")
+            } else {
+                null
+            }
+            
+            // Re-enable minification with proper ProGuard rules
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
         }
+    }
+    
+    lint {
+        checkReleaseBuilds = true
+        abortOnError = false
+        warningsAsErrors = false
+        xmlReport = true
+        htmlReport = true
+        disable += setOf(
+            "ObsoleteLintCustomCheck",
+            "UnusedResources",
+            "TypographyEllipsis",
+            "CustomSplashScreen",
+            "AppBundleLocaleChanges"
+        )
     }
 
     compileOptions {

@@ -14,6 +14,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -157,13 +160,12 @@ class SettingsViewModel
             year: Int,
         ) {
             viewModelScope.launch {
+                val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
                 settingsRepository.updateHijriDate(
                     day,
                     month,
                     year,
-                    java.time.LocalDate
-                        .now()
-                        .toString(),
+                    currentDate.toString(),
                 )
             }
         }

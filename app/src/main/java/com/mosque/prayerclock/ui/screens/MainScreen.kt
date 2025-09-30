@@ -1300,8 +1300,8 @@ fun CompactPrayerTimeCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Use consistent font sizes to prevent text cutoff while maintaining readability
-                val prayerNameFontSize = 16.sp // Reduced from 18.sp to prevent Tamil text cutoff
-                val prayerTimeFontSize = 32.sp // Reduced from 34.sp to prevent time cutoff
+                val prayerNameFontSize = 17.sp
+                val prayerTimeFontSize = 32.sp
                 val spacingSize = 1.dp
 
                 Text(

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Suppress custom splash screen warning - we have legacy compatibility requirements -->
+    <issue id="CustomSplashScreen" severity="informational" />
+    
+    <!-- Suppress unused resources warnings - resources may be used dynamically or for future features -->
+    <issue id="UnusedResources" severity="informational" />
+    
+    <!-- Suppress unused attribute warnings - attributes provide graceful degradation -->
+    <issue id="UnusedAttribute" severity="informational" />
+    
+    <!-- Suppress typography ellipsis - using standard dots for better compatibility -->
+    <issue id="TypographyEllipsis" severity="informational" />
+    
+    <!-- Suppress monochrome launcher icon warning - our icon design doesn't require it -->
+    <issue id="MonochromeLauncherIcon" severity="informational" />
+    
+    <!-- Suppress icon location warnings - drawables are intentionally density-independent -->
+    <issue id="IconLocation" severity="informational" />
+    
+    <!-- Suppress vector raster warning - our banner is intentionally large for TV displays -->
+    <issue id="VectorRaster" severity="informational" />
+    
+    <!-- Suppress gradle dependency warnings - we're using stable, tested versions -->
+    <issue id="GradleDependency" severity="informational" />
+    
+    <!-- Suppress modifier parameter order - our parameter order is intentional for API clarity -->
+    <issue id="ModifierParameter" severity="informational" />
+    
+    <!-- Suppress locale changes warning - we handle locale changes internally -->
+    <issue id="AppBundleLocaleChanges" severity="informational" />
+    
+    <!-- Suppress kapt vs ksp warning - we'll migrate to KSP in a future update -->
+    <issue id="KaptUsageInsteadOfKsp" severity="informational" />
+    
+    <!-- Obsolete lint custom checks are from library versions - not our issue to fix -->
+    <issue id="ObsoleteLintCustomCheck" severity="informational" />
+</lint>

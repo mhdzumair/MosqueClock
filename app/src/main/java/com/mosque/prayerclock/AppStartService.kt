@@ -5,8 +5,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 
 class AppStartService : Service() {
@@ -26,7 +28,9 @@ class AppStartService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        startForeground(1, createNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForeground(1, createNotification())
+        }
 
         // Display management handled by activities through window flags
         Log.i(TAG, "Starting mosque clock app from boot...")
@@ -48,6 +52,7 @@ class AppStartService : Service() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotification(): Notification {
         val serviceChannel =
             NotificationChannel(

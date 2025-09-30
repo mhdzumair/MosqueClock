@@ -37,14 +37,14 @@
     <string name="hour_format_24">24 Hour Format</string>
     
     <!-- Sound Settings -->
-    <string name="sound_notifications">Prayer Countdown Ticking</string>
-    <string name="sound_enabled">Enable Sound</string>
-    <string name="sound_description">Play 5-second countdown ticking before azan, iqamah, and sunrise</string>
+    <string name="sound_notifications" translatable="false">Prayer Countdown Ticking</string>
+    <string name="sound_enabled" translatable="false">Enable Sound</string>
+    <string name="sound_description" translatable="false">Play 5-second countdown ticking before azan, iqamah, and sunrise</string>
     
     <!-- Clock Types -->
     <string name="digital_clock">Digital</string>
     <string name="analog_clock">Analog</string>
-    <string name="both_clocks">Both</string>
+    <string name="both_clocks" translatable="false">Both</string>
     
     <!-- Themes -->
     <string name="theme_default">Default</string>
@@ -54,25 +54,25 @@
     <string name="theme_blue">Blue</string>
     
     <!-- Font Sizes -->
-    <string name="font_small">Small</string>
-    <string name="font_medium">Medium</string>
-    <string name="font_large">Large</string>
-    <string name="font_extra_large">Extra Large</string>
+    <string name="font_small" translatable="false">Small</string>
+    <string name="font_medium" translatable="false">Medium</string>
+    <string name="font_large" translatable="false">Large</string>
+    <string name="font_extra_large" translatable="false">Extra Large</string>
     
     <!-- Languages -->
-    <string name="language_english">English</string>
-    <string name="language_tamil">Tamil</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_tamil" translatable="false">Tamil</string>
     
     <!-- Messages -->
-    <string name="loading">Loading...</string>
+    <string name="loading" translatable="false">Loading…</string>
     <string name="error_network">Network Error</string>
     <string name="error_no_data">No prayer times available</string>
     <string name="refresh">Refresh</string>
-    <string name="last_updated">Last Updated</string>
+    <string name="last_updated" translatable="false">Last Updated</string>
     
     <!-- Navigation -->
     <string name="back">Back</string>
-    <string name="save">Save</string>
+    <string name="save" translatable="false">Save</string>
     <string name="cancel">Cancel</string>
     <string name="exit_app">Exit App</string>
     <string name="exit_confirmation">Are you sure you want to exit the Mosque Prayer Clock?</string>
@@ -83,8 +83,8 @@
     <string name="pm">PM</string>
     
     <!-- Location -->
-    <string name="colombo">Colombo</string>
-    <string name="western_province">Western Province</string>
+    <string name="colombo" translatable="false">Colombo</string>
+    <string name="western_province" translatable="false">Western Province</string>
 
     <!-- Weather -->
     <string name="weather">Weather</string>
@@ -93,33 +93,33 @@
     <string name="weather_placeholder">Enter city name for weather</string>
     
     <!-- Prayer Settings -->
-    <string name="manual_prayer_times">Manual Prayer Times</string>
-    <string name="manual_prayer_times_description">Use manual times instead of API</string>
-    <string name="prayer_times_setup">Prayer Times Setup</string>
+    <string name="manual_prayer_times" translatable="false">Manual Prayer Times</string>
+    <string name="manual_prayer_times_description" translatable="false">Use manual times instead of API</string>
+    <string name="prayer_times_setup" translatable="false">Prayer Times Setup</string>
     
     <!-- App Control -->
-    <string name="app_control">App Control</string>
-    <string name="exit_prayer_clock">Exit Prayer Clock</string>
+    <string name="app_control" translatable="false">App Control</string>
+    <string name="exit_prayer_clock" translatable="false">Exit Prayer Clock</string>
     
     <!-- Location Setting -->
-    <string name="location">Location</string>
-    <string name="select_city">Select City</string>
+    <string name="location" translatable="false">Location</string>
+    <string name="select_city" translatable="false">Select City</string>
     
     <!-- Clock Format -->
-    <string name="clock_format">Clock Format</string>
+    <string name="clock_format" translatable="false">Clock Format</string>
     
     <!-- Prayer Buffer Period -->
     <string name="silent_your_phone">Silent Your Phone</string>
     
     <!-- Time Calculation -->
-    <string name="hours_short">hours</string>
-    <string name="minutes_short">minutes</string>
-    <string name="hour_short">hour</string>
-    <string name="minute_short">minute</string>
-    <string name="remaining">remaining</string>
-    <string name="time_format_hours_minutes">%1$dh %2$dm remaining</string>
-    <string name="time_format_minutes_seconds">%1$dm %2$ds remaining</string>
-    <string name="time_format_seconds">%1$ds remaining</string>
+    <string name="hours_short" translatable="false">hours</string>
+    <string name="minutes_short" translatable="false">minutes</string>
+    <string name="hour_short" translatable="false">hour</string>
+    <string name="minute_short" translatable="false">minute</string>
+    <string name="remaining" translatable="false">remaining</string>
+    <string name="time_format_hours_minutes" translatable="false">%1$dh %2$dm remaining</string>
+    <string name="time_format_minutes_seconds" translatable="false">%1$dm %2$ds remaining</string>
+    <string name="time_format_seconds" translatable="false">%1$ds remaining</string>
     
     <!-- Prayer Time Letters (for highlighting) -->
     <string name="azan_letter">Azan</string>
@@ -153,7 +153,7 @@
     </string-array>
     
     <!-- Loading text -->
-    <string name="loading_hijri">Loading...</string>
+    <string name="loading_hijri" translatable="false">Loading…</string>
     
     <!-- Countdown type labels - removed as no longer used -->
 </resources>

@@ -29,7 +29,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class PrayerNotificationService : Service() {
     companion object {
-        private const val TAG = "PrayerNotificationService"
+        private const val TAG = "PrayerNotifService" // Max 23 chars for Android log tag
         private const val CHECK_INTERVAL_MS = 10_000L // Check every 10 seconds (much more efficient)
         private const val COUNTDOWN_CHECK_INTERVAL_MS = 1_000L // Only use 1-second interval during countdown
         private const val COUNTDOWN_START_MINUTES = 1 // Start countdown 1 minute before prayer
