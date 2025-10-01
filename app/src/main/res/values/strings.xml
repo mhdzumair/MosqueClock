@@ -156,4 +156,13 @@
     <string name="loading_hijri" translatable="false">Loading…</string>
     
     <!-- Countdown type labels - removed as no longer used -->
+    
+    <!-- System Settings Access -->
+    <string name="system_settings" translatable="false">System Settings</string>
+    <string name="android_settings" translatable="false">Android Settings</string>
+    <string name="date_time_settings" translatable="false">Date &amp; Time</string>
+    <string name="system_settings_description" translatable="false">Access Android system settings</string>
+    <string name="open_android_settings" translatable="false">Open Android Settings</string>
+    <string name="open_date_time_settings" translatable="false">Open Date &amp; Time Settings</string>
+    <string name="quick_access" translatable="false">Quick Access</string>
 </resources>

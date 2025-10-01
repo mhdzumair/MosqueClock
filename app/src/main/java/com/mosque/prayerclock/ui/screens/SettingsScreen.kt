@@ -1,5 +1,7 @@
 package com.mosque.prayerclock.ui.screens
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,6 +56,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -111,6 +114,10 @@ fun SettingsScreen(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                item {
+                    SystemSettingsAccess()
+                }
+
                 item {
                     MosqueNameSetting(
                         mosqueName = settings.mosqueName,
@@ -271,13 +278,21 @@ private fun MosqueNameSetting(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = stringResource(R.string.mosque_name),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp),
+            ) {
+                Text(
+                    text = "🕌",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = stringResource(R.string.mosque_name),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             ImprovedTextField(
                 value = mosqueName,
@@ -297,13 +312,21 @@ private fun LanguageSetting(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = stringResource(R.string.language),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp),
+            ) {
+                Text(
+                    text = "🌐",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = stringResource(R.string.language),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             Language.values().forEach { language ->
                 SelectableSettingsRow(
@@ -327,11 +350,21 @@ private fun PrayerServiceSettings(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = "Prayer Service",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 4.dp),
+            ) {
+                Text(
+                    text = "📡",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Prayer Service",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             Text(
                 text = "Choose between our backend or third-party service for prayer times",
@@ -656,17 +689,27 @@ private fun WeatherSettings(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
                     Text(
-                        text = stringResource(R.string.weather),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = "🌤️",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(end = 12.dp),
                     )
-                    Text(
-                        text = stringResource(R.string.weather_city_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.weather),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.weather_city_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
                 }
                 Switch(checked = showWeather, onCheckedChange = onToggleShowWeather)
             }
@@ -712,13 +755,21 @@ private fun ManualPrayerTimesSettings(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = "Prayer Times Setup",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp),
+            ) {
+                Text(
+                    text = "⏱️",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Prayer Times Setup",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             PrayerTimeInput(
                 label = "Fajr Azan",
@@ -766,13 +817,21 @@ private fun IqamahGapSettings(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = "Iqamah Time Gaps (minutes after Azan)",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp),
+            ) {
+                Text(
+                    text = "⏳",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Iqamah Time Gaps (minutes after Azan)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             IqamahGapInput(
                 label = "Fajr",
@@ -875,13 +934,21 @@ private fun ClockTypeSetting(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = stringResource(R.string.clock_type),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp),
+            ) {
+                Text(
+                    text = "🕐",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = stringResource(R.string.clock_type),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             ClockType.values().forEach { clockType ->
                 SelectableSettingsRow(
@@ -908,13 +975,21 @@ private fun ClockFormatSettings(
 ) {
     SettingsCard {
         Column {
-            Text(
-                text = "Clock Format",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp),
+            ) {
+                Text(
+                    text = "🔢",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Clock Format",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -991,11 +1066,20 @@ private fun HijriDateSettings(
 ) {
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = "Hijri Date Source",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "🌙",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Hijri Date Source",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             // Hijri Provider Selection
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1489,19 +1573,155 @@ private fun SoundSettings(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f),
+            ) {
                 Text(
-                    text = stringResource(R.string.sound_notifications),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = "🔔",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
                 )
-                Text(
-                    text = stringResource(R.string.sound_description),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.sound_notifications),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.sound_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
             }
             Switch(checked = soundEnabled, onCheckedChange = onSoundEnabledChange)
+        }
+    }
+}
+
+@Composable
+private fun SystemSettingsAccess() {
+    val context = LocalContext.current
+
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "⚙️",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.system_settings),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.system_settings_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Date & Time Settings Button
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val intent = Intent(Settings.ACTION_DATE_SETTINGS)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // Fallback to general settings if date/time settings not available
+                        try {
+                            val intent = Intent(Settings.ACTION_SETTINGS)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            context.startActivity(intent)
+                        } catch (e2: Exception) {
+                            android.util.Log.e("SettingsScreen", "Failed to open settings", e2)
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "⏰",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.date_time_settings),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.open_date_time_settings),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
+
+            // General Android Settings Button
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val intent = Intent(Settings.ACTION_SETTINGS)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        android.util.Log.e("SettingsScreen", "Failed to open settings", e)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "⚙️",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.android_settings),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.open_android_settings),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
         }
     }
 }
