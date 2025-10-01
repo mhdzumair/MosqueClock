@@ -40,9 +40,7 @@ fun localizedStringResource(
 
 @Composable
 @ReadOnlyComposable
-fun localizedStringArrayResource(
-    id: Int,
-): Array<String> = LocalLocalizedContext.current.resources.getStringArray(id)
+fun localizedStringArrayResource(id: Int): Array<String> = LocalLocalizedContext.current.resources.getStringArray(id)
 
 // Animated version for smooth language transitions
 @OptIn(ExperimentalAnimationApi::class)

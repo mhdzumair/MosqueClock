@@ -87,9 +87,9 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import kotlin.math.min
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.min
 import kotlin.time.Duration.Companion.seconds
 
 // Helper data class for returning four values
@@ -718,7 +718,7 @@ fun FlipClockCountdown(
     // Calculate spacing proportional to digit size
     val spacing = with(LocalDensity.current) { (digitBoxSize.toPx() * 0.15f).toDp() }
     val colonSize = digitBoxSize * 0.70f // Colons are 70% of digit size
-    
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalAlignment = Alignment.CenterVertically,
@@ -769,7 +769,7 @@ fun FlipClockDigitPair(
 ) {
     val tens = (value / 10).toInt()
     val units = (value % 10).toInt()
-    
+
     // Calculate spacing proportional to digit size
     val pairSpacing = with(LocalDensity.current) { (digitBoxSize.toPx() * 0.06f).toDp() }
 
@@ -797,17 +797,17 @@ fun AnimatedFlipDigit(
             currentDigit = digit
         }
     }
-    
+
     val density = LocalDensity.current
-    
+
     // Calculate box dimensions based on digitBoxSize
     // Box should be proportional: width is ~0.73x of height
     val boxHeight = with(density) { digitBoxSize.toDp() * 1.38f }
     val boxWidth = boxHeight * 0.73f
-    
+
     // Font size is ~64% of box height
     val fontSize = digitBoxSize
-    
+
     // Border radius proportional to box size
     val borderRadius = boxHeight * 0.09f
 
@@ -932,26 +932,27 @@ fun CountdownDisplay(
         contentAlignment = Alignment.Center, // Center the countdown horizontally
     ) {
         val density = LocalDensity.current
-        
+
         // Calculate available space
         val availableWidthPx = with(density) { maxWidth.toPx() }
         val availableHeightPx = with(density) { maxHeight.toPx() }
-        
+
         // Calculate dynamic sizes for countdown digits
         // Countdown should use most of available height
-        val calculatedDigitSize = with(density) {
-            // Use 80% of available height for digit box
-            val heightBasedSize = (availableHeightPx * 0.80f).toSp()
-            
-            // Consider width: we have up to 8 digits + 2 colons (HH:MM:SS)
-            // Each digit box is ~1.5x wider than height, spacing between elements
-            val numElements = if (hours > 0) 8f else 5f // 8 elements with hours, 5 without
-            val widthBasedSize = (availableWidthPx / numElements * 1.0f).toSp()
-            
-            // Use smaller to ensure it fits
-            min(heightBasedSize.value, widthBasedSize.value).sp
-        }
-        
+        val calculatedDigitSize =
+            with(density) {
+                // Use 80% of available height for digit box
+                val heightBasedSize = (availableHeightPx * 0.80f).toSp()
+
+                // Consider width: we have up to 8 digits + 2 colons (HH:MM:SS)
+                // Each digit box is ~1.5x wider than height, spacing between elements
+                val numElements = if (hours > 0) 8f else 5f // 8 elements with hours, 5 without
+                val widthBasedSize = (availableWidthPx / numElements * 1.0f).toSp()
+
+                // Use smaller to ensure it fits
+                min(heightBasedSize.value, widthBasedSize.value).sp
+            }
+
         FlipClockCountdown(
             hours = hours,
             minutes = minutes,
@@ -1103,38 +1104,40 @@ fun NextPrayerCountdownSection(
                             val density = LocalDensity.current
                             val availableHeightPx = with(density) { maxHeight.toPx() }
                             val availableWidthPx = with(density) { maxWidth.toPx() }
-                            
+
                             // Calculate dynamic font sizes based on available space
                             // Adjust based on whether countdown is visible
-                            val calculatedTimeFontSize = with(density) {
-                                // When countdown is visible, use less height (18% instead of 25%)
-                                // When no countdown, prayer time can use more (30%)
-                                val heightPercentage = if (showCountdown) 0.18f else 0.30f
-                                val heightBasedSize = (availableHeightPx * heightPercentage).toSp()
-                                
-                                // Consider width for time display (typical: "12:00 PM" = 8 chars)
-                                val widthBasedSize = (availableWidthPx / 8f * 1.5f).toSp()
-                                
-                                // Use smaller to ensure it fits
-                                min(heightBasedSize.value, widthBasedSize.value).sp
-                            }
-                            
+                            val calculatedTimeFontSize =
+                                with(density) {
+                                    // When countdown is visible, use less height (18% instead of 25%)
+                                    // When no countdown, prayer time can use more (30%)
+                                    val heightPercentage = if (showCountdown) 0.18f else 0.30f
+                                    val heightBasedSize = (availableHeightPx * heightPercentage).toSp()
+
+                                    // Consider width for time display (typical: "12:00 PM" = 8 chars)
+                                    val widthBasedSize = (availableWidthPx / 8f * 1.5f).toSp()
+
+                                    // Use smaller to ensure it fits
+                                    min(heightBasedSize.value, widthBasedSize.value).sp
+                                }
+
                             // Prayer name calculation considers text length to fit in one line
-                            val calculatedPrayerNameFontSize = with(density) {
-                                // Estimate max chars for prayer name with suffix (e.g., "ஜுஹ்ர் அதான்" = ~12 chars in Tamil)
-                                val estimatedChars = 15f // Conservative estimate for longest prayer name + suffix
-                                val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
-                                
-                                // Also constrain by time font size (should be smaller)
-                                val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
-                                
-                                // Use smaller to ensure single line
-                                min(widthBasedSize.value, maxSize.value).sp
-                            }
-                            
+                            val calculatedPrayerNameFontSize =
+                                with(density) {
+                                    // Estimate max chars for prayer name with suffix (e.g., "ஜுஹ்ர் அதான்" = ~12 chars in Tamil)
+                                    val estimatedChars = 15f // Conservative estimate for longest prayer name + suffix
+                                    val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
+
+                                    // Also constrain by time font size (should be smaller)
+                                    val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
+
+                                    // Use smaller to ensure single line
+                                    min(widthBasedSize.value, maxSize.value).sp
+                                }
+
                             // Title is 45% of time size
                             val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f
-                            
+
                             // Minimal padding to maximize space for content
                             val paddingSize = if (showCountdown) 6.dp else 2.dp
 
@@ -1397,25 +1400,26 @@ fun CompactPrayerTimeCard(
                 modifier = Modifier.fillMaxWidth().padding(contentPadding),
             ) {
                 val density = LocalDensity.current
-                
+
                 // Calculate available space for this prayer card
                 val availableWidthPx = with(density) { maxWidth.toPx() }
                 val availableHeightPx = with(density) { maxHeight.toPx() }
-                
+
                 // Calculate dynamic font sizes based on available space
                 // Each card gets equal space in the row, so we optimize for that
-                val calculatedTimeFontSize = with(density) {
-                    // Time takes about 60% of card height
-                    val heightBasedSize = (availableHeightPx * 0.60f).toSp()
-                    
-                    // Time string is typically 7-8 chars ("12:45 AM" or "12:45")
-                    val estimatedTimeChars = if (show24Hour) 5f else 8f
-                    val widthBasedSize = (availableWidthPx / estimatedTimeChars * 1.8f).toSp()
-                    
-                    // Use the smaller to ensure it fits
-                    min(heightBasedSize.value, widthBasedSize.value).sp
-                }
-                
+                val calculatedTimeFontSize =
+                    with(density) {
+                        // Time takes about 60% of card height
+                        val heightBasedSize = (availableHeightPx * 0.60f).toSp()
+
+                        // Time string is typically 7-8 chars ("12:45 AM" or "12:45")
+                        val estimatedTimeChars = if (show24Hour) 5f else 8f
+                        val widthBasedSize = (availableWidthPx / estimatedTimeChars * 1.8f).toSp()
+
+                        // Use the smaller to ensure it fits
+                        min(heightBasedSize.value, widthBasedSize.value).sp
+                    }
+
                 // Prayer name should be proportional to time (about 50% of time size)
                 val calculatedNameFontSize = calculatedTimeFontSize * 0.50f
                 val spacingSize = 1.dp

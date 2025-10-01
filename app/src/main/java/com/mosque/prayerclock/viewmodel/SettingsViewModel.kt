@@ -160,7 +160,11 @@ class SettingsViewModel
             year: Int,
         ) {
             viewModelScope.launch {
-                val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val currentDate =
+                    Clock.System
+                        .now()
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                        .date
                 settingsRepository.updateHijriDate(
                     day,
                     month,

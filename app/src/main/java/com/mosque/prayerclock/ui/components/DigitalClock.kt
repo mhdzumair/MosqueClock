@@ -46,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.min
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
@@ -60,6 +59,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.floor
+import kotlin.math.min
 
 @Composable
 fun DigitalClock(
@@ -148,35 +148,37 @@ fun DigitalClock(
         modifier = modifier.fillMaxSize(),
     ) {
         val density = LocalDensity.current
-        
+
         // Calculate available space
         val availableWidthPx = with(density) { maxWidth.toPx() }
         val availableHeightPx = with(density) { maxHeight.toPx() }
-        
+
         // Calculate dynamic font size based on available space
         // Similar to analog clock which uses size.minDimension * 0.5f for radius
-        val calculatedFontSize = with(density) {
-            // Time display should take about 70% of available height for maximum visibility
-            // (The Column uses SpaceEvenly arrangement, so we need to account for date cards too)
-            val heightBasedSize = (availableHeightPx * 0.70f).toSp()
-            
-            // Also consider width - time string length varies (12hr format is longer)
-            // Approximate: 8 chars for "HH:MM:SS" or 14 chars for "H:MM:SS AM/PM"
-            // Use an even more aggressive multiplier (2.4) to maximize text size
-            val estimatedTimeChars = if (show24Hour) 8f else 14f
-            val widthBasedSize = (availableWidthPx / estimatedTimeChars * 2.4f).toSp()
-            
-            // Use the smaller of the two to ensure it fits
-            min(heightBasedSize.value, widthBasedSize.value).sp
-        }
-        
+        val calculatedFontSize =
+            with(density) {
+                // Time display should take about 70% of available height for maximum visibility
+                // (The Column uses SpaceEvenly arrangement, so we need to account for date cards too)
+                val heightBasedSize = (availableHeightPx * 0.70f).toSp()
+
+                // Also consider width - time string length varies (12hr format is longer)
+                // Approximate: 8 chars for "HH:MM:SS" or 14 chars for "H:MM:SS AM/PM"
+                // Use an even more aggressive multiplier (2.4) to maximize text size
+                val estimatedTimeChars = if (show24Hour) 8f else 14f
+                val widthBasedSize = (availableWidthPx / estimatedTimeChars * 2.4f).toSp()
+
+                // Use the smaller of the two to ensure it fits
+                min(heightBasedSize.value, widthBasedSize.value).sp
+            }
+
         // Calculate dynamic padding for date cards based on available space
-        val calculatedCardPadding = with(density) {
-            // Use about 2% of height for padding, with min/max constraints
-            val dynamicPadding = (availableHeightPx * 0.02f).toDp()
-            // Constrain between 8dp and 20dp
-            dynamicPadding.coerceIn(8.dp, 20.dp)
-        }
+        val calculatedCardPadding =
+            with(density) {
+                // Use about 2% of height for padding, with min/max constraints
+                val dynamicPadding = (availableHeightPx * 0.02f).toDp()
+                // Constrain between 8dp and 20dp
+                dynamicPadding.coerceIn(8.dp, 20.dp)
+            }
 
         // Clean, elegant digital clock without outer card (already inside ClockSection card)
         Column(
@@ -184,55 +186,119 @@ fun DigitalClock(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly, // Even distribution of space
         ) {
-        // Clean time display with elegant brass color
-        Text(
-            text = formattedTime,
-            style =
-                MaterialTheme.typography.displayLarge.copy(
-                    fontSize = calculatedFontSize,
-                    fontWeight = FontWeight.Bold,
-                    shadow =
-                        Shadow(
-                            color =
-                                androidx.compose.ui.graphics
-                                    .Color(0xFFB08D57)
-                                    .copy(alpha = 0.3f),
-                            offset = Offset(0f, 2f),
-                            blurRadius = 8f,
-                        ),
-                ),
-            color =
-                androidx.compose.ui.graphics
-                    .Color(0xFFB08D57),
-            // Elegant brass color
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            softWrap = false,
-        )
+            // Clean time display with elegant brass color
+            Text(
+                text = formattedTime,
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = calculatedFontSize,
+                        fontWeight = FontWeight.Bold,
+                        shadow =
+                            Shadow(
+                                color =
+                                    androidx.compose.ui.graphics
+                                        .Color(0xFFB08D57)
+                                        .copy(alpha = 0.3f),
+                                offset = Offset(0f, 2f),
+                                blurRadius = 8f,
+                            ),
+                    ),
+                color =
+                    androidx.compose.ui.graphics
+                        .Color(0xFFB08D57),
+                // Elegant brass color
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+            )
 
-        // Side-by-side date cards layout
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Hijri Date Card (Left)
-            hijriDate?.let { hDate ->
-                val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
+            // Side-by-side date cards layout
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Hijri Date Card (Left)
+                hijriDate?.let { hDate ->
+                    val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
 
+                    AnimatedContent(
+                        targetState = hijriMonth to hDate,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
+                                fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                        },
+                        label = "hijri_date_transition",
+                        modifier = Modifier.weight(1f),
+                    ) { (animatedMonth, animatedDate) ->
+                        Card(
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(calculatedCardPadding),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    text = animatedMonth,
+                                    style =
+                                        MaterialTheme.typography.headlineLarge.copy(
+                                            fontSize = calculatedFontSize * 0.35f, // Increased from 0.32f
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                )
+
+                                Text(
+                                    text = animatedDate.day.toString(),
+                                    style =
+                                        MaterialTheme.typography.displayLarge.copy(
+                                            fontSize = calculatedFontSize * 0.60f, // Increased from 0.55f
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                )
+
+                                Text(
+                                    text = animatedDate.year.toString(),
+                                    style =
+                                        MaterialTheme.typography.headlineMedium.copy(
+                                            fontSize = calculatedFontSize * 0.32f, // Increased from 0.28f
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Gregorian Date Card (Right)
                 AnimatedContent(
-                    targetState = hijriMonth to hDate,
+                    targetState = localDateTime.dayOfMonth to monthYear,
                     transitionSpec = {
                         fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
                             fadeOut(animationSpec = tween(40, easing = LinearEasing))
                     },
-                    label = "hijri_date_transition",
+                    label = "gregorian_date_transition",
                     modifier = Modifier.weight(1f),
-                ) { (animatedMonth, animatedDate) ->
+                ) { (dayOfMonth, monthYearStr) ->
                     Card(
                         colors =
                             CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
                             ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -246,19 +312,19 @@ fun DigitalClock(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
-                                text = animatedMonth,
+                                text = monthYearStr.split(" ")[0], // Month name
                                 style =
                                     MaterialTheme.typography.headlineLarge.copy(
                                         fontSize = calculatedFontSize * 0.35f, // Increased from 0.32f
                                         fontWeight = FontWeight.Bold,
                                     ),
-                                color = MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.secondary,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1,
                             )
 
                             Text(
-                                text = animatedDate.day.toString(),
+                                text = dayOfMonth.toString(),
                                 style =
                                     MaterialTheme.typography.displayLarge.copy(
                                         fontSize = calculatedFontSize * 0.60f, // Increased from 0.55f
@@ -269,7 +335,7 @@ fun DigitalClock(
                             )
 
                             Text(
-                                text = animatedDate.year.toString(),
+                                text = monthYearStr.split(" ")[1], // Year
                                 style =
                                     MaterialTheme.typography.headlineMedium.copy(
                                         fontSize = calculatedFontSize * 0.32f, // Increased from 0.28f
@@ -282,70 +348,6 @@ fun DigitalClock(
                     }
                 }
             }
-
-            // Gregorian Date Card (Right)
-            AnimatedContent(
-                targetState = localDateTime.dayOfMonth to monthYear,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
-                        fadeOut(animationSpec = tween(40, easing = LinearEasing))
-                },
-                label = "gregorian_date_transition",
-                modifier = Modifier.weight(1f),
-            ) { (dayOfMonth, monthYearStr) ->
-                Card(
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
-                        ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(calculatedCardPadding),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = monthYearStr.split(" ")[0], // Month name
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontSize = calculatedFontSize * 0.35f, // Increased from 0.32f
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color = MaterialTheme.colorScheme.secondary,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                        )
-
-                        Text(
-                            text = dayOfMonth.toString(),
-                            style =
-                                MaterialTheme.typography.displayLarge.copy(
-                                    fontSize = calculatedFontSize * 0.60f, // Increased from 0.55f
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                        )
-
-                        Text(
-                            text = monthYearStr.split(" ")[1], // Year
-                            style =
-                                MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = calculatedFontSize * 0.32f, // Increased from 0.28f
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-        }
         }
     }
 }

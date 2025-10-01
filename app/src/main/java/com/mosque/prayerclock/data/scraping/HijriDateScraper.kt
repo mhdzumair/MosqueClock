@@ -425,7 +425,10 @@ class HijriDateScraper
                 if (entries != null) {
                     // Use the start date's year-month as the key, since that's how ACJU indexes the entries
                     val hijriMonthKey = String.format("%04d-%02d", startDate.year, startDate.monthNumber)
-                    Log.d(TAG, "🔍 Looking for Hijri month entry using key: $hijriMonthKey (from startDate: $startDateStr)")
+                    Log.d(
+                        TAG,
+                        "🔍 Looking for Hijri month entry using key: $hijriMonthKey (from startDate: $startDateStr)",
+                    )
 
                     val matchingEntry =
                         entries.find { entry ->

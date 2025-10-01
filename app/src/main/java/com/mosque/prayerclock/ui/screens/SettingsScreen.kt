@@ -1649,9 +1649,10 @@ private fun SystemSettingsAccess() {
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                ),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    ),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1666,9 +1667,10 @@ private fun SystemSettingsAccess() {
                     Column {
                         Text(
                             text = stringResource(R.string.date_time_settings),
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                            ),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                ),
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
@@ -1692,9 +1694,10 @@ private fun SystemSettingsAccess() {
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
-                ),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                    ),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1709,9 +1712,10 @@ private fun SystemSettingsAccess() {
                     Column {
                         Text(
                             text = stringResource(R.string.android_settings),
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                            ),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                ),
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(

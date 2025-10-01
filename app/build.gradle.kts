@@ -19,7 +19,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
+
         // Generate universal APKs for all screen densities and ABIs
         vectorDrawables.useSupportLibrary = true
 
@@ -62,7 +62,7 @@ android {
             if (localPropertiesFile.exists()) {
                 localProperties.load(localPropertiesFile.inputStream())
             }
-            
+
             val keystorePath = localProperties.getProperty("RELEASE_STORE_FILE")
             if (keystorePath != null) {
                 storeFile = file(keystorePath)
@@ -72,7 +72,7 @@ android {
             }
         }
     }
-    
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -81,18 +81,20 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        
+
         release {
             // Use signing config if available, otherwise build will be unsigned
-            signingConfig = if (rootProject.file("local.properties").exists() &&
-                Properties().apply { load(rootProject.file("local.properties").inputStream()) }
-                    .getProperty("RELEASE_STORE_FILE") != null
-            ) {
-                signingConfigs.getByName("release")
-            } else {
-                null
-            }
-            
+            signingConfig =
+                if (rootProject.file("local.properties").exists() &&
+                    Properties()
+                        .apply { load(rootProject.file("local.properties").inputStream()) }
+                        .getProperty("RELEASE_STORE_FILE") != null
+                ) {
+                    signingConfigs.getByName("release")
+                } else {
+                    null
+                }
+
             // Re-enable minification with proper ProGuard rules
             isMinifyEnabled = true
             isShrinkResources = true
@@ -103,20 +105,21 @@ android {
             )
         }
     }
-    
+
     lint {
         checkReleaseBuilds = true
         abortOnError = false
         warningsAsErrors = false
         xmlReport = true
         htmlReport = true
-        disable += setOf(
-            "ObsoleteLintCustomCheck",
-            "UnusedResources",
-            "TypographyEllipsis",
-            "CustomSplashScreen",
-            "AppBundleLocaleChanges"
-        )
+        disable +=
+            setOf(
+                "ObsoleteLintCustomCheck",
+                "UnusedResources",
+                "TypographyEllipsis",
+                "CustomSplashScreen",
+                "AppBundleLocaleChanges",
+            )
     }
 
     compileOptions {
@@ -137,7 +140,7 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
-    
+
     // Split configuration - Generate multiple APK variants for different architectures
     splits {
         abi {
@@ -149,10 +152,10 @@ android {
             isUniversalApk = true
         }
         density {
-            isEnable = false  // Disable density splits - not needed for TV
+            isEnable = false // Disable density splits - not needed for TV
         }
     }
-    
+
     // Product flavors for different deployment scenarios (optional - comment out if not needed)
     // flavorDimensions += "deployment"
     // productFlavors {

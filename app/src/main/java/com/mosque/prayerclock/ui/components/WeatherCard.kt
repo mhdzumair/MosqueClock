@@ -48,7 +48,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import kotlin.math.min
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,6 +59,7 @@ import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.ui.AnimatedLocalizedText
 import com.mosque.prayerclock.ui.localizedStringResource
+import kotlin.math.min
 
 @Composable
 fun WeatherCard(
@@ -94,33 +94,36 @@ fun WeatherCard(
                 val density = LocalDensity.current
                 val availableHeightPx = with(density) { maxHeight.toPx() }
                 val availableWidthPx = with(density) { maxWidth.toPx() }
-                
+
                 // Calculate dynamic sizes based on available space
-                val calculatedTemperatureFontSize = with(density) {
-                    // Temperature should use about 25% of height
-                    val heightBasedSize = (availableHeightPx * 0.25f).toSp()
-                    
-                    // Consider width (typical: "28.8°C" = 6 chars)
-                    val widthBasedSize = (availableWidthPx / 10f * 1.5f).toSp()
-                    
-                    min(heightBasedSize.value, widthBasedSize.value).sp
-                }
-                
+                val calculatedTemperatureFontSize =
+                    with(density) {
+                        // Temperature should use about 25% of height
+                        val heightBasedSize = (availableHeightPx * 0.25f).toSp()
+
+                        // Consider width (typical: "28.8°C" = 6 chars)
+                        val widthBasedSize = (availableWidthPx / 10f * 1.5f).toSp()
+
+                        min(heightBasedSize.value, widthBasedSize.value).sp
+                    }
+
                 // Details font is 60% of temperature size
                 val calculatedDetailsFontSize = calculatedTemperatureFontSize * 0.60f
-                
+
                 // Icon size is proportional to temperature font
-                val calculatedIconSize = with(density) { 
-                    (calculatedTemperatureFontSize.toPx() * 1.3f).toDp()
-                }
-                
+                val calculatedIconSize =
+                    with(density) {
+                        (calculatedTemperatureFontSize.toPx() * 1.3f).toDp()
+                    }
+
                 // Detail icon size is proportional to details font
-                val calculatedDetailIconSize = with(density) { 
-                    (calculatedDetailsFontSize.toPx() * 1.1f).toDp()
-                }
-                
+                val calculatedDetailIconSize =
+                    with(density) {
+                        (calculatedDetailsFontSize.toPx() * 1.1f).toDp()
+                    }
+
                 val cardPadding = 6.dp // Balanced padding for proper spacing
-                
+
                 Column(
                     modifier =
                         Modifier
@@ -129,119 +132,119 @@ fun WeatherCard(
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                // Top row: weather icon + temperature
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp), // Increased spacing for larger elements
-                ) {
-                    // Log weather info only once when it changes, not on every recomposition
-                    LaunchedEffect(
-                        weatherInfo.icon,
-                        weatherInfo.temperature,
-                        weatherInfo.uvIndex,
-                        weatherInfo.windSpeed,
+                    // Top row: weather icon + temperature
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp), // Increased spacing for larger elements
                     ) {
-                        Log.d(
-                            "WeatherCard",
-                            "Weather info updated - Icon: '${weatherInfo.icon}', Temperature: ${weatherInfo.temperature} -> ${weatherInfo.temperature.toInt()}°C, UV: ${weatherInfo.uvIndex} -> UV ${weatherInfo.uvIndex?.toInt()}, Wind: ${weatherInfo.windSpeed} -> ${weatherInfo.windSpeed?.toInt()}km/h, FeelsLike: ${weatherInfo.feelsLike} -> ${weatherInfo.feelsLike.toInt()}°",
-                        )
-                    }
-
-                    // Direct weather icon from API
-                    val iconUrl =
-                        if (weatherInfo.icon.startsWith("http")) {
-                            weatherInfo.icon
-                        } else {
-                            "https:${weatherInfo.icon}"
+                        // Log weather info only once when it changes, not on every recomposition
+                        LaunchedEffect(
+                            weatherInfo.icon,
+                            weatherInfo.temperature,
+                            weatherInfo.uvIndex,
+                            weatherInfo.windSpeed,
+                        ) {
+                            Log.d(
+                                "WeatherCard",
+                                "Weather info updated - Icon: '${weatherInfo.icon}', Temperature: ${weatherInfo.temperature} -> ${weatherInfo.temperature.toInt()}°C, UV: ${weatherInfo.uvIndex} -> UV ${weatherInfo.uvIndex?.toInt()}, Wind: ${weatherInfo.windSpeed} -> ${weatherInfo.windSpeed?.toInt()}km/h, FeelsLike: ${weatherInfo.feelsLike} -> ${weatherInfo.feelsLike.toInt()}°",
+                            )
                         }
 
-                    AsyncImage(
-                        model =
-                            ImageRequest
-                                .Builder(LocalContext.current)
-                                .data(iconUrl)
-                                .crossfade(true)
-                                .build(),
-                        contentDescription = weatherInfo.description,
-                        modifier =
-                            Modifier
-                                .size(calculatedIconSize)
-                                .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Fit,
-                    )
+                        // Direct weather icon from API
+                        val iconUrl =
+                            if (weatherInfo.icon.startsWith("http")) {
+                                weatherInfo.icon
+                            } else {
+                                "https:${weatherInfo.icon}"
+                            }
 
-                    // Just show temperature - icon is self-explanatory
-                    Text(
-                        text = "${weatherInfo.temperature}°C",
-                        style =
-                            MaterialTheme.typography.headlineSmall.copy(
-                                fontSize = calculatedTemperatureFontSize,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                // Bottom: Weather details in a 2x2 grid for better space utilization
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    // Row 1: Feels like and Humidity
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        WeatherDetailRow(
-                            icon = Icons.Filled.Thermostat,
-                            value = "${weatherInfo.feelsLike}°",
-                            fontSize = calculatedDetailsFontSize,
-                            iconSize = calculatedDetailIconSize,
+                        AsyncImage(
+                            model =
+                                ImageRequest
+                                    .Builder(LocalContext.current)
+                                    .data(iconUrl)
+                                    .crossfade(true)
+                                    .build(),
+                            contentDescription = weatherInfo.description,
+                            modifier =
+                                Modifier
+                                    .size(calculatedIconSize)
+                                    .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Fit,
                         )
 
-                        WeatherDetailRow(
-                            icon = Icons.Filled.WaterDrop,
-                            value = "${weatherInfo.humidity}%",
-                            fontSize = calculatedDetailsFontSize,
-                            iconSize = calculatedDetailIconSize,
+                        // Just show temperature - icon is self-explanatory
+                        Text(
+                            text = "${weatherInfo.temperature}°C",
+                            style =
+                                MaterialTheme.typography.headlineSmall.copy(
+                                    fontSize = calculatedTemperatureFontSize,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
 
-                    // Row 2: Wind speed and UV Index
-                    Row(
+                    // Bottom: Weather details in a 2x2 grid for better space utilization
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        // Wind speed (if available, otherwise show placeholder)
-                        weatherInfo.windSpeed?.let { wind ->
+                        // Row 1: Feels like and Humidity
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             WeatherDetailRow(
-                                icon = Icons.Filled.Air,
-                                value = "${wind}km/h",
+                                icon = Icons.Filled.Thermostat,
+                                value = "${weatherInfo.feelsLike}°",
                                 fontSize = calculatedDetailsFontSize,
                                 iconSize = calculatedDetailIconSize,
                             )
-                        } ?: run {
-                            // Placeholder to maintain layout balance
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
 
-                        // UV Index (if available, otherwise show placeholder)
-                        weatherInfo.uvIndex?.let { uv ->
                             WeatherDetailRow(
-                                icon = Icons.Filled.WbSunny,
-                                value = "UV $uv",
+                                icon = Icons.Filled.WaterDrop,
+                                value = "${weatherInfo.humidity}%",
                                 fontSize = calculatedDetailsFontSize,
                                 iconSize = calculatedDetailIconSize,
                             )
-                        } ?: run {
-                            // Placeholder to maintain layout balance
-                            Spacer(modifier = Modifier.weight(1f))
+                        }
+
+                        // Row 2: Wind speed and UV Index
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // Wind speed (if available, otherwise show placeholder)
+                            weatherInfo.windSpeed?.let { wind ->
+                                WeatherDetailRow(
+                                    icon = Icons.Filled.Air,
+                                    value = "${wind}km/h",
+                                    fontSize = calculatedDetailsFontSize,
+                                    iconSize = calculatedDetailIconSize,
+                                )
+                            } ?: run {
+                                // Placeholder to maintain layout balance
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+
+                            // UV Index (if available, otherwise show placeholder)
+                            weatherInfo.uvIndex?.let { uv ->
+                                WeatherDetailRow(
+                                    icon = Icons.Filled.WbSunny,
+                                    value = "UV $uv",
+                                    fontSize = calculatedDetailsFontSize,
+                                    iconSize = calculatedDetailIconSize,
+                                )
+                            } ?: run {
+                                // Placeholder to maintain layout balance
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
-                }
                 }
             }
         }

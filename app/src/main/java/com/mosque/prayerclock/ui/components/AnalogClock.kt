@@ -129,30 +129,33 @@ fun AnalogClock(
         val availableWidthPx = with(density) { maxWidth.toPx() }
         val availableHeightPx = with(density) { maxHeight.toPx() }
         val minDimension = minOf(availableWidthPx, availableHeightPx)
-        
+
         // Calculate clock radius (same as Canvas calculation)
         val clockRadius = minDimension * 0.5f
-        
+
         // Calculate dynamic font sizes based on clock radius as the reference
         // Month names (top/bottom): Scale with clock radius
-        val calculatedMonthFontSize = with(density) {
-            // Month names should be about 10% of clock radius
-            (clockRadius * 0.10f).toSp()
-        }
-        
+        val calculatedMonthFontSize =
+            with(density) {
+                // Month names should be about 10% of clock radius
+                (clockRadius * 0.10f).toSp()
+            }
+
         // Day numbers (center sides): These can be largest since they're on the sides
-        val calculatedDayFontSize = with(density) {
-            // Day numbers have horizontal space, can be larger
-            // Use about 28% of clock radius for day numbers
-            (clockRadius * 0.28f).toSp()
-        }
-        
+        val calculatedDayFontSize =
+            with(density) {
+                // Day numbers have horizontal space, can be larger
+                // Use about 28% of clock radius for day numbers
+                (clockRadius * 0.28f).toSp()
+            }
+
         // Year (bottom): Scale with clock radius, slightly larger than month
-        val calculatedYearFontSize = with(density) {
-            // Year should be about 15% of clock radius (larger than month for visibility)
-            (clockRadius * 0.15f).toSp()
-        }
-        
+        val calculatedYearFontSize =
+            with(density) {
+                // Year should be about 15% of clock radius (larger than month for visibility)
+                (clockRadius * 0.15f).toSp()
+            }
+
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -164,89 +167,165 @@ fun AnalogClock(
                 val radius = this.size.minDimension * 0.5f // Increased from 0.47f for larger clock face
                 val center = this.size.center
 
-            // Elegant forest green gradient background
-            drawCircle(
-                brush =
-                    Brush.radialGradient(
-                        colors =
-                            listOf(
-                                Color(0xFF2D5016), // Deep forest green center
-                                Color(0xFF1A2E0A), // Darker forest green edge
+                // Elegant forest green gradient background
+                drawCircle(
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    Color(0xFF2D5016), // Deep forest green center
+                                    Color(0xFF1A2E0A), // Darker forest green edge
+                                ),
+                            radius = radius,
+                            center = center,
+                        ),
+                    radius = radius,
+                    center = center,
+                )
+
+                // Elegant brass/bronze outer rim
+                drawCircle(
+                    color = Color(0xFFB08D57), // Realistic brass color
+                    radius = radius,
+                    center = center,
+                    style = Stroke(width = 6.dp.toPx()),
+                )
+
+                // Inner brass accent ring
+                drawCircle(
+                    color = Color(0xFFB08D57).copy(alpha = 0.3f),
+                    radius = radius * 0.95f,
+                    center = center,
+                    style = Stroke(width = 1.dp.toPx()),
+                )
+
+                // Draw sunburst pattern
+                drawSunburstPattern(center, radius * 0.9f, Color(0xFFB08D57).copy(alpha = 0.4f))
+
+                // Draw modern minimalist numbers (only 12, 3, 6, 9)
+                drawModernNumbers(center, radius * 0.8f, Color(0xFFB08D57))
+
+                // Draw modern hour markers
+                drawModernHourMarkers(center, radius, Color(0xFFB08D57))
+
+                // Draw modern hands
+                drawModernHourHand(center, radius * 0.5f, hour, minute, Color(0xFFB08D57))
+                drawModernMinuteHand(center, radius * 0.7f, minute, Color(0xFFB08D57))
+                drawModernSecondHand(center, radius * 0.75f, second, Color(0xFFF5F5DC)) // Elegant cream color
+
+                // Modern center piece
+                drawCircle(
+                    color = Color(0xFFB08D57),
+                    radius = 12f,
+                    center = center,
+                )
+                drawCircle(
+                    color = Color(0xFF2D5016),
+                    radius = 8f,
+                    center = center,
+                )
+                drawCircle(
+                    color = Color(0xFFB08D57),
+                    radius = 4f,
+                    center = center,
+                )
+            }
+
+            // Hijri Month Name - Top Left
+            hijriDate?.let { hDate ->
+                val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
+                AnimatedContent(
+                    targetState = hijriMonth,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
+                            fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                    },
+                    label = "hijri_month_transition",
+                    modifier = Modifier.align(Alignment.TopStart).padding(start = 0.dp, top = 16.dp),
+                ) { animatedMonth ->
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(12.dp),
+                        shadowElevation = 4.dp,
+                    ) {
+                        Text(
+                            text = animatedMonth,
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontSize = calculatedMonthFontSize,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+
+            // Hijri Day Number - Center Left
+            hijriDate?.let { hDate ->
+                Surface(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 0.dp),
+                ) {
+                    Text(
+                        text = hDate.day.toString(),
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontSize = calculatedDayFontSize,
+                                fontWeight = FontWeight.Bold,
                             ),
-                        radius = radius,
-                        center = center,
-                    ),
-                radius = radius,
-                center = center,
-            )
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                }
+            }
 
-            // Elegant brass/bronze outer rim
-            drawCircle(
-                color = Color(0xFFB08D57), // Realistic brass color
-                radius = radius,
-                center = center,
-                style = Stroke(width = 6.dp.toPx()),
-            )
+            // Hijri Year - Bottom Left
+            hijriDate?.let { hDate ->
+                Surface(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(12.dp),
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(start = 0.dp, bottom = 16.dp),
+                ) {
+                    Text(
+                        text = hDate.year.toString(),
+                        style =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = calculatedYearFontSize,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                    )
+                }
+            }
 
-            // Inner brass accent ring
-            drawCircle(
-                color = Color(0xFFB08D57).copy(alpha = 0.3f),
-                radius = radius * 0.95f,
-                center = center,
-                style = Stroke(width = 1.dp.toPx()),
-            )
-
-            // Draw sunburst pattern
-            drawSunburstPattern(center, radius * 0.9f, Color(0xFFB08D57).copy(alpha = 0.4f))
-
-            // Draw modern minimalist numbers (only 12, 3, 6, 9)
-            drawModernNumbers(center, radius * 0.8f, Color(0xFFB08D57))
-
-            // Draw modern hour markers
-            drawModernHourMarkers(center, radius, Color(0xFFB08D57))
-
-            // Draw modern hands
-            drawModernHourHand(center, radius * 0.5f, hour, minute, Color(0xFFB08D57))
-            drawModernMinuteHand(center, radius * 0.7f, minute, Color(0xFFB08D57))
-            drawModernSecondHand(center, radius * 0.75f, second, Color(0xFFF5F5DC)) // Elegant cream color
-
-            // Modern center piece
-            drawCircle(
-                color = Color(0xFFB08D57),
-                radius = 12f,
-                center = center,
-            )
-            drawCircle(
-                color = Color(0xFF2D5016),
-                radius = 8f,
-                center = center,
-            )
-            drawCircle(
-                color = Color(0xFFB08D57),
-                radius = 4f,
-                center = center,
-            )
-        }
-
-        // Hijri Month Name - Top Left
-        hijriDate?.let { hDate ->
-            val hijriMonth = hijriMonthNames.getOrNull(hDate.month - 1) ?: hijriMonthNames[0]
+            // Gregorian Month Name - Top Right
+            val monthName = SimpleDateFormat("MMMM", currentLocale).format(date)
             AnimatedContent(
-                targetState = hijriMonth,
+                targetState = monthName,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(80, easing = LinearEasing)) togetherWith
-                        fadeOut(animationSpec = tween(40, easing = LinearEasing))
+                    fadeIn(animationSpec = tween(60, easing = LinearEasing)) togetherWith
+                        fadeOut(animationSpec = tween(30, easing = LinearEasing))
                 },
-                label = "hijri_month_transition",
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 0.dp, top = 16.dp),
-            ) { animatedMonth ->
+                label = "month_name_transition",
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 0.dp, top = 16.dp),
+            ) { animatedMonthName ->
                 Surface(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                     shape = RoundedCornerShape(12.dp),
                     shadowElevation = 4.dp,
                 ) {
                     Text(
-                        text = animatedMonth,
+                        text = animatedMonthName,
                         style =
                             MaterialTheme.typography.bodyLarge.copy(
                                 fontSize = calculatedMonthFontSize,
@@ -259,18 +338,16 @@ fun AnalogClock(
                     )
                 }
             }
-        }
 
-        // Hijri Day Number - Center Left
-        hijriDate?.let { hDate ->
+            // Gregorian Day Number - Center Right
             Surface(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 6.dp,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 0.dp),
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 0.dp),
             ) {
                 Text(
-                    text = hDate.day.toString(),
+                    text = localDateTime.dayOfMonth.toString(),
                     style =
                         MaterialTheme.typography.headlineLarge.copy(
                             fontSize = calculatedDayFontSize,
@@ -281,18 +358,16 @@ fun AnalogClock(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                 )
             }
-        }
 
-        // Hijri Year - Bottom Left
-        hijriDate?.let { hDate ->
+            // Gregorian Year - Bottom Right
             Surface(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(12.dp),
                 shadowElevation = 4.dp,
-                modifier = Modifier.align(Alignment.BottomStart).padding(start = 0.dp, bottom = 16.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 16.dp),
             ) {
                 Text(
-                    text = hDate.year.toString(),
+                    text = localDateTime.year.toString(),
                     style =
                         MaterialTheme.typography.bodyLarge.copy(
                             fontSize = calculatedYearFontSize,
@@ -303,78 +378,6 @@ fun AnalogClock(
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                 )
             }
-        }
-
-        // Gregorian Month Name - Top Right
-        val monthName = SimpleDateFormat("MMMM", currentLocale).format(date)
-        AnimatedContent(
-            targetState = monthName,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(60, easing = LinearEasing)) togetherWith
-                    fadeOut(animationSpec = tween(30, easing = LinearEasing))
-            },
-            label = "month_name_transition",
-            modifier = Modifier.align(Alignment.TopEnd).padding(end = 0.dp, top = 16.dp),
-        ) { animatedMonthName ->
-            Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                shape = RoundedCornerShape(12.dp),
-                shadowElevation = 4.dp,
-            ) {
-                Text(
-                    text = animatedMonthName,
-                    style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = calculatedMonthFontSize,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                    maxLines = 1,
-                )
-            }
-        }
-
-        // Gregorian Day Number - Center Right
-        Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-            shape = RoundedCornerShape(16.dp),
-            shadowElevation = 6.dp,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 0.dp),
-        ) {
-            Text(
-                text = localDateTime.dayOfMonth.toString(),
-                style =
-                    MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = calculatedDayFontSize,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            )
-        }
-
-        // Gregorian Year - Bottom Right
-        Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-            shape = RoundedCornerShape(12.dp),
-            shadowElevation = 4.dp,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 16.dp),
-        ) {
-            Text(
-                text = localDateTime.year.toString(),
-                style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = calculatedYearFontSize,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-            )
-        }
         }
     }
 }
