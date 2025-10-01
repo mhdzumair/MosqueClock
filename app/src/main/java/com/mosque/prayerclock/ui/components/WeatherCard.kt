@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,7 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import kotlin.math.min
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,10 +66,6 @@ fun WeatherCard(
     weatherInfo: WeatherInfo,
     modifier: Modifier = Modifier,
 ) {
-    val cardPadding = 6.dp // Balanced padding for proper spacing
-    val temperatureFontSize = 32.sp // Readable temperature size
-    val detailsFontSize = 20.sp // Readable detail text that fits properly
-
     Card(
         modifier =
             modifier
@@ -88,14 +87,48 @@ fun WeatherCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = RoundedCornerShape(9.dp),
         ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(cardPadding),
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // Use BoxWithConstraints for dynamic sizing
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
             ) {
+                val density = LocalDensity.current
+                val availableHeightPx = with(density) { maxHeight.toPx() }
+                val availableWidthPx = with(density) { maxWidth.toPx() }
+                
+                // Calculate dynamic sizes based on available space
+                val calculatedTemperatureFontSize = with(density) {
+                    // Temperature should use about 25% of height
+                    val heightBasedSize = (availableHeightPx * 0.25f).toSp()
+                    
+                    // Consider width (typical: "28.8°C" = 6 chars)
+                    val widthBasedSize = (availableWidthPx / 10f * 1.5f).toSp()
+                    
+                    min(heightBasedSize.value, widthBasedSize.value).sp
+                }
+                
+                // Details font is 60% of temperature size
+                val calculatedDetailsFontSize = calculatedTemperatureFontSize * 0.60f
+                
+                // Icon size is proportional to temperature font
+                val calculatedIconSize = with(density) { 
+                    (calculatedTemperatureFontSize.toPx() * 1.3f).toDp()
+                }
+                
+                // Detail icon size is proportional to details font
+                val calculatedDetailIconSize = with(density) { 
+                    (calculatedDetailsFontSize.toPx() * 1.1f).toDp()
+                }
+                
+                val cardPadding = 6.dp // Balanced padding for proper spacing
+                
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(cardPadding),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                 // Top row: weather icon + temperature
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -132,7 +165,7 @@ fun WeatherCard(
                         contentDescription = weatherInfo.description,
                         modifier =
                             Modifier
-                                .size(48.dp)
+                                .size(calculatedIconSize)
                                 .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Fit,
                     )
@@ -142,7 +175,7 @@ fun WeatherCard(
                         text = "${weatherInfo.temperature}°C",
                         style =
                             MaterialTheme.typography.headlineSmall.copy(
-                                fontSize = temperatureFontSize,
+                                fontSize = calculatedTemperatureFontSize,
                                 fontWeight = FontWeight.Bold,
                             ),
                         color = MaterialTheme.colorScheme.primary,
@@ -164,13 +197,15 @@ fun WeatherCard(
                         WeatherDetailRow(
                             icon = Icons.Filled.Thermostat,
                             value = "${weatherInfo.feelsLike}°",
-                            fontSize = detailsFontSize,
+                            fontSize = calculatedDetailsFontSize,
+                            iconSize = calculatedDetailIconSize,
                         )
 
                         WeatherDetailRow(
                             icon = Icons.Filled.WaterDrop,
                             value = "${weatherInfo.humidity}%",
-                            fontSize = detailsFontSize,
+                            fontSize = calculatedDetailsFontSize,
+                            iconSize = calculatedDetailIconSize,
                         )
                     }
 
@@ -185,7 +220,8 @@ fun WeatherCard(
                             WeatherDetailRow(
                                 icon = Icons.Filled.Air,
                                 value = "${wind}km/h",
-                                fontSize = detailsFontSize,
+                                fontSize = calculatedDetailsFontSize,
+                                iconSize = calculatedDetailIconSize,
                             )
                         } ?: run {
                             // Placeholder to maintain layout balance
@@ -197,13 +233,15 @@ fun WeatherCard(
                             WeatherDetailRow(
                                 icon = Icons.Filled.WbSunny,
                                 value = "UV $uv",
-                                fontSize = detailsFontSize,
+                                fontSize = calculatedDetailsFontSize,
+                                iconSize = calculatedDetailIconSize,
                             )
                         } ?: run {
                             // Placeholder to maintain layout balance
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }
+                }
                 }
             }
         }
@@ -215,6 +253,7 @@ private fun WeatherDetailRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     value: String,
     fontSize: androidx.compose.ui.unit.TextUnit,
+    iconSize: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -225,7 +264,7 @@ private fun WeatherDetailRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(22.dp), // Slightly larger to match text size
+            modifier = Modifier.size(iconSize),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
         Text(

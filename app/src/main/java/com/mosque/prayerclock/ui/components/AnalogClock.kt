@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -120,17 +121,48 @@ fun AnalogClock(
             com.mosque.prayerclock.ui.LocalLocalizedContext.current,
         )
 
-    // Use Box layout to maximize space utilization with overlays
-    Box(
+    // Use BoxWithConstraints to calculate dynamic font sizes
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
     ) {
-        // Main clock - takes maximum available space
-        Canvas(
+        val density = LocalDensity.current
+        val availableWidthPx = with(density) { maxWidth.toPx() }
+        val availableHeightPx = with(density) { maxHeight.toPx() }
+        val minDimension = minOf(availableWidthPx, availableHeightPx)
+        
+        // Calculate clock radius (same as Canvas calculation)
+        val clockRadius = minDimension * 0.5f
+        
+        // Calculate dynamic font sizes based on clock radius as the reference
+        // Month names (top/bottom): Scale with clock radius
+        val calculatedMonthFontSize = with(density) {
+            // Month names should be about 10% of clock radius
+            (clockRadius * 0.10f).toSp()
+        }
+        
+        // Day numbers (center sides): These can be largest since they're on the sides
+        val calculatedDayFontSize = with(density) {
+            // Day numbers have horizontal space, can be larger
+            // Use about 28% of clock radius for day numbers
+            (clockRadius * 0.28f).toSp()
+        }
+        
+        // Year (bottom): Scale with clock radius, slightly larger than month
+        val calculatedYearFontSize = with(density) {
+            // Year should be about 15% of clock radius (larger than month for visibility)
+            (clockRadius * 0.15f).toSp()
+        }
+        
+        Box(
             modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
-            val radius = this.size.minDimension * 0.5f // Increased from 0.47f for larger clock face
-            val center = this.size.center
+            // Main clock - takes maximum available space
+            Canvas(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                val radius = this.size.minDimension * 0.5f // Increased from 0.47f for larger clock face
+                val center = this.size.center
 
             // Elegant forest green gradient background
             drawCircle(
@@ -217,12 +249,12 @@ fun AnalogClock(
                         text = animatedMonth,
                         style =
                             MaterialTheme.typography.bodyLarge.copy(
-                                fontSize = 18.sp, // Reduced from 22.sp to make it smaller
+                                fontSize = calculatedMonthFontSize,
                                 fontWeight = FontWeight.Bold,
                             ),
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                         maxLines = 1,
                     )
                 }
@@ -241,12 +273,12 @@ fun AnalogClock(
                     text = hDate.day.toString(),
                     style =
                         MaterialTheme.typography.headlineLarge.copy(
-                            fontSize = 52.sp, // Much larger for TV viewing
+                            fontSize = calculatedDayFontSize,
                             fontWeight = FontWeight.Bold,
                         ),
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Reduced inner padding
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                 )
             }
         }
@@ -263,12 +295,12 @@ fun AnalogClock(
                     text = hDate.year.toString(),
                     style =
                         MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 26.sp, // Increased from 22.sp to make year larger
+                            fontSize = calculatedYearFontSize,
                             fontWeight = FontWeight.Medium,
                         ),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                 )
             }
         }
@@ -293,12 +325,12 @@ fun AnalogClock(
                     text = animatedMonthName,
                     style =
                         MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 18.sp, // Consistent with Hijri month size
+                            fontSize = calculatedMonthFontSize,
                             fontWeight = FontWeight.Bold,
                         ),
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                     maxLines = 1,
                 )
             }
@@ -315,12 +347,12 @@ fun AnalogClock(
                 text = localDateTime.dayOfMonth.toString(),
                 style =
                     MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = 52.sp, // Much larger for TV viewing
+                        fontSize = calculatedDayFontSize,
                         fontWeight = FontWeight.Bold,
                     ),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Reduced inner padding
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             )
         }
 
@@ -335,13 +367,14 @@ fun AnalogClock(
                 text = localDateTime.year.toString(),
                 style =
                     MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = 26.sp, // Increased to match Hijri year size
+                        fontSize = calculatedYearFontSize,
                         fontWeight = FontWeight.Medium,
                     ),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Reduced inner padding
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
             )
+        }
         }
     }
 }

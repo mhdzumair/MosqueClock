@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,12 +39,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.min
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
@@ -63,7 +66,6 @@ fun DigitalClock(
     show24Hour: Boolean = false,
     showSeconds: Boolean = true,
     modifier: Modifier = Modifier,
-    fontSize: androidx.compose.ui.unit.TextUnit = 96.sp,
     hijriDateRepository: com.mosque.prayerclock.data.repository.HijriDateRepository? = null,
     currentTime: Instant? = null,
 ) {
@@ -141,18 +143,53 @@ fun DigitalClock(
             "$timeWithSeconds $ampm"
         }
 
-    // Clean, elegant digital clock without outer card (already inside ClockSection card)
-    Column(
+    // Use BoxWithConstraints to dynamically calculate optimal font size based on available space
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly, // Even distribution of space
     ) {
+        val density = LocalDensity.current
+        
+        // Calculate available space
+        val availableWidthPx = with(density) { maxWidth.toPx() }
+        val availableHeightPx = with(density) { maxHeight.toPx() }
+        
+        // Calculate dynamic font size based on available space
+        // Similar to analog clock which uses size.minDimension * 0.5f for radius
+        val calculatedFontSize = with(density) {
+            // Time display should take about 70% of available height for maximum visibility
+            // (The Column uses SpaceEvenly arrangement, so we need to account for date cards too)
+            val heightBasedSize = (availableHeightPx * 0.70f).toSp()
+            
+            // Also consider width - time string length varies (12hr format is longer)
+            // Approximate: 8 chars for "HH:MM:SS" or 14 chars for "H:MM:SS AM/PM"
+            // Use an even more aggressive multiplier (2.4) to maximize text size
+            val estimatedTimeChars = if (show24Hour) 8f else 14f
+            val widthBasedSize = (availableWidthPx / estimatedTimeChars * 2.4f).toSp()
+            
+            // Use the smaller of the two to ensure it fits
+            min(heightBasedSize.value, widthBasedSize.value).sp
+        }
+        
+        // Calculate dynamic padding for date cards based on available space
+        val calculatedCardPadding = with(density) {
+            // Use about 2% of height for padding, with min/max constraints
+            val dynamicPadding = (availableHeightPx * 0.02f).toDp()
+            // Constrain between 8dp and 20dp
+            dynamicPadding.coerceIn(8.dp, 20.dp)
+        }
+
+        // Clean, elegant digital clock without outer card (already inside ClockSection card)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly, // Even distribution of space
+        ) {
         // Clean time display with elegant brass color
         Text(
             text = formattedTime,
             style =
                 MaterialTheme.typography.displayLarge.copy(
-                    fontSize = fontSize,
+                    fontSize = calculatedFontSize,
                     fontWeight = FontWeight.Bold,
                     shadow =
                         Shadow(
@@ -205,14 +242,14 @@ fun DigitalClock(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(calculatedCardPadding),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
                                 text = animatedMonth,
                                 style =
                                     MaterialTheme.typography.headlineLarge.copy(
-                                        fontSize = fontSize * 0.32f, // Much larger month name
+                                        fontSize = calculatedFontSize * 0.35f, // Increased from 0.32f
                                         fontWeight = FontWeight.Bold,
                                     ),
                                 color = MaterialTheme.colorScheme.primary,
@@ -224,7 +261,7 @@ fun DigitalClock(
                                 text = animatedDate.day.toString(),
                                 style =
                                     MaterialTheme.typography.displayLarge.copy(
-                                        fontSize = fontSize * 0.55f, // Much larger day number
+                                        fontSize = calculatedFontSize * 0.60f, // Increased from 0.55f
                                         fontWeight = FontWeight.Bold,
                                     ),
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -235,7 +272,7 @@ fun DigitalClock(
                                 text = animatedDate.year.toString(),
                                 style =
                                     MaterialTheme.typography.headlineMedium.copy(
-                                        fontSize = fontSize * 0.28f, // Larger year
+                                        fontSize = calculatedFontSize * 0.32f, // Increased from 0.28f
                                         fontWeight = FontWeight.Medium,
                                     ),
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -269,14 +306,14 @@ fun DigitalClock(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(calculatedCardPadding),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
                             text = monthYearStr.split(" ")[0], // Month name
                             style =
                                 MaterialTheme.typography.headlineLarge.copy(
-                                    fontSize = fontSize * 0.32f, // Much larger month name
+                                    fontSize = calculatedFontSize * 0.35f, // Increased from 0.32f
                                     fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.secondary,
@@ -288,7 +325,7 @@ fun DigitalClock(
                             text = dayOfMonth.toString(),
                             style =
                                 MaterialTheme.typography.displayLarge.copy(
-                                    fontSize = fontSize * 0.55f, // Much larger day number
+                                    fontSize = calculatedFontSize * 0.60f, // Increased from 0.55f
                                     fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.onSurface,
@@ -299,7 +336,7 @@ fun DigitalClock(
                             text = monthYearStr.split(" ")[1], // Year
                             style =
                                 MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = fontSize * 0.28f, // Larger year
+                                    fontSize = calculatedFontSize * 0.32f, // Increased from 0.28f
                                     fontWeight = FontWeight.Medium,
                                 ),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -308,6 +345,7 @@ fun DigitalClock(
                     }
                 }
             }
+        }
         }
     }
 }
