@@ -141,15 +141,10 @@ android {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
 
-    // Split configuration - Generate multiple APK variants for different architectures
+    // Split configuration - Only generate universal APK
     splits {
         abi {
-            isEnable = true
-            reset()
-            // Include all major CPU architectures
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            // Also generate a universal APK that works on all devices
-            isUniversalApk = true
+            isEnable = false // Disabled - only building universal APK
         }
         density {
             isEnable = false // Disable density splits - not needed for TV

@@ -699,11 +699,17 @@ private fun DrawScope.drawModernNumbers(
             Pair("9", 9),
         )
 
+    // Calculate dynamic text size based on radius (12% of radius)
+    val dynamicTextSize = radius * 0.12f
+    
+    // Background circle size proportional to text (about 1.25x of text size)
+    val backgroundRadius = dynamicTextSize * 1.25f
+
     drawIntoCanvas { canvas ->
         val paint =
             AndroidPaint().apply {
                 this.color = color.toArgb()
-                textSize = 48f
+                textSize = dynamicTextSize
                 textAlign = AndroidPaint.Align.CENTER
                 isAntiAlias = true
                 isFakeBoldText = true
@@ -719,13 +725,13 @@ private fun DrawScope.drawModernNumbers(
             // Draw modern number with background
             drawCircle(
                 color = Color(0xFF1A2E0A), // Dark forest green background
-                radius = 30f,
+                radius = backgroundRadius,
                 center = Offset(x, y),
             )
 
             drawCircle(
                 color = color.copy(alpha = 0.1f),
-                radius = 28f,
+                radius = backgroundRadius * 0.93f,
                 center = Offset(x, y),
                 style = Stroke(width = 2.dp.toPx()),
             )
