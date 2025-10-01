@@ -419,22 +419,23 @@ class HijriDateScraper
                 val daysFromStart = (targetDate.toEpochDays() - startDate.toEpochDays()).toInt()
                 val hijriDay = daysFromStart + 1 // Start from day 1
 
-                // Get the month name from the AJAX data
-                val targetYearMonth = String.format("%04d-%02d", year, month)
-
                 @Suppress("UNCHECKED_CAST")
                 val entries = monthData["entries"] as? List<Map<String, String>>
 
                 if (entries != null) {
+                    // Use the start date's year-month as the key, since that's how ACJU indexes the entries
+                    val hijriMonthKey = String.format("%04d-%02d", startDate.year, startDate.monthNumber)
+                    Log.d(TAG, "🔍 Looking for Hijri month entry using key: $hijriMonthKey (from startDate: $startDateStr)")
+
                     val matchingEntry =
                         entries.find { entry ->
                             val gregorianDate = entry["gregorianDate"]
-                            gregorianDate == targetYearMonth
+                            gregorianDate == hijriMonthKey
                         }
 
                     if (matchingEntry != null) {
                         val hijriDescription = matchingEntry["hijriDescription"] ?: ""
-                        Log.d(TAG, "✅ Found matching month entry: $targetYearMonth -> $hijriDescription")
+                        Log.d(TAG, "✅ Found matching month entry: $hijriMonthKey -> $hijriDescription")
 
                         // Parse the Hijri description: "Rabee`unith Thaani - 1447"
                         val hijriInfo = parseHijriDescription(hijriDescription)
@@ -453,7 +454,12 @@ class HijriDateScraper
                             Log.w(TAG, "⚠️ Could not parse Hijri description: $hijriDescription")
                         }
                     } else {
-                        Log.w(TAG, "⚠️ No matching month entry found for $targetYearMonth")
+                        Log.w(TAG, "⚠️ No matching month entry found for $hijriMonthKey")
+                        // Log available entries for debugging
+                        Log.d(TAG, "📋 Available entries:")
+                        entries.take(5).forEach { entry ->
+                            Log.d(TAG, "  - ${entry["gregorianDate"]} -> ${entry["hijriDescription"]}")
+                        }
                     }
                 } else {
                     Log.w(TAG, "⚠️ No entries found in month data")
