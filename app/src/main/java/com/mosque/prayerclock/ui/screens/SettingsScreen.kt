@@ -4,8 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +34,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,6 +84,7 @@ import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
 import javax.inject.Inject
 import com.mosque.prayerclock.data.model.AppSettings
+import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
@@ -211,6 +219,13 @@ fun SettingsScreen(
                         show24Hour = settings.show24HourFormat,
                         onShowSecondsChange = viewModel::updateShowSeconds,
                         onShow24HourChange = viewModel::updateShow24HourFormat,
+                    )
+                }
+
+                item {
+                    ColorThemeSettings(
+                        selectedThemeId = settings.colorTheme,
+                        onThemeChange = viewModel::updateColorTheme,
                     )
                 }
 
@@ -1769,6 +1784,164 @@ private fun FullScreenCountdownSettings(
             Switch(checked = fullScreenCountdownEnabled, onCheckedChange = onFullScreenCountdownEnabledChange)
         }
     }
+}
+
+@Composable
+private fun ColorThemeSettings(
+    selectedThemeId: String,
+    onThemeChange: (String) -> Unit,
+) {
+    val allThemes = AppColorThemes.getAllThemes()
+    var isExpanded by remember { mutableStateOf(false) }
+    
+    SettingsCard {
+        Column {
+            // Header with icon and title
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = "🎨",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.color_theme_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.color_theme_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                        
+                        // Show currently selected theme name
+                        val currentTheme = allThemes.find { it.id == selectedThemeId }
+                        currentTheme?.let {
+                            Text(
+                                text = "Current: ${it.name}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    }
+                }
+                
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            
+            // Expandable theme grid
+            AnimatedVisibility(visible = isExpanded) {
+                Column(modifier = Modifier.padding(top = 16.dp)) {
+                    // Display themes in a vertical list for TV UI
+                    allThemes.forEach { theme ->
+                        ThemeOption(
+                            theme = theme,
+                            isSelected = theme.id == selectedThemeId,
+                            onSelect = { onThemeChange(theme.id) },
+                        )
+                        if (theme != allThemes.last()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeOption(
+    theme: com.mosque.prayerclock.ui.theme.ColorTheme,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect() },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+        ),
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = theme.name,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    ),
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                Text(
+                    text = theme.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            
+            // Color preview squares
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(start = 12.dp),
+            ) {
+                // Show 3 key colors as preview
+                ColorPreviewBox(color = theme.primaryAccent)
+                ColorPreviewBox(color = theme.surfacePrimary)
+                ColorPreviewBox(color = theme.azanTime)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorPreviewBox(color: androidx.compose.ui.graphics.Color) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .background(color, shape = RoundedCornerShape(4.dp))
+            .border(
+                width = 1.dp,
+                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(4.dp),
+            ),
+    )
 }
 
 @Composable

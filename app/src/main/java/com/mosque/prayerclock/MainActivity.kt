@@ -43,6 +43,7 @@ import com.mosque.prayerclock.ui.LocalizedApp
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.screens.MainScreen
 import com.mosque.prayerclock.ui.screens.SettingsScreen
+import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.ui.theme.MosqueClockTheme
 import com.mosque.prayerclock.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -73,8 +74,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
+            
+            // Get the selected color theme
+            val selectedColorTheme = AppColorThemes.getThemeById(settings.colorTheme)
 
-            MosqueClockTheme {
+            MosqueClockTheme(colorTheme = selectedColorTheme) {
                 var effectiveLanguage by remember { mutableStateOf(settings.language) }
                 LaunchedEffect(settings.language) {
                     if (settings.language == com.mosque.prayerclock.data.model.Language.MULTI) {

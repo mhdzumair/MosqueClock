@@ -4,18 +4,101 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 
 ## 📸 Screenshots
 
+### Classic Mosque Theme (Default)
+Traditional forest green with elegant brass accents
 <p align="center">
-  <img src="docs/screenshot1.png" width="45%" alt="Main Clock Display" />
-  <img src="docs/screenshot2.png" width="45%" alt="Prayer Times View" />
+  <img src="docs/screenshot-classic-digital.png" width="45%" alt="Classic Mosque - Digital Clock" />
+  <img src="docs/screenshot-classic-analog.png" width="45%" alt="Classic Mosque - Analog Clock" />
 </p>
 
+### Midnight Blue Theme
+Deep navy blue with elegant silver accents
 <p align="center">
-  <img src="docs/screenshot3.png" width="45%" alt="Digital Clock with Weather" />
-  <img src="docs/screenshot4.png" width="45%" alt="Analog Clock Display" />
+  <img src="docs/screenshot-midnight-digital.png" width="45%" alt="Midnight Blue - Digital Clock" />
+  <img src="docs/screenshot-midnight-analog.png" width="45%" alt="Midnight Blue - Analog Clock" />
 </p>
 
+### Desert Sand Theme
+Warm desert tones with copper accents
 <p align="center">
-  <img src="docs/screenshot5.png" width="45%" alt="Multi-language Support" />
+  <img src="docs/screenshot-dessert-digital.png" width="45%" alt="Desert Sand - Digital Clock" />
+  <img src="docs/screenshot-dessert-analog.png" width="45%" alt="Desert Sand - Analog Clock" />
+</p>
+
+### Royal Purple Theme
+Majestic purple with luxurious gold accents
+<p align="center">
+  <img src="docs/screenshot-royal-digital.png" width="45%" alt="Royal Purple - Digital Clock" />
+  <img src="docs/screenshot-royal-analog.png" width="45%" alt="Royal Purple - Analog Clock" />
+</p>
+
+### Ocean Teal Theme
+Serene teal with pearl white accents
+<p align="center">
+  <img src="docs/screenshot-ocean-digital.png" width="45%" alt="Ocean Teal - Digital Clock" />
+  <img src="docs/screenshot-ocean-analog.png" width="45%" alt="Ocean Teal - Analog Clock" />
+</p>
+
+### Elegant Charcoal Theme
+Modern charcoal with rose gold accents
+<p align="center">
+  <img src="docs/screenshot-elegant-digital.png" width="45%" alt="Elegant Charcoal - Digital Clock" />
+  <img src="docs/screenshot-elegant-analog.png" width="45%" alt="Elegant Charcoal - Analog Clock" />
+</p>
+
+### Emerald Garden Theme
+Vibrant emerald green with golden highlights
+<p align="center">
+  <img src="docs/screenshot-emerald-digital.png" width="45%" alt="Emerald Garden - Digital Clock" />
+  <img src="docs/screenshot-emerald-analog.png" width="45%" alt="Emerald Garden - Analog Clock" />
+</p>
+
+### Burgundy Elegance Theme
+Deep burgundy red with elegant silver accents
+<p align="center">
+  <img src="docs/screenshot-burgundy-digital.png" width="45%" alt="Burgundy Elegance - Digital Clock" />
+  <img src="docs/screenshot-burgundy-analog.png" width="45%" alt="Burgundy Elegance - Analog Clock" />
+</p>
+
+### Sapphire Night Theme
+Deep sapphire blue with pearl white elegance
+<p align="center">
+  <img src="docs/screenshot-sapphire-digital.png" width="45%" alt="Sapphire Night - Digital Clock" />
+  <img src="docs/screenshot-sapphire-analog.png" width="45%" alt="Sapphire Night - Analog Clock" />
+</p>
+
+### Amber Sunset Theme
+Warm amber sunset with cream highlights
+<p align="center">
+  <img src="docs/screenshot-amber-digital.png" width="45%" alt="Amber Sunset - Digital Clock" />
+  <img src="docs/screenshot-amber-analog.png" width="45%" alt="Amber Sunset - Analog Clock" />
+</p>
+
+### Full-Screen Countdown Feature
+Activates when 10 minutes or less remain before Azan or Iqamah
+<p align="center">
+  <img src="docs/screenshot-full-screen-countdown.png" width="70%" alt="Full-Screen Countdown" />
+</p>
+
+### Additional Features
+
+#### Prayer in Progress - Silent Phone Notification
+When a prayer is in progress, the app displays a reminder to silence phones
+<p align="center">
+  <img src="docs/screenshot3.png" width="70%" alt="Silent Phone Reminder During Prayer" />
+</p>
+
+#### Multi-Language Support
+Full support for English, Tamil, and Sinhala with dynamic language switching
+
+**Tamil Display (தமிழ்)**
+<p align="center">
+  <img src="docs/screenshot4.png" width="70%" alt="Tamil Language Support" />
+</p>
+
+**Sinhala Display (සිංහල)**
+<p align="center">
+  <img src="docs/screenshot5.png" width="70%" alt="Sinhala Language Support" />
 </p>
 
 ## 🌟 Features
@@ -77,9 +160,11 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 ### ⚙️ Customization Options
 - **Mosque Name**: Add custom mosque name display
 - **Location Settings**: Configure region, city, and zones
-- **Theme Selection**: Multiple themes including Default, Dark, Light, Mosque Green, Blue
+- **Color Theme Selection**: 10 beautiful themes - Classic Mosque, Midnight Blue, Desert Sand, Royal Purple, Ocean Teal, Elegant Charcoal, Emerald Garden, Burgundy Elegance, Sapphire Night, Amber Sunset
+- **Clock Type**: Choose between Digital, Analog, or Both clocks displayed simultaneously
 - **Font Sizes**: Adjustable font sizes (Small, Medium, Large, Extra Large)
-- **Clock Preferences**: Customize clock display options
+- **Dynamic Scaling**: All elements automatically scale for optimal TV viewing
+- **Full-Screen Countdown**: Configurable countdown display when 10 minutes or less remain
 - **Sound Notifications**: Prayer countdown ticking with 5-second alerts
 
 ### 📱 Android TV Optimized
@@ -604,12 +689,64 @@ The app includes a custom FastAPI backend for enhanced features:
 
 ## 🎨 Themes & Customization
 
-### Available Themes
-1. **Default**: System-based light/dark theme
-2. **Light**: Light theme with green accents
-3. **Dark**: Dark theme with green accents
-4. **Mosque Green**: Green-themed design
-5. **Blue**: Blue-themed design
+### Available Color Themes
+All themes are optimized for TV viewing with high contrast and excellent readability from distance:
+
+1. **Classic Mosque** (Default)
+   - Traditional forest green with elegant brass/gold accents
+   - Perfect for traditional mosque environments
+   - Green prayer indicators with brass highlights
+
+2. **Midnight Blue**
+   - Deep navy blue with bright silver accents
+   - Modern and serene, inspired by night sky
+   - Blue prayer indicators with excellent visibility
+
+3. **Desert Sand**
+   - Warm beige and sand tones with copper accents
+   - Inspired by Middle Eastern desert landscapes
+   - Copper/orange prayer indicators for warmth
+
+4. **Royal Purple**
+   - Rich purple with luxurious gold accents
+   - Majestic and regal appearance
+   - Purple/magenta prayer indicators with gold rim
+
+5. **Ocean Teal**
+   - Calming teal with pearl white accents
+   - Fresh and tranquil, ocean-inspired
+   - Teal/cyan prayer indicators
+
+6. **Elegant Charcoal**
+   - Modern dark gray with rose gold accents
+   - Contemporary and sophisticated
+   - Coral/peach prayer indicators for elegance
+
+7. **Emerald Garden**
+   - Vibrant emerald green with pure gold accents
+   - Fresh and energetic, inspired by lush gardens
+   - Bright green/cyan prayer indicators
+
+8. **Burgundy Elegance**
+   - Deep burgundy red with silver accents
+   - Sophisticated and warm, traditional appearance
+   - Red/orange prayer indicators for warmth
+
+9. **Sapphire Night**
+   - Deep sapphire blue with pearl white accents
+   - Cool and calming, evening-optimized
+   - Bright blue prayer indicators, perfect for night prayers
+
+10. **Amber Sunset**
+    - Warm amber and orange with cream accents
+    - Warm and welcoming, sunset-inspired
+    - Orange/coral prayer indicators, ideal for evening displays
+
+### Dynamic Color Features
+- **Next Prayer Highlighting**: Each theme has dedicated brighter colors for the upcoming prayer
+- **Prayer Status Colors**: Distinct colors for Azan, Iqamah, and Sunrise times
+- **Full Theme Consistency**: All UI elements (clock face, hands, cards, borders) match the selected theme
+- **TV-Optimized Contrast**: Every theme designed for maximum visibility on large screens
 
 ### Font Sizes
 - **Small**: Compact display for smaller screens

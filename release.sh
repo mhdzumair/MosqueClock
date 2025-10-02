@@ -4,8 +4,10 @@
 # Handles version bumping, building, tagging, and GitHub release creation
 #
 # Usage:
-#   ./release.sh              - Full automated release
-#   ./release.sh --build-only - Build APK only (no git/GitHub operations)
+#   ./release.sh                    - Full automated release
+#   ./release.sh --build-only       - Build APK only (no git/GitHub operations)
+#   ./release.sh --no-clean         - Skip clean step (faster builds)
+#   ./release.sh --build-only --no-clean - Combine flags
 
 set -e  # Exit on any error
 
@@ -29,9 +31,28 @@ GITHUB_REPO="mhdzumair/MosqueClock"
 
 # Parse command line arguments
 BUILD_ONLY=false
-if [ "$1" == "--build-only" ]; then
-    BUILD_ONLY=true
-fi
+NO_CLEAN=false
+
+for arg in "$@"; do
+    case $arg in
+        --build-only)
+            BUILD_ONLY=true
+            ;;
+        --no-clean)
+            NO_CLEAN=true
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            echo ""
+            echo "Usage:"
+            echo "  ./release.sh                    - Full automated release"
+            echo "  ./release.sh --build-only       - Build APK only (no git/GitHub operations)"
+            echo "  ./release.sh --no-clean         - Skip clean step (faster builds)"
+            echo "  ./release.sh --build-only --no-clean - Combine flags"
+            exit 1
+            ;;
+    esac
+done
 
 # Functions
 print_header() {
@@ -256,6 +277,12 @@ update_version() {
 
 # Clean previous builds
 clean_build() {
+    if [ "$NO_CLEAN" = true ]; then
+        print_header "Skipping Clean Step"
+        print_info "Building incrementally (--no-clean flag)"
+        return
+    fi
+    
     print_header "Cleaning Previous Builds"
     print_step "Removing old build artifacts..."
     
@@ -609,6 +636,9 @@ main() {
     # Build-only mode: skip version prompts and git operations
     if [ "$BUILD_ONLY" = true ]; then
         print_info "Build-only mode: Building current version without version bump or release"
+        if [ "$NO_CLEAN" = true ]; then
+            print_info "Incremental build mode: Skipping clean step for faster builds"
+        fi
         echo ""
         read -p "Continue with build? (y/n) " -n 1 -r
         echo ""
@@ -633,7 +663,11 @@ main() {
     echo ""
     print_warning "This will:"
     echo "  1. Update version in build.gradle.kts"
-    echo "  2. Build release APK"
+    if [ "$NO_CLEAN" = true ]; then
+        echo "  2. Build release APK (incremental, no clean)"
+    else
+        echo "  2. Clean and build release APK"
+    fi
     echo "  3. Generate checksums"
     echo "  4. Commit version changes"
     echo "  5. Create git tag v${NEW_VERSION_NAME}"

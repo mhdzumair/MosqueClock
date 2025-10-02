@@ -189,6 +189,10 @@
     <string name="backend_api_key_label" translatable="false">Backend API Key</string>
     <string name="backend_api_key_hint" translatable="false">Enter backend API key</string>
     
+    <!-- Color Theme -->
+    <string name="color_theme_title">Color Theme</string>
+    <string name="color_theme_description">Choose your preferred color palette</string>
+    
     <!-- About/Version -->
     <string name="about_app" translatable="false">About</string>
     <string name="app_version" translatable="false">Version</string>

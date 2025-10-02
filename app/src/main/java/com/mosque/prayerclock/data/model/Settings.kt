@@ -12,6 +12,7 @@ data class AppSettings(
     val fontSize: FontSize = FontSize.MEDIUM,
     val showSeconds: Boolean = true,
     val show24HourFormat: Boolean = false,
+    val colorTheme: String = "classic_mosque", // Color theme ID
     val manualFajrAzan: String = "05:30",
     val manualSunrise: String = "06:15",
     val manualDhuhrAzan: String = "12:15",

@@ -67,6 +67,7 @@ import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
 import com.mosque.prayerclock.ui.theme.ColorSecondaryAccent
 import com.mosque.prayerclock.ui.theme.ColorSurfaceCenter
 import com.mosque.prayerclock.ui.theme.ColorSurfaceDark
+import com.mosque.prayerclock.ui.theme.rememberThemeColors
 import com.mosque.prayerclock.utils.LocaleManager
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -161,6 +162,9 @@ fun AnalogClock(
                 (clockRadius * 0.15f).toSp()
             }
 
+        // Remember theme colors for use in Canvas (non-@Composable context)
+        val colors = rememberThemeColors()
+        
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -178,8 +182,8 @@ fun AnalogClock(
                         Brush.radialGradient(
                             colors =
                                 listOf(
-                                    ColorSurfaceCenter, // Center surface color
-                                    ColorSurfaceDark, // Darker edge surface color
+                                    colors.surfaceCenter, // Center surface color
+                                    colors.surfaceDark, // Darker edge surface color
                                 ),
                             radius = radius,
                             center = center,
@@ -190,7 +194,7 @@ fun AnalogClock(
 
                 // Outer rim with primary accent color
                 drawCircle(
-                    color = ColorPrimaryAccent,
+                    color = colors.primaryAccent,
                     radius = radius,
                     center = center,
                     style = Stroke(width = 6.dp.toPx()),
@@ -198,39 +202,39 @@ fun AnalogClock(
 
                 // Inner accent ring
                 drawCircle(
-                    color = ColorPrimaryAccent.copy(alpha = AlphaValues.SUBTLE),
+                    color = colors.primaryAccent.copy(alpha = AlphaValues.SUBTLE),
                     radius = radius * 0.95f,
                     center = center,
                     style = Stroke(width = 1.dp.toPx()),
                 )
 
                 // Draw sunburst pattern
-                drawSunburstPattern(center, radius * 0.9f, ColorPrimaryAccent.copy(alpha = 0.4f))
+                drawSunburstPattern(center, radius * 0.9f, colors.primaryAccent.copy(alpha = 0.4f))
 
                 // Draw modern minimalist numbers (only 12, 3, 6, 9)
-                drawModernNumbers(center, radius * 0.8f, ColorPrimaryAccent)
+                drawModernNumbers(center, radius * 0.8f, colors.primaryAccent, colors.surfaceDark)
 
                 // Draw modern hour markers
-                drawModernHourMarkers(center, radius, ColorPrimaryAccent)
+                drawModernHourMarkers(center, radius, colors.primaryAccent)
 
                 // Draw modern hands
-                drawModernHourHand(center, radius * 0.5f, hour, minute, ColorPrimaryAccent)
-                drawModernMinuteHand(center, radius * 0.7f, minute, ColorPrimaryAccent)
-                drawModernSecondHand(center, radius * 0.75f, second, ColorSecondaryAccent)
+                drawModernHourHand(center, radius * 0.5f, hour, minute, colors.primaryAccent, radius)
+                drawModernMinuteHand(center, radius * 0.7f, minute, colors.primaryAccent, radius)
+                drawModernSecondHand(center, radius * 0.75f, second, colors.secondaryAccent, radius)
 
                 // Modern center piece
                 drawCircle(
-                    color = ColorPrimaryAccent,
+                    color = colors.primaryAccent,
                     radius = 12f,
                     center = center,
                 )
                 drawCircle(
-                    color = ColorSurfaceCenter,
+                    color = colors.surfaceCenter,
                     radius = 8f,
                     center = center,
                 )
                 drawCircle(
-                    color = ColorPrimaryAccent,
+                    color = colors.primaryAccent,
                     radius = 4f,
                     center = center,
                 )
@@ -695,6 +699,7 @@ private fun DrawScope.drawModernNumbers(
     center: Offset,
     radius: Float,
     color: Color,
+    backgroundColor: Color,
 ) {
     val numbers =
         listOf(
@@ -729,7 +734,7 @@ private fun DrawScope.drawModernNumbers(
 
             // Draw modern number with background
             drawCircle(
-                color = ColorSurfaceDark, // Dark surface background
+                color = backgroundColor, // Dark surface background
                 radius = backgroundRadius,
                 center = Offset(x, y),
             )
@@ -787,17 +792,22 @@ private fun DrawScope.drawModernHourHand(
     hour: Int,
     minute: Int,
     color: Color,
+    clockRadius: Float,
 ) {
     val angle = (hour * 30f + minute * 0.5f) - 90f
     val endX = center.x + length * cos(Math.toRadians(angle.toDouble())).toFloat()
     val endY = center.y + length * sin(Math.toRadians(angle.toDouble())).toFloat()
 
-    // Modern tapered hand design
+    // Dynamic thickness based on clock size - hour hand is thickest
+    val hourHandWidth = clockRadius * 0.055f // 5.5% of clock radius (more prominent)
+    val highlightWidth = clockRadius * 0.024f // 2.4% of clock radius
+
+    // Modern tapered hand design - dynamically scaled
     drawLine(
         color = color,
         start = center,
         end = Offset(endX, endY),
-        strokeWidth = 8.dp.toPx(),
+        strokeWidth = hourHandWidth,
         cap = StrokeCap.Round,
     )
 
@@ -806,7 +816,7 @@ private fun DrawScope.drawModernHourHand(
         color = Color.White.copy(alpha = 0.3f),
         start = center,
         end = Offset(endX, endY),
-        strokeWidth = 3.dp.toPx(),
+        strokeWidth = highlightWidth,
         cap = StrokeCap.Round,
     )
 }
@@ -817,17 +827,22 @@ private fun DrawScope.drawModernMinuteHand(
     length: Float,
     minute: Int,
     color: Color,
+    clockRadius: Float,
 ) {
     val angle = minute * 6f - 90f
     val endX = center.x + length * cos(Math.toRadians(angle.toDouble())).toFloat()
     val endY = center.y + length * sin(Math.toRadians(angle.toDouble())).toFloat()
 
-    // Modern sleek minute hand
+    // Dynamic thickness based on clock size - minute hand is thinner than hour
+    val minuteHandWidth = clockRadius * 0.032f // 3.2% of clock radius (thinner than hour)
+    val highlightWidth = clockRadius * 0.014f // 1.4% of clock radius
+
+    // Modern sleek minute hand - dynamically scaled
     drawLine(
         color = color,
         start = center,
         end = Offset(endX, endY),
-        strokeWidth = 6.dp.toPx(),
+        strokeWidth = minuteHandWidth,
         cap = StrokeCap.Round,
     )
 
@@ -836,7 +851,7 @@ private fun DrawScope.drawModernMinuteHand(
         color = Color.White.copy(alpha = 0.3f),
         start = center,
         end = Offset(endX, endY),
-        strokeWidth = 2.dp.toPx(),
+        strokeWidth = highlightWidth,
         cap = StrokeCap.Round,
     )
 }
@@ -847,24 +862,29 @@ private fun DrawScope.drawModernSecondHand(
     length: Float,
     second: Int,
     color: Color,
+    clockRadius: Float,
 ) {
     val angle = second * 6f - 90f
     val endX = center.x + length * cos(Math.toRadians(angle.toDouble())).toFloat()
     val endY = center.y + length * sin(Math.toRadians(angle.toDouble())).toFloat()
 
-    // Thin modern second hand
+    // Dynamic thickness based on clock size - second hand is thinnest
+    val secondHandWidth = clockRadius * 0.010f // 1.0% of clock radius (thinnest)
+    val circleRadius = clockRadius * 0.020f // 2.0% of clock radius
+
+    // Thin modern second hand - dynamically scaled
     drawLine(
         color = color,
         start = center,
         end = Offset(endX, endY),
-        strokeWidth = 2.dp.toPx(),
+        strokeWidth = secondHandWidth,
         cap = StrokeCap.Round,
     )
 
     // Small circle at the end
     drawCircle(
         color = color,
-        radius = 6f,
+        radius = circleRadius,
         center = Offset(endX, endY),
     )
 }

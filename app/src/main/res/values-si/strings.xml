@@ -80,6 +80,10 @@
     <string name="weather_city_description">කාලගුණ තොරතුරු සඳහා නගරය</string>
     <string name="weather_placeholder">නගර නාමය ඇතුල් කරන්න</string>
 
+    <!-- Color Theme -->
+    <string name="color_theme_title">වර්ණ තේමාව</string>
+    <string name="color_theme_description">ඔබේ කැමති වර්ණ තෝරන්න</string>
+
     <!-- Prayer Time Letters (for highlighting) -->
     <string name="azan_letter">අදාන්</string>
     <string name="iqamah_letter">ඉකාමත්</string>

@@ -30,6 +30,9 @@ import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.ui.theme.ColorAzanTime
 import com.mosque.prayerclock.ui.theme.ColorIqamahTime
 import com.mosque.prayerclock.ui.theme.ColorSunriseTime
+import com.mosque.prayerclock.ui.theme.ColorNextAzanTime
+import com.mosque.prayerclock.ui.theme.ColorNextIqamahTime
+import com.mosque.prayerclock.ui.theme.ColorNextSunriseTime
 import kotlin.math.min
 
 /**
@@ -62,26 +65,14 @@ fun PrayerTimeCard(
     val isShowingAzan = globalShowAzan || prayerInfo.iqamahTime == null
 
     // Get the prayer color based on current state
-    val prayerColor =
-        if (isNext) {
-            // Special handling for next prayer colors
-            if (prayerInfo.type == PrayerType.SUNRISE) {
-                ColorSunriseTime // Sunrise time indicator (next)
-            } else if (!isShowingAzan && prayerInfo.iqamahTime != null) {
-                ColorIqamahTime // Iqamah time indicator (next)
-            } else {
-                MaterialTheme.colorScheme.primary // Default primary for Azan (next)
-            }
-        } else {
-            // Non-next prayer colors
-            if (prayerInfo.type == PrayerType.SUNRISE) {
-                ColorSunriseTime // Sunrise time indicator
-            } else if (isShowingAzan) {
-                ColorAzanTime // Azan time indicator
-            } else {
-                ColorIqamahTime // Iqamah time indicator
-            }
-        }
+    // Use theme-specific "next" colors when isNext is true for better emphasis
+    val prayerColor = if (prayerInfo.type == PrayerType.SUNRISE) {
+        if (isNext) ColorNextSunriseTime else ColorSunriseTime
+    } else if (isShowingAzan) {
+        if (isNext) ColorNextAzanTime else ColorAzanTime
+    } else {
+        if (isNext) ColorNextIqamahTime else ColorIqamahTime
+    }
 
     Card(
         modifier =

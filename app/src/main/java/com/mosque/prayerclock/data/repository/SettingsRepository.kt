@@ -69,6 +69,7 @@ class SettingsRepository
             val SELECTED_REGION = stringPreferencesKey("selected_region")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
             val FULL_SCREEN_COUNTDOWN_ENABLED = booleanPreferencesKey("full_screen_countdown_enabled")
+            val COLOR_THEME = stringPreferencesKey("color_theme")
             val WEATHER_API_KEY = stringPreferencesKey("weather_api_key")
             val OPENWEATHERMAP_API_KEY = stringPreferencesKey("openweathermap_api_key")
             val MOSQUE_CLOCK_BACKEND_URL = stringPreferencesKey("mosque_clock_backend_url")
@@ -109,6 +110,7 @@ class SettingsRepository
                     show24HourFormat =
                         preferences[PreferencesKeys.SHOW_24_HOUR_FORMAT]
                             ?: false,
+                    colorTheme = preferences[PreferencesKeys.COLOR_THEME] ?: "classic_mosque",
                     manualFajrAzan = preferences[PreferencesKeys.MANUAL_FAJR_AZAN] ?: "05:30",
                     manualSunrise = preferences[PreferencesKeys.MANUAL_SUNRISE] ?: "06:15",
                     manualDhuhrAzan = preferences[PreferencesKeys.MANUAL_DHUHR_AZAN] ?: "12:15",
@@ -311,6 +313,10 @@ class SettingsRepository
 
         suspend fun updateFullScreenCountdownEnabled(enabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] = enabled }
+        }
+
+        suspend fun updateColorTheme(themeId: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.COLOR_THEME] = themeId }
         }
 
         suspend fun updateWeatherApiKey(apiKey: String) {

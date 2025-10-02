@@ -186,6 +186,12 @@ class SettingsViewModel
             }
         }
 
+        fun updateColorTheme(themeId: String) {
+            viewModelScope.launch {
+                settingsRepository.updateColorTheme(themeId)
+            }
+        }
+
         fun updateWeatherApiKey(apiKey: String) {
             viewModelScope.launch {
                 settingsRepository.updateWeatherApiKey(apiKey)

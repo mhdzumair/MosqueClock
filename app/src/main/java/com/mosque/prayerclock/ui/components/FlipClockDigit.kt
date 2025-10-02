@@ -39,9 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.ui.theme.AlphaValues
 import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
+import com.mosque.prayerclock.ui.theme.ColorShadow
 import com.mosque.prayerclock.ui.theme.ColorSurfacePrimary
 import com.mosque.prayerclock.ui.theme.ColorSurfaceSecondary
-import com.mosque.prayerclock.ui.theme.ShadowBlack
 
 /**
  * Shared flip clock digit pair component - reusable across MainScreen and FullScreenCountdown
@@ -178,7 +178,7 @@ fun AnimatedFlipDigit(
                                     Brush.verticalGradient(
                                         colors =
                                             listOf(
-                                                ShadowBlack.copy(alpha = 0.2f),
+                                                ColorShadow.copy(alpha = 0.2f),
                                                 Color.Transparent,
                                             ),
                                     ),
@@ -195,7 +195,7 @@ fun AnimatedFlipDigit(
                                         colors =
                                             listOf(
                                                 Color.Transparent,
-                                                ShadowBlack.copy(alpha = 0.2f),
+                                                ColorShadow.copy(alpha = 0.2f),
                                             ),
                                     ),
                                 ).align(Alignment.BottomCenter),

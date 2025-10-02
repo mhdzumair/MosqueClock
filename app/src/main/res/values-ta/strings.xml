@@ -96,6 +96,10 @@
     <string name="weather_city_description">காலநிலை தகவலுக்கான நகரம் (தொழுகை நேர இடத்திலிருந்து தனி)</string>
     <string name="weather_placeholder">காலநிலைக்கான நகர பெயரை உள்ளிடவும்</string>
     
+    <!-- Color Theme -->
+    <string name="color_theme_title">வண்ண தீம்</string>
+    <string name="color_theme_description">உங்களுக்கு விருப்பமான வண்ண தேர்வு</string>
+    
     <!-- Prayer Settings -->
     <string name="manual_prayer_times">கைமுறை தொழுகை நேரங்கள்</string>
     <string name="manual_prayer_times_description">API க்கு பதிலாக கைமுறை நேரங்களைப் பயன்படுத்தவும்</string>
