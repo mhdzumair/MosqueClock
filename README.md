@@ -198,6 +198,36 @@ adb install app/build/outputs/apk/debug/app-debug.apk
    ./gradlew installDebug
    ```
 
+### 🚀 Release Build
+
+#### Automated Release
+Use the automated release script for one-command releases:
+```bash
+./release.sh
+```
+
+This will:
+- ✅ Prompt for version (patch/minor/major)
+- 🔨 Build optimized APK with ProGuard
+- 🏷️ Create and push git tag
+- 📦 Create GitHub release with APK
+- ✨ Done in one step!
+
+**Prerequisites:**
+- GitHub CLI: `brew install gh` (macOS)
+- Authenticate: `gh auth login`
+
+#### Build APK Only (Testing)
+For testing without creating a release:
+```bash
+# Build current version without git operations
+./release.sh --build-only
+
+# Creates: release/MosqueClock-v1.0.apk
+```
+
+See [RELEASE_GUIDE.md](RELEASE_GUIDE.md) for quick reference or [UPDATE_PROCESS.md](UPDATE_PROCESS.md) for detailed documentation.
+
 ### 📱 Android TV Device Setup & Optimization
 
 For optimal mosque display setup, use these ADB commands to configure your Android TV device:
