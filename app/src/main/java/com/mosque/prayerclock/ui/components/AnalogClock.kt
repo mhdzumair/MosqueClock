@@ -62,6 +62,11 @@ import com.mosque.prayerclock.R
 import com.mosque.prayerclock.ui.AnimatedLocalizedText
 import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.ui.theme.AlphaValues
+import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
+import com.mosque.prayerclock.ui.theme.ColorSecondaryAccent
+import com.mosque.prayerclock.ui.theme.ColorSurfaceCenter
+import com.mosque.prayerclock.ui.theme.ColorSurfaceDark
 import com.mosque.prayerclock.utils.LocaleManager
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -167,14 +172,14 @@ fun AnalogClock(
                 val radius = this.size.minDimension * 0.5f // Increased from 0.47f for larger clock face
                 val center = this.size.center
 
-                // Elegant forest green gradient background
+                // Elegant gradient background
                 drawCircle(
                     brush =
                         Brush.radialGradient(
                             colors =
                                 listOf(
-                                    Color(0xFF2D5016), // Deep forest green center
-                                    Color(0xFF1A2E0A), // Darker forest green edge
+                                    ColorSurfaceCenter, // Center surface color
+                                    ColorSurfaceDark, // Darker edge surface color
                                 ),
                             radius = radius,
                             center = center,
@@ -183,49 +188,49 @@ fun AnalogClock(
                     center = center,
                 )
 
-                // Elegant brass/bronze outer rim
+                // Outer rim with primary accent color
                 drawCircle(
-                    color = Color(0xFFB08D57), // Realistic brass color
+                    color = ColorPrimaryAccent,
                     radius = radius,
                     center = center,
                     style = Stroke(width = 6.dp.toPx()),
                 )
 
-                // Inner brass accent ring
+                // Inner accent ring
                 drawCircle(
-                    color = Color(0xFFB08D57).copy(alpha = 0.3f),
+                    color = ColorPrimaryAccent.copy(alpha = AlphaValues.SUBTLE),
                     radius = radius * 0.95f,
                     center = center,
                     style = Stroke(width = 1.dp.toPx()),
                 )
 
                 // Draw sunburst pattern
-                drawSunburstPattern(center, radius * 0.9f, Color(0xFFB08D57).copy(alpha = 0.4f))
+                drawSunburstPattern(center, radius * 0.9f, ColorPrimaryAccent.copy(alpha = 0.4f))
 
                 // Draw modern minimalist numbers (only 12, 3, 6, 9)
-                drawModernNumbers(center, radius * 0.8f, Color(0xFFB08D57))
+                drawModernNumbers(center, radius * 0.8f, ColorPrimaryAccent)
 
                 // Draw modern hour markers
-                drawModernHourMarkers(center, radius, Color(0xFFB08D57))
+                drawModernHourMarkers(center, radius, ColorPrimaryAccent)
 
                 // Draw modern hands
-                drawModernHourHand(center, radius * 0.5f, hour, minute, Color(0xFFB08D57))
-                drawModernMinuteHand(center, radius * 0.7f, minute, Color(0xFFB08D57))
-                drawModernSecondHand(center, radius * 0.75f, second, Color(0xFFF5F5DC)) // Elegant cream color
+                drawModernHourHand(center, radius * 0.5f, hour, minute, ColorPrimaryAccent)
+                drawModernMinuteHand(center, radius * 0.7f, minute, ColorPrimaryAccent)
+                drawModernSecondHand(center, radius * 0.75f, second, ColorSecondaryAccent)
 
                 // Modern center piece
                 drawCircle(
-                    color = Color(0xFFB08D57),
+                    color = ColorPrimaryAccent,
                     radius = 12f,
                     center = center,
                 )
                 drawCircle(
-                    color = Color(0xFF2D5016),
+                    color = ColorSurfaceCenter,
                     radius = 8f,
                     center = center,
                 )
                 drawCircle(
-                    color = Color(0xFFB08D57),
+                    color = ColorPrimaryAccent,
                     radius = 4f,
                     center = center,
                 )
@@ -724,7 +729,7 @@ private fun DrawScope.drawModernNumbers(
 
             // Draw modern number with background
             drawCircle(
-                color = Color(0xFF1A2E0A), // Dark forest green background
+                color = ColorSurfaceDark, // Dark surface background
                 radius = backgroundRadius,
                 center = Offset(x, y),
             )

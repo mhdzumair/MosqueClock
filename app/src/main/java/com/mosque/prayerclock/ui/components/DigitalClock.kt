@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.ui.localizedStringArrayResource
 import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.ui.theme.AlphaValues
+import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
 import com.mosque.prayerclock.utils.LocaleManager
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -196,17 +198,13 @@ fun DigitalClock(
                         shadow =
                             Shadow(
                                 color =
-                                    androidx.compose.ui.graphics
-                                        .Color(0xFFB08D57)
-                                        .copy(alpha = 0.3f),
+                                    ColorPrimaryAccent
+                                        .copy(alpha = AlphaValues.SUBTLE),
                                 offset = Offset(0f, 2f),
                                 blurRadius = 8f,
                             ),
                     ),
-                color =
-                    androidx.compose.ui.graphics
-                        .Color(0xFFB08D57),
-                // Elegant brass color
+                color = ColorPrimaryAccent, // Primary accent color
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 softWrap = false,

@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.ui.localizedStringResource
+import com.mosque.prayerclock.ui.theme.AlphaValues
+import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
 import kotlin.math.min
 
 @Composable
@@ -98,7 +100,7 @@ fun FullScreenCountdown(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = with(density) { (calculatedTitleFontSize.toPx() * 0.04f).toSp() },
                         ),
-                    color = Color(0xFFB08D57), // Brass/gold color
+                    color = ColorPrimaryAccent, // Primary accent color
                     textAlign = TextAlign.Center,
                 )
 
@@ -123,7 +125,7 @@ fun FullScreenCountdown(
                                 fontWeight = FontWeight.Medium,
                                 letterSpacing = with(density) { (calculatedDuaFontSize.toPx() * 0.05f).toSp() },
                             ),
-                        color = Color(0xFFB08D57).copy(alpha = 0.85f), // Brass color
+                        color = ColorPrimaryAccent.copy(alpha = AlphaValues.STRONG), // Primary accent color
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -162,7 +164,7 @@ private fun FullScreenFlipClock(
                     fontSize = colonSize,
                     fontWeight = FontWeight.Bold,
                 ),
-            color = Color(0xFFB08D57), // Brass/gold
+            color = ColorPrimaryAccent, // Primary accent color
         )
 
         // Seconds (SS) - using shared component

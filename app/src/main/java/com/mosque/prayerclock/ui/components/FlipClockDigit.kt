@@ -37,6 +37,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mosque.prayerclock.ui.theme.AlphaValues
+import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
+import com.mosque.prayerclock.ui.theme.ColorSurfacePrimary
+import com.mosque.prayerclock.ui.theme.ColorSurfaceSecondary
+import com.mosque.prayerclock.ui.theme.ShadowBlack
 
 /**
  * Shared flip clock digit pair component - reusable across MainScreen and FullScreenCountdown
@@ -101,7 +106,7 @@ fun AnimatedFlipDigit(
             modifier = Modifier.fillMaxSize(),
             colors =
                 CardDefaults.cardColors(
-                    containerColor = Color(0xFF2D4A22), // Deep forest green matching your analog clock
+                    containerColor = ColorSurfacePrimary, // Primary surface color
                 ),
             shape = RoundedCornerShape(borderRadius),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -115,7 +120,7 @@ fun AnimatedFlipDigit(
                 // Thin border to show outer color
                 colors =
                     CardDefaults.cardColors(
-                        containerColor = Color(0xFF3A5F2A), // Slightly lighter forest green
+                        containerColor = ColorSurfaceSecondary, // Secondary surface color
                     ),
                 shape = RoundedCornerShape(borderRadius * 0.75f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -149,7 +154,7 @@ fun AnimatedFlipDigit(
                                     fontSize = fontSize,
                                     fontWeight = FontWeight.Black, // Extra bold for visibility
                                 ),
-                            color = Color(0xFFB08D57), // Elegant brass/gold color matching your analog clock
+                            color = ColorPrimaryAccent, // Primary accent color for text
                         )
                     }
 
@@ -159,7 +164,7 @@ fun AnimatedFlipDigit(
                             Modifier
                                 .fillMaxWidth()
                                 .height(1.dp)
-                                .background(Color(0xFFB08D57).copy(alpha = 0.6f)) // Subtle brass line
+                                .background(ColorPrimaryAccent.copy(alpha = AlphaValues.MEDIUM)) // Subtle accent line
                                 .align(Alignment.Center),
                     )
 
@@ -173,7 +178,7 @@ fun AnimatedFlipDigit(
                                     Brush.verticalGradient(
                                         colors =
                                             listOf(
-                                                Color.Black.copy(alpha = 0.2f),
+                                                ShadowBlack.copy(alpha = 0.2f),
                                                 Color.Transparent,
                                             ),
                                     ),
@@ -190,7 +195,7 @@ fun AnimatedFlipDigit(
                                         colors =
                                             listOf(
                                                 Color.Transparent,
-                                                Color.Black.copy(alpha = 0.2f),
+                                                ShadowBlack.copy(alpha = 0.2f),
                                             ),
                                     ),
                                 ).align(Alignment.BottomCenter),
