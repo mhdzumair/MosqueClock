@@ -9,6 +9,11 @@ import retrofit2.http.GET
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class GitHubReleaseAsset(
+    @SerializedName("name") val name: String,
+    @SerializedName("browser_download_url") val browserDownloadUrl: String,
+)
+
 data class GitHubRelease(
     @SerializedName("tag_name") val tagName: String,
     @SerializedName("name") val name: String,
@@ -16,10 +21,11 @@ data class GitHubRelease(
     @SerializedName("html_url") val htmlUrl: String,
     @SerializedName("published_at") val publishedAt: String,
     @SerializedName("prerelease") val prerelease: Boolean,
+    @SerializedName("assets") val assets: List<GitHubReleaseAsset>,
 )
 
 interface GitHubApi {
-    @GET("repos/OWNER/REPO/releases/latest")
+    @GET("repos/mhdzumair/MosqueClock/releases/latest")
     suspend fun getLatestRelease(): Response<GitHubRelease>
 }
 
@@ -61,11 +67,17 @@ class UpdateChecker
 
                     val hasUpdate = compareVersions(latestVersion, currentVersion) > 0
 
+                    // Find the APK asset (MosqueClock-v*.apk)
+                    val apkAsset = release.assets.firstOrNull { it.name.endsWith(".apk") }
+                    val downloadUrl = apkAsset?.browserDownloadUrl ?: release.htmlUrl
+
+                    Log.d("UpdateChecker", "APK download URL: $downloadUrl")
+
                     UpdateInfo(
                         hasUpdate = hasUpdate,
                         latestVersion = latestVersion,
                         currentVersion = currentVersion,
-                        downloadUrl = release.htmlUrl,
+                        downloadUrl = downloadUrl,
                         releaseNotes = release.body,
                     )
                 } else {

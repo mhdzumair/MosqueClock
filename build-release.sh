@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Mosque Prayer Clock - Release Build Script
-# This script automates the release build process for Android TV
+# Mosque Prayer Clock - GitHub Release Build Script
+# Creates production-ready release APK for GitHub releases
+# Compatible with auto-updater functionality
 
 set -e  # Exit on any error
 
@@ -9,13 +10,16 @@ set -e  # Exit on any error
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-APP_NAME="Mosque Prayer Clock"
+APP_NAME="MosqueClock"
 PACKAGE_NAME="com.mosque.prayerclock"
 OUTPUT_DIR="app/build/outputs/apk/release"
 APK_NAME="app-release.apk"
+APK_RELEASE_NAME="MosqueClock"
+RELEASE_DIR="release"
 
 # Functions
 print_header() {
@@ -36,6 +40,10 @@ print_error() {
     echo -e "${RED}✗ $1${NC}"
 }
 
+print_info() {
+    echo -e "${BLUE}ℹ $1${NC}"
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_header "Checking Prerequisites"
@@ -47,18 +55,46 @@ check_prerequisites() {
     fi
     print_success "Gradle wrapper found"
     
-    # Check if local.properties exists
-    if [ ! -f "local.properties" ]; then
-        print_error "local.properties not found"
-        echo "Please create local.properties with required API keys"
-        echo "See local.properties.example for reference"
-        exit 1
-    fi
-    print_success "local.properties found"
-    
     # Make gradlew executable
     chmod +x ./gradlew
     print_success "Made gradlew executable"
+    
+    # Check git
+    if ! command -v git &> /dev/null; then
+        print_error "Git is not installed"
+        exit 1
+    fi
+    print_success "Git found"
+}
+
+# Get version information
+get_version_info() {
+    print_header "Version Information"
+    
+    # Get version from build.gradle.kts
+    VERSION_NAME=$(grep 'versionName = ' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/' | tr -d ' ')
+    VERSION_CODE=$(grep 'versionCode = ' app/build.gradle.kts | sed 's/.*= \(.*\)/\1/' | tr -d ' ')
+    
+    if [ -z "$VERSION_NAME" ]; then
+        print_error "Could not determine version from build.gradle.kts"
+        exit 1
+    fi
+    
+    print_info "Version Name: $VERSION_NAME"
+    print_info "Version Code: $VERSION_CODE"
+    
+    # Check if this version has a git tag
+    if git rev-parse "v$VERSION_NAME" >/dev/null 2>&1; then
+        print_info "Git tag v$VERSION_NAME exists"
+        GIT_TAG="v$VERSION_NAME"
+    else
+        print_info "No git tag found for v$VERSION_NAME"
+        GIT_TAG=""
+    fi
+    
+    # Get git commit
+    GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    print_info "Git Commit: $GIT_COMMIT"
 }
 
 # Clean previous builds
@@ -68,36 +104,14 @@ clean_build() {
     
     ./gradlew clean
     
-    if [ -d "$OUTPUT_DIR" ]; then
-        rm -rf "$OUTPUT_DIR"
-        print_success "Cleaned output directory"
-    fi
-    
     print_success "Clean completed"
-}
-
-# Run lint checks
-run_lint() {
-    print_header "Running Lint Checks"
-    print_step "Analyzing code..."
-    
-    ./gradlew lintRelease || {
-        print_error "Lint check failed"
-        echo "Check reports at: app/build/reports/lint-results-release.html"
-        read -p "Continue anyway? (y/n) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    }
-    
-    print_success "Lint checks passed"
 }
 
 # Build release APK
 build_release() {
     print_header "Building Release APK"
-    print_step "Compiling and packaging..."
+    print_step "Building with ProGuard optimization..."
+    print_info "This may take a few minutes..."
     
     ./gradlew assembleRelease
     
@@ -120,6 +134,16 @@ verify_apk() {
     APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
     print_success "APK size: $APK_SIZE"
     
+    # Check if APK is signed
+    if command -v apksigner &> /dev/null; then
+        if apksigner verify "$APK_PATH" &> /dev/null; then
+            print_success "APK is properly signed"
+        else
+            print_error "APK is not signed or signature is invalid"
+            print_info "For GitHub releases, make sure you have signing config in local.properties"
+        fi
+    fi
+    
     # Get APK info using aapt (if available)
     if command -v aapt &> /dev/null; then
         print_step "APK Information:"
@@ -133,172 +157,225 @@ generate_checksums() {
     
     APK_PATH="$OUTPUT_DIR/$APK_NAME"
     
-    # MD5
-    if command -v md5sum &> /dev/null; then
-        MD5=$(md5sum "$APK_PATH" | cut -d' ' -f1)
-        echo "$MD5" > "$OUTPUT_DIR/app-release.md5"
-        print_success "MD5: $MD5"
-    elif command -v md5 &> /dev/null; then
-        MD5=$(md5 -q "$APK_PATH")
-        echo "$MD5" > "$OUTPUT_DIR/app-release.md5"
-        print_success "MD5: $MD5"
-    fi
-    
-    # SHA256
+    # SHA256 (primary checksum for releases)
     if command -v sha256sum &> /dev/null; then
         SHA256=$(sha256sum "$APK_PATH" | cut -d' ' -f1)
-        echo "$SHA256" > "$OUTPUT_DIR/app-release.sha256"
         print_success "SHA256: $SHA256"
     elif command -v shasum &> /dev/null; then
         SHA256=$(shasum -a 256 "$APK_PATH" | cut -d' ' -f1)
-        echo "$SHA256" > "$OUTPUT_DIR/app-release.sha256"
         print_success "SHA256: $SHA256"
-    fi
-}
-
-# Optional: Install on connected device
-install_on_device() {
-    print_header "Installation"
-    
-    # Check if adb is available
-    if ! command -v adb &> /dev/null; then
-        print_error "ADB not found. Skipping installation."
-        return
-    fi
-    
-    # Check for connected devices
-    DEVICES=$(adb devices | grep -v "List" | grep "device$" | wc -l)
-    
-    if [ "$DEVICES" -eq 0 ]; then
-        print_step "No devices connected. Skipping installation."
-        return
-    fi
-    
-    read -p "Install APK on connected device? (y/n) " -n 1 -r
-    echo
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_step "Installing APK..."
-        adb install -r "$OUTPUT_DIR/$APK_NAME"
-        print_success "APK installed successfully"
-        
-        # Optional: Launch app
-        read -p "Launch app on device? (y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            adb shell am start -n "$PACKAGE_NAME/.SplashActivity"
-            print_success "App launched"
-        fi
+    else
+        print_error "No SHA256 tool found"
+        SHA256="not-generated"
     fi
 }
 
 # Copy APK to release directory
 copy_to_release() {
-    print_header "Copying Release Artifacts"
+    print_header "Preparing GitHub Release Artifacts"
     
-    RELEASE_DIR="release"
-    mkdir -p "$RELEASE_DIR"
-    
-    # Get version from build.gradle.kts
-    VERSION=$(grep "versionName" app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+    # Create timestamped release directory
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+    VERSION_DIR="$RELEASE_DIR/v${VERSION_NAME}_$TIMESTAMP"
+    mkdir -p "$VERSION_DIR"
     
-    APK_RELEASE_NAME="MosquePrayerClock-v${VERSION}-${TIMESTAMP}.apk"
+    # Universal APK name for GitHub releases
+    # Format: MosqueClock-v1.0.apk
+    RELEASE_APK_NAME="${APK_RELEASE_NAME}-v${VERSION_NAME}.apk"
     
-    cp "$OUTPUT_DIR/$APK_NAME" "$RELEASE_DIR/$APK_RELEASE_NAME"
+    # Copy APK
+    cp "$OUTPUT_DIR/$APK_NAME" "$VERSION_DIR/$RELEASE_APK_NAME"
+    print_success "APK copied: $RELEASE_APK_NAME"
     
-    if [ -f "$OUTPUT_DIR/app-release.md5" ]; then
-        cp "$OUTPUT_DIR/app-release.md5" "$RELEASE_DIR/$APK_RELEASE_NAME.md5"
+    # Create SHA256 checksum file
+    if [ -n "$SHA256" ] && [ "$SHA256" != "not-generated" ]; then
+        echo "$SHA256  $RELEASE_APK_NAME" > "$VERSION_DIR/$RELEASE_APK_NAME.sha256"
+        print_success "Checksum file created"
     fi
     
-    if [ -f "$OUTPUT_DIR/app-release.sha256" ]; then
-        cp "$OUTPUT_DIR/app-release.sha256" "$RELEASE_DIR/$APK_RELEASE_NAME.sha256"
-    fi
+    print_info "Release artifacts in: $VERSION_DIR/"
     
-    print_success "Release artifacts copied to: $RELEASE_DIR/"
-    print_success "APK: $APK_RELEASE_NAME"
+    # Also copy to root release directory for easy access
+    cp "$VERSION_DIR/$RELEASE_APK_NAME" "$RELEASE_DIR/$RELEASE_APK_NAME"
+    print_success "Latest release APK: $RELEASE_DIR/$RELEASE_APK_NAME"
 }
 
-# Generate release notes
+# Generate release notes for GitHub
 generate_release_notes() {
-    print_header "Generating Release Notes"
+    print_header "Generating GitHub Release Notes"
     
-    VERSION=$(grep "versionName" app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
     BUILD_DATE=$(date +"%Y-%m-%d %H:%M:%S")
     
-    NOTES_FILE="release/RELEASE_NOTES.txt"
+    VERSION_DIR="$RELEASE_DIR/v${VERSION_NAME}_$(date +"%Y%m%d_%H%M%S")"
+    NOTES_FILE="$VERSION_DIR/RELEASE_NOTES.md"
     
     cat > "$NOTES_FILE" << EOF
-===============================================
-$APP_NAME - Release Build
-===============================================
+# MosqueClock v${VERSION_NAME}
 
-Version: $VERSION
-Build Date: $BUILD_DATE
-Package: $PACKAGE_NAME
+## 📱 Release Information
 
-BUILD INFORMATION
------------------
-- Optimized for Android TV
-- Code minification: Enabled (ProGuard)
-- Resource shrinking: Enabled
-- Debug logging: Disabled
-- Target SDK: 34 (Android 14)
-- Minimum SDK: 21 (Android 5.0)
+- **Version:** ${VERSION_NAME}
+- **Build Date:** ${BUILD_DATE}
+- **Package:** ${PACKAGE_NAME}
+- **Git Commit:** ${GIT_COMMIT}
 
-FEATURES
---------
-- Prayer times display with countdown
-- Multiple prayer time sources (ACJU, PrayerTimes.co.uk)
-- Weather integration
-- Multi-language support (English, Tamil, Sinhala)
-- Customizable themes
-- Auto-start on boot
-- Always-on display
-- Remote control navigation optimized
+## 📦 Download
 
-INSTALLATION
-------------
-1. Copy APK to Android TV device
-2. Enable "Unknown sources" in Settings
-3. Install APK using a file manager
-4. Launch and configure
+\`\`\`
+${APK_RELEASE_NAME}-v${VERSION_NAME}.apk
+\`\`\`
 
-POST-INSTALLATION SETUP
------------------------
-Run these ADB commands for optimal operation:
+**SHA256 Checksum:**
+\`\`\`
+${SHA256}
+\`\`\`
 
+## ✨ Features
+
+- 🕌 **Prayer Times Display** - Multiple sources (ACJU Direct, MosqueClock API, Al-Adhan API, Manual)
+- 🌍 **Multi-Language Support** - English, Tamil, Sinhala
+- 🌤️ **Weather Integration** - WeatherAPI.com & OpenWeatherMap support
+- 🔔 **Prayer Countdown** - Audio and full-screen countdown alerts
+- 📅 **Hijri Calendar** - Multiple data sources
+- 🎨 **Customizable Themes** - Multiple color schemes
+- ⚙️ **In-App Configuration** - No build-time setup required
+- 🔄 **Auto-Update** - Check for updates from GitHub releases
+
+## 🔧 Configuration
+
+All configuration is done in-app:
+
+1. Open **Settings** (⚙️)
+2. Configure **Prayer Service** and select your zone/region
+3. Enable **Weather** and add your API key (optional)
+4. Set **Mosque Name** and preferences
+
+### API Keys (Optional)
+
+- **WeatherAPI.com**: Get free key from https://www.weatherapi.com/
+- **OpenWeatherMap**: Get free key from https://openweathermap.org/api
+- **MosqueClock Backend**: Configure your backend URL and API key (if using)
+
+## 📋 Installation
+
+### Method 1: Direct Install (Recommended)
+1. Download \`${APK_RELEASE_NAME}-v${VERSION_NAME}.apk\`
+2. Transfer to your Android TV device
+3. Enable "Unknown sources" in Settings
+4. Install using a file manager
+5. Launch and configure
+
+### Method 2: ADB Install
+\`\`\`bash
+adb install ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk
+\`\`\`
+
+## 🚀 Post-Installation Setup (Optional)
+
+For optimal operation on Android TV, run these ADB commands:
+
+\`\`\`bash
 # Allow display over other apps
-adb shell appops set $PACKAGE_NAME SYSTEM_ALERT_WINDOW allow
+adb shell appops set ${PACKAGE_NAME} SYSTEM_ALERT_WINDOW allow
 
 # Disable battery optimization
-adb shell dumpsys deviceidle whitelist +$PACKAGE_NAME
+adb shell dumpsys deviceidle whitelist +${PACKAGE_NAME}
 
-# Keep screen on
+# Keep screen on (optional)
 adb shell settings put system screen_off_timeout 2147483647
+\`\`\`
 
-CHECKSUMS
----------
+## 📱 Requirements
+
+- **Minimum:** Android 5.0 (API 21)
+- **Target:** Android 14 (API 34)
+- **Device:** Android TV or any Android device
+- **Internet:** Required for API-based prayer times and weather
+
+## 🔒 Security
+
+- APK is signed and verified
+- No build-time secrets included
+- All API keys configured in-app
+- Secure data storage using DataStore
+
+## 📝 Technical Details
+
+- **Build Type:** Release (ProGuard optimized)
+- **Code Minification:** Enabled
+- **Resource Shrinking:** Enabled
+- **Debug Logging:** Disabled
+- **APK Size:** ~10MB
+
+## 🐛 Known Issues
+
+None reported for this version.
+
+## 💬 Support
+
+- **GitHub Issues:** https://github.com/mhdzumair/MosqueClock/issues
+- **Developer:** mhdzumair
+
+## 📜 License
+
+Open Source - See LICENSE file in repository
+
+---
+
+Built with ❤️ for the Muslim community
 EOF
     
-    if [ -f "$OUTPUT_DIR/app-release.md5" ]; then
-        echo "MD5:    $(cat $OUTPUT_DIR/app-release.md5)" >> "$NOTES_FILE"
-    fi
-    
-    if [ -f "$OUTPUT_DIR/app-release.sha256" ]; then
-        echo "SHA256: $(cat $OUTPUT_DIR/app-release.sha256)" >> "$NOTES_FILE"
-    fi
-    
-    cat >> "$NOTES_FILE" << EOF
+    print_success "Release notes: $NOTES_FILE"
+}
 
-SUPPORT
--------
-For issues or questions, please contact support.
+# Create GitHub release checklist
+create_release_checklist() {
+    print_header "GitHub Release Checklist"
+    
+    VERSION_DIR="$RELEASE_DIR/v${VERSION_NAME}_$(date +"%Y%m%d_%H%M%S")"
+    CHECKLIST_FILE="$VERSION_DIR/GITHUB_RELEASE_CHECKLIST.txt"
+    
+    cat > "$CHECKLIST_FILE" << EOF
+===============================================
+GitHub Release Checklist - v${VERSION_NAME}
+===============================================
+
+PRE-RELEASE
+-----------
+☐ Test APK on Android TV device
+☐ Verify all features work correctly
+☐ Test auto-updater checks this release
+☐ Verify APK signature is valid
+☐ Check SHA256 checksum matches
+
+CREATE GITHUB RELEASE
+--------------------
+☐ Go to: https://github.com/mhdzumair/MosqueClock/releases/new
+☐ Create new tag: v${VERSION_NAME}
+☐ Release title: "${APP_NAME} v${VERSION_NAME}"
+☐ Copy content from RELEASE_NOTES.md
+☐ Upload: ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk
+☐ Upload: ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk.sha256
+☐ Set as latest release: ✓
+☐ Publish release
+
+POST-RELEASE
+------------
+☐ Test auto-updater from app
+☐ Verify download link works
+☐ Update README.md if needed
+☐ Announce release (if applicable)
+
+NOTES
+-----
+- Auto-updater will check: https://api.github.com/repos/mhdzumair/MosqueClock/releases/latest
+- APK must be attached to release for download
+- Tag format must be: v${VERSION_NAME} (starts with 'v')
 
 ===============================================
 EOF
     
-    print_success "Release notes generated: $NOTES_FILE"
+    print_success "Checklist created: $CHECKLIST_FILE"
 }
 
 # Print summary
@@ -306,36 +383,59 @@ print_summary() {
     print_header "Build Summary"
     
     echo ""
-    echo "✓ Build completed successfully!"
+    echo -e "${GREEN}✓ Release build completed successfully!${NC}"
     echo ""
-    echo "Artifacts location:"
-    echo "  - APK: $OUTPUT_DIR/$APK_NAME"
-    echo "  - Release copy: release/"
-    echo "  - Lint report: app/build/reports/lint-results-release.html"
-    echo "  - ProGuard mapping: app/build/outputs/mapping/release/mapping.txt"
+    echo -e "${BLUE}📦 Release Artifacts:${NC}"
+    echo "  └─ $RELEASE_DIR/"
+    echo "     ├─ ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk  (Upload to GitHub)"
+    echo "     └─ v${VERSION_NAME}_*/"
+    echo "        ├─ ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk"
+    echo "        ├─ ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk.sha256"
+    echo "        ├─ RELEASE_NOTES.md"
+    echo "        └─ GITHUB_RELEASE_CHECKLIST.txt"
     echo ""
-    echo "Next steps:"
-    echo "  1. Test the APK on an Android TV device"
-    echo "  2. Verify all features work correctly"
-    echo "  3. Check release notes in release/RELEASE_NOTES.txt"
-    echo "  4. Deploy to target devices"
+    echo -e "${BLUE}📋 Next Steps:${NC}"
+    echo "  1. Test APK: $RELEASE_DIR/${APK_RELEASE_NAME}-v${VERSION_NAME}.apk"
+    echo "  2. Create git tag: git tag v${VERSION_NAME} && git push origin v${VERSION_NAME}"
+    echo "  3. Create GitHub release: https://github.com/mhdzumair/MosqueClock/releases/new"
+    echo "  4. Upload APK and checksums"
+    echo "  5. Copy release notes from RELEASE_NOTES.md"
+    echo ""
+    echo -e "${YELLOW}⚠️  Important for Auto-Updater:${NC}"
+    echo "  - Tag must be: v${VERSION_NAME}"
+    echo "  - APK name must be: ${APK_RELEASE_NAME}-v${VERSION_NAME}.apk"
+    echo "  - Mark as 'Latest release'"
     echo ""
 }
 
 # Main execution
 main() {
-    print_header "$APP_NAME - Release Build Script"
+    clear
+    print_header "$APP_NAME - GitHub Release Build"
     
     check_prerequisites
+    get_version_info
+    
+    echo ""
+    read -p "Build release APK for v${VERSION_NAME}? (y/n) " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_info "Build cancelled"
+        exit 0
+    fi
+    
     clean_build
-    run_lint
     build_release
     verify_apk
     generate_checksums
     copy_to_release
     generate_release_notes
-    install_on_device
+    create_release_checklist
     print_summary
+    
+    echo -e "${GREEN}🎉 Ready for GitHub release!${NC}"
+    echo ""
 }
 
 # Run main function

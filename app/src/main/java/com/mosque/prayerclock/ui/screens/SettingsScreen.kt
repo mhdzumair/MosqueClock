@@ -72,6 +72,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.data.service.ApkDownloader
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
 import javax.inject.Inject
@@ -1906,7 +1907,9 @@ private fun AboutSettings() {
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var isChecking by remember { mutableStateOf(false) }
     var updateCheckError by remember { mutableStateOf(false) }
+    var isDownloading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val apkDownloader = remember { ApkDownloader() }
     
     // Get current version from BuildConfig
     val currentVersion = BuildConfig.VERSION_NAME
@@ -1928,7 +1931,7 @@ private fun AboutSettings() {
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "Mosque Prayer Clock",
+                        text = "MosqueClock",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     )
@@ -2030,20 +2033,71 @@ private fun AboutSettings() {
                             ),
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = stringResource(R.string.update_available, updateInfo!!.latestVersion),
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.update_available, updateInfo!!.latestVersion),
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    Text(
+                                        text = "Current: v$currentVersion",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                    )
+                                }
+                            }
+                            
                             Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Download and Install Button
                             Button(
                                 onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo!!.downloadUrl))
-                                    context.startActivity(intent)
+                                    isDownloading = true
+                                    apkDownloader.downloadApk(
+                                        context = context,
+                                        downloadUrl = updateInfo!!.downloadUrl,
+                                        version = updateInfo!!.latestVersion
+                                    )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
+                                enabled = !isDownloading,
                             ) {
-                                Text(stringResource(R.string.download_update))
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (isDownloading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp).padding(end = 8.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                        )
+                                        Text("Downloading...")
+                                    } else {
+                                        Text(stringResource(R.string.download_update))
+                                    }
+                                }
+                            }
+                            
+                            // Release Notes (if available)
+                            if (updateInfo!!.releaseNotes.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "What's New:",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                                Text(
+                                    text = updateInfo!!.releaseNotes.take(200) + if (updateInfo!!.releaseNotes.length > 200) "..." else "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                    maxLines = 4,
+                                )
                             }
                         }
                     }

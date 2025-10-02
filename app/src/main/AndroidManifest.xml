@@ -12,6 +12,11 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    
+    <!-- Permissions for APK download and installation -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Query permission for sharing functionality -->
     <queries>
@@ -103,6 +108,17 @@
             android:enabled="true"
             android:exported="false"
             android:stopWithTask="false" />
+        
+        <!-- FileProvider for sharing APK files (Android N+) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         
     </application>
 
