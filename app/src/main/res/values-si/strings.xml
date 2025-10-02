@@ -35,6 +35,15 @@
     <string name="font_size">අකුරු ප්‍රමාණය</string>
     <string name="show_seconds">තත්පර පෙන්වන්න</string>
     <string name="hour_format_24">24 පැය ආකෘතිය</string>
+    
+    <!-- Sound Settings -->
+    <string name="sound_notifications">නමස් කවුන්ට්ඩවුන් ටික්කිං</string>
+    <string name="sound_enabled">ශබ්දය සක්‍රීය කරන්න</string>
+    <string name="sound_description">අසාන්, ඉකාමත් සහ හිරු උදාවට තත්පර 5කට පෙර ටික්කිං ශබ්දය වාදනය කරන්න</string>
+    
+    <!-- Full Screen Countdown Settings -->
+    <string name="fullscreen_countdown_title">සම්පූර්ණ තිර කවුන්ට්ඩවුන්</string>
+    <string name="fullscreen_countdown_description">අසාන්ට මිනිත්තු 10කට පෙර සහ ඉකාමත් පරතරය තුළ සම්පූර්ණ තිර කවුන්ට්ඩවුන් පෙන්වන්න</string>
 
     <!-- Clock Types -->
     <string name="digital_clock">ඩිජිටල්</string>
@@ -109,4 +118,11 @@
     <string name="loading_hijri">පූරණය වෙමින්...</string>
     
     <!-- Countdown type labels - removed as no longer used -->
+    
+    <!-- Full Screen Countdown -->
+    <string name="countdown_azan_title">අසාන් කවුන්ට්ඩවුන්</string>
+    <string name="countdown_iqamah_title">ඉකාමත් කවුන්ට්ඩවුන්</string>
+    <string name="countdown_label_minutes">මිනිත්තු</string>
+    <string name="countdown_label_seconds">තත්පර</string>
+    <string name="best_time_dua">දුආ කිරීමට හොඳම කාලය</string>
 </resources>

@@ -41,6 +41,10 @@
     <string name="sound_enabled" translatable="false">Enable Sound</string>
     <string name="sound_description" translatable="false">Play 5-second countdown ticking before azan, iqamah, and sunrise</string>
     
+    <!-- Full Screen Countdown Settings -->
+    <string name="fullscreen_countdown_title">Full-Screen Countdown</string>
+    <string name="fullscreen_countdown_description">Show full-screen countdown 10 minutes before azan and during iqamah gap</string>
+    
     <!-- Clock Types -->
     <string name="digital_clock">Digital</string>
     <string name="analog_clock">Analog</string>
@@ -156,6 +160,13 @@
     <string name="loading_hijri" translatable="false">Loading…</string>
     
     <!-- Countdown type labels - removed as no longer used -->
+    
+    <!-- Full Screen Countdown -->
+    <string name="countdown_azan_title">AZAN COUNTDOWN</string>
+    <string name="countdown_iqamah_title">IQAMAH COUNTDOWN</string>
+    <string name="countdown_label_minutes">MINUTES</string>
+    <string name="countdown_label_seconds">SECONDS</string>
+    <string name="best_time_dua">Best time to make Dua</string>
     
     <!-- System Settings Access -->
     <string name="system_settings" translatable="false">System Settings</string>

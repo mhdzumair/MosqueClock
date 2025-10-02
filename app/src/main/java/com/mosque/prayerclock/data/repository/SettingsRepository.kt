@@ -68,6 +68,7 @@ class SettingsRepository
             val SELECTED_ZONE = intPreferencesKey("selected_zone")
             val SELECTED_REGION = stringPreferencesKey("selected_region")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
+            val FULL_SCREEN_COUNTDOWN_ENABLED = booleanPreferencesKey("full_screen_countdown_enabled")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -149,6 +150,7 @@ class SettingsRepository
                     selectedZone = preferences[PreferencesKeys.SELECTED_ZONE] ?: 1,
                     selectedRegion = preferences[PreferencesKeys.SELECTED_REGION] ?: "Colombo",
                     soundEnabled = preferences[PreferencesKeys.SOUND_ENABLED] ?: true,
+                    fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: false,
                 )
             }
 
@@ -297,5 +299,9 @@ class SettingsRepository
 
         suspend fun updateSoundEnabled(soundEnabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SOUND_ENABLED] = soundEnabled }
+        }
+
+        suspend fun updateFullScreenCountdownEnabled(enabled: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] = enabled }
         }
     }

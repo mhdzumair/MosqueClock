@@ -205,6 +205,13 @@ fun SettingsScreen(
                         onSoundEnabledChange = viewModel::updateSoundEnabled,
                     )
                 }
+
+                item {
+                    FullScreenCountdownSettings(
+                        fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
+                        onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
+                    )
+                }
             }
         }
     }
@@ -1596,6 +1603,44 @@ private fun SoundSettings(
                 }
             }
             Switch(checked = soundEnabled, onCheckedChange = onSoundEnabledChange)
+        }
+    }
+}
+
+@Composable
+private fun FullScreenCountdownSettings(
+    fullScreenCountdownEnabled: Boolean,
+    onFullScreenCountdownEnabledChange: (Boolean) -> Unit,
+) {
+    SettingsCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = "⏱️",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.fullscreen_countdown_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.fullscreen_countdown_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
+            Switch(checked = fullScreenCountdownEnabled, onCheckedChange = onFullScreenCountdownEnabledChange)
         }
     }
 }

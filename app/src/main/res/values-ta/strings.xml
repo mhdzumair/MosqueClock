@@ -41,6 +41,10 @@
     <string name="sound_enabled">ஒலியை இயக்கு</string>
     <string name="sound_description">அதான், இகாமத் மற்றும் சூரிய உதயத்திற்கு 5 விநாடிகளுக்கு முன் டிக்கிங் ஒலி</string>
     
+    <!-- Full Screen Countdown Settings -->
+    <string name="fullscreen_countdown_title">முழு திரை கவுண்டவுன்</string>
+    <string name="fullscreen_countdown_description">அதானுக்கு 10 நிமிடங்களுக்கு முன்பும் இகாமத் இடைவெளியிலும் முழு திரை கவுண்டவுன் காட்டு</string>
+    
     <!-- Clock Types -->
     <string name="digital_clock">டிஜிட்டல்</string>
     <string name="analog_clock">அனலாக்</string>
@@ -156,4 +160,11 @@
     <string name="loading_hijri">ஏற்றுகிறது...</string>
     
     <!-- Countdown type labels - removed as no longer used -->
+    
+    <!-- Full Screen Countdown -->
+    <string name="countdown_azan_title">அதான் கவுண்டவுன்</string>
+    <string name="countdown_iqamah_title">இகாமத் கவுண்டவுன்</string>
+    <string name="countdown_label_minutes">நிமிடங்கள்</string>
+    <string name="countdown_label_seconds">விநாடிகள்</string>
+    <string name="best_time_dua">துஆ செய்ய சிறந்த நேரம்</string>
 </resources>

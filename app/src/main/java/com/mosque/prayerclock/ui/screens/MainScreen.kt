@@ -71,6 +71,8 @@ import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.repository.HijriDateRepository
 import com.mosque.prayerclock.ui.components.AnalogClock
 import com.mosque.prayerclock.ui.components.DigitalClock
+import com.mosque.prayerclock.ui.components.FlipClockDigitPair
+import com.mosque.prayerclock.ui.components.FullScreenCountdown
 import com.mosque.prayerclock.ui.components.PrayerTimeCard
 import com.mosque.prayerclock.ui.components.WeatherCard
 import com.mosque.prayerclock.ui.localizedStringResource
@@ -98,6 +100,25 @@ data class Quadruple<A, B, C, D>(
     val second: B,
     val third: C,
     val fourth: D,
+)
+
+// Helper data class for returning six values
+data class Sextuple<A, B, C, D, E, F>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E,
+    val sixth: F,
+)
+
+// Data class for full-screen countdown information
+data class FullScreenCountdownData(
+    val prayerName: String,
+    val prayerType: PrayerType,
+    val isIqamah: Boolean,
+    val minutes: Long,
+    val seconds: Long,
 )
 
 @Composable
@@ -171,8 +192,8 @@ fun MainLayout(
         }
     }
 
-    // Calculate countdown visibility, prayer state, and prayer-in-progress period once for the entire layout
-    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, isPrayerInProgress) =
+    // Calculate countdown visibility, prayer state, prayer-in-progress period, and full-screen countdown state
+    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, isPrayerInProgress, shouldShowFullScreenCountdown, fullScreenCountdownData) =
         when (uiState) {
             is MainUiState.Success -> {
                 // Use centralized time source
@@ -266,10 +287,10 @@ fun MainLayout(
                                     ) > 0
                                 }
 
-                            // Show countdown if time is positive, within 59 minutes,
+                            // Show countdown if time is zero or positive, within 59 minutes,
                             // and not in buffer period
                             val isCountdownVisible =
-                                countdownData.totalSeconds > 0 &&
+                                countdownData.totalSeconds >= 0 &&
                                     countdownData.totalMinutes < 60 &&
                                     !isPastFinalTime
 
@@ -292,26 +313,66 @@ fun MainLayout(
                                     false
                                 }
 
-                            Quadruple(
+                            // Check if full-screen countdown should be shown
+                            // Show for 10 minutes before Azan, OR full Iqamah gap when counting to Iqamah
+                            val maxCountdownMinutes =
+                                if (shouldShowIqamah && prayer.iqamahTime != null) {
+                                    // When showing Iqamah countdown, show for the full Iqamah gap
+                                    // Calculate the gap by getting minutes between Azan and Iqamah
+                                    val azanParts = prayer.azanTime.split(":")
+                                    val iqamahParts = prayer.iqamahTime.split(":")
+                                    val azanMinutes = azanParts[0].toInt() * 60 + azanParts[1].toInt()
+                                    val iqamahMinutes = iqamahParts[0].toInt() * 60 + iqamahParts[1].toInt()
+                                    val gapMinutes = iqamahMinutes - azanMinutes
+                                    gapMinutes.toLong()
+                                } else {
+                                    // Before Azan: show for 10 minutes
+                                    10L
+                                }
+
+                            val shouldShowFullScreenCountdown =
+                                settings.fullScreenCountdownEnabled &&
+                                    countdownData.totalMinutes in 0..maxCountdownMinutes &&
+                                    countdownData.totalSeconds >= 0 &&
+                                    !isPastFinalTime
+
+                            val fullScreenCountdownData =
+                                if (shouldShowFullScreenCountdown) {
+                                    FullScreenCountdownData(
+                                        prayerName = prayer.name,
+                                        prayerType = prayer.type,
+                                        isIqamah = shouldShowIqamah,
+                                        minutes = countdownData.minutes,
+                                        seconds = countdownData.seconds,
+                                    )
+                                } else {
+                                    null
+                                }
+
+                            Sextuple(
                                 isCountdownVisible,
                                 currentTime,
                                 isCurrentPrayerLocal,
                                 isPrayerInProgress,
+                                shouldShowFullScreenCountdown,
+                                fullScreenCountdownData,
                             )
                         }
-                            ?: Quadruple(false, currentTime, false, false)
+                            ?: Sextuple(false, currentTime, false, false, false, null)
                     }
 
                 calculatedValues
             }
-            else -> Quadruple(false, Clock.System.now(), false, false)
+            else -> Sextuple(false, Clock.System.now(), false, false, false, null)
         }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(paddingSize),
-    ) {
-        // Main content row with revamped layout
-        Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Main layout content
+        Column(
+            modifier = Modifier.fillMaxSize().padding(paddingSize),
+        ) {
+            // Main content row with revamped layout
+            Row(
             modifier = Modifier.weight(0.75f),
             horizontalArrangement = Arrangement.spacedBy(4.dp), // Reduced spacing between columns
             verticalAlignment = Alignment.Top,
@@ -454,6 +515,19 @@ fun MainLayout(
             else -> {
                 Spacer(modifier = Modifier.height(100.dp))
             }
+        }
+        }
+
+        // Full-screen countdown overlay (shown when enabled and 10 minutes or less remain)
+        if (shouldShowFullScreenCountdown && fullScreenCountdownData != null) {
+            FullScreenCountdown(
+                prayerName = fullScreenCountdownData.prayerName,
+                prayerType = fullScreenCountdownData.prayerType,
+                isIqamah = fullScreenCountdownData.isIqamah,
+                minutes = fullScreenCountdownData.minutes,
+                seconds = fullScreenCountdownData.seconds,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
@@ -693,18 +767,20 @@ private fun getCountdownData(
         val duration = prayerInstant - currentTime
 
         if (duration.isNegative()) {
-            return CountdownData(0, 0, 0, 0, 0)
+            // Return -1 for totalSeconds to clearly indicate we've passed the target time
+            return CountdownData(0, 0, 0, 0, -1)
         }
 
         val hours = duration.inWholeHours
         val minutes = (duration.inWholeMinutes % 60)
-        val seconds = (duration.inWholeSeconds % 60) + 1 // Add 1 second to fix timing
+        val seconds = (duration.inWholeSeconds % 60)
         val totalMinutes = duration.inWholeMinutes
-        val totalSeconds = duration.inWholeSeconds + 1 // Add 1 second to fix timing
+        val totalSeconds = duration.inWholeSeconds
 
         return CountdownData(hours, minutes, seconds, totalMinutes, totalSeconds)
     } catch (e: Exception) {
-        return CountdownData(0, 0, 0, 0, 0)
+        // Return -1 for totalSeconds to indicate an error/invalid state
+        return CountdownData(0, 0, 0, 0, -1)
     }
 }
 
@@ -759,163 +835,6 @@ fun FlipClockCountdown(
             value = seconds,
             digitBoxSize = digitBoxSize,
         )
-    }
-}
-
-@Composable
-fun FlipClockDigitPair(
-    value: Long,
-    digitBoxSize: androidx.compose.ui.unit.TextUnit = 64.sp,
-) {
-    val tens = (value / 10).toInt()
-    val units = (value % 10).toInt()
-
-    // Calculate spacing proportional to digit size
-    val pairSpacing = with(LocalDensity.current) { (digitBoxSize.toPx() * 0.06f).toDp() }
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(pairSpacing),
-    ) {
-        AnimatedFlipDigit(digit = tens, digitBoxSize = digitBoxSize)
-        AnimatedFlipDigit(digit = units, digitBoxSize = digitBoxSize)
-    }
-}
-
-@OptIn(ExperimentalAnimationApi::class)
-@Composable
-fun AnimatedFlipDigit(
-    digit: Int,
-    digitBoxSize: androidx.compose.ui.unit.TextUnit = 64.sp,
-) {
-    var previousDigit by remember { mutableStateOf(digit) }
-    var currentDigit by remember { mutableStateOf(digit) }
-
-    // Detect digit change for animation
-    LaunchedEffect(digit) {
-        if (digit != currentDigit) {
-            previousDigit = currentDigit
-            currentDigit = digit
-        }
-    }
-
-    val density = LocalDensity.current
-
-    // Calculate box dimensions based on digitBoxSize
-    // Box should be proportional: width is ~0.73x of height
-    val boxHeight = with(density) { digitBoxSize.toDp() * 1.38f }
-    val boxWidth = boxHeight * 0.73f
-
-    // Font size is ~64% of box height
-    val fontSize = digitBoxSize
-
-    // Border radius proportional to box size
-    val borderRadius = boxHeight * 0.09f
-
-    Box(
-        modifier = Modifier.size(width = boxWidth, height = boxHeight),
-    ) {
-        // Main flip card background - elegant natural color matching your mosque clock theme
-        Card(
-            modifier = Modifier.fillMaxSize(),
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = Color(0xFF2D4A22), // Deep forest green matching your analog clock
-                ),
-            shape = RoundedCornerShape(borderRadius),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        ) {
-            // Inner card with elegant brass-tinted background
-            Card(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(2.dp),
-                // Thin border to show outer color
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = Color(0xFF3A5F2A), // Slightly lighter forest green
-                    ),
-                shape = RoundedCornerShape(borderRadius * 0.75f),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // Animated digit transition
-                    AnimatedContent(
-                        targetState = currentDigit,
-                        transitionSpec = {
-                            if (targetState > initialState) {
-                                // Flip up animation
-                                slideInVertically { height -> -height } + fadeIn() togetherWith
-                                    slideOutVertically { height -> height } + fadeOut()
-                            } else {
-                                // Flip down animation
-                                slideInVertically { height -> height } + fadeIn() togetherWith
-                                    slideOutVertically { height -> -height } + fadeOut()
-                            }.using(
-                                SizeTransform(clip = false),
-                            )
-                        },
-                        label = "digit_flip",
-                    ) { animatedDigit ->
-                        Text(
-                            text = animatedDigit.toString(),
-                            style =
-                                MaterialTheme.typography.displayLarge.copy(
-                                    fontSize = fontSize,
-                                    fontWeight = FontWeight.Black, // Extra bold for visibility
-                                ),
-                            color = Color(0xFFB08D57), // Elegant brass/gold color matching your analog clock
-                        )
-                    }
-
-                    // Horizontal line in the middle to simulate flip mechanism - subtle brass accent
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(Color(0xFFB08D57).copy(alpha = 0.6f)) // Subtle brass line
-                                .align(Alignment.Center),
-                    )
-
-                    // Add subtle gradient shadows for depth like your analog clock
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                Color.Black.copy(alpha = 0.2f),
-                                                Color.Transparent,
-                                            ),
-                                    ),
-                                ).align(Alignment.TopCenter),
-                    )
-
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                Color.Transparent,
-                                                Color.Black.copy(alpha = 0.2f),
-                                            ),
-                                    ),
-                                ).align(Alignment.BottomCenter),
-                    )
-                }
-            }
-        }
     }
 }
 

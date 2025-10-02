@@ -179,4 +179,10 @@ class SettingsViewModel
                 settingsRepository.updateSoundEnabled(soundEnabled)
             }
         }
+
+        fun updateFullScreenCountdownEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateFullScreenCountdownEnabled(enabled)
+            }
+        }
     }
