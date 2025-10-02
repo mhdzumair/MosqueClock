@@ -373,12 +373,17 @@ class DirectScrapingService
                 // Convert to PrayerTimes entities
                 val prayerTimesEntities = pdfParser.convertToPrayerTimesEntities(prayerTimesData, zone)
 
+                if (prayerTimesEntities.isEmpty()) {
+                    Log.e(TAG, "⚠️ No prayer times extracted from PDF for Zone $zone, $year-$month")
+                    return null
+                }
+
                 // Cache all prayer times for the month
                 prayerTimesDao.insertPrayerTimesList(prayerTimesEntities)
 
                 Log.d(
                     TAG,
-                    "✅ Successfully cached ${prayerTimesEntities.size} prayer times for Zone $zone, $year-$month",
+                    "✅ Cached ${prayerTimesEntities.size} prayer times for Zone $zone (${prayerTimesEntities.first().date} to ${prayerTimesEntities.last().date})",
                 )
                 prayerTimesEntities
             } catch (e: Exception) {
