@@ -20,6 +20,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -34,15 +35,17 @@ class WeatherRepository
         private val weatherApi: WeatherApi, // Primary weather provider (WeatherAPI.com)
         private val mosqueClockApi: MosqueClockApi, // MosqueClock API (for backend fallback)
         private val openWeatherMapService: OpenWeatherMapService, // Secondary weather provider
+        private val settingsRepository: com.mosque.prayerclock.data.repository.SettingsRepository, // For runtime API key
     ) {
         // Weather refresh job management - survives ViewModel recreation since Repository is Singleton
         private val weatherRefreshJobs = mutableMapOf<Triple<String, String, WeatherProvider>, Job>()
         private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-        // TODO: Add your WeatherAPI.com API key to local.properties file as:
-        // weather_api_key=your_actual_api_key_here
-        // You can get a free API key from: https://www.weatherapi.com/
-        private val apiKey = BuildConfig.WEATHER_API_KEY
+        // Get API key from settings at runtime
+        private suspend fun getWeatherApiKey(): String {
+            val settings = settingsRepository.getSettings().first()
+            return settings.weatherApiKey
+        }
 
         fun getCurrentWeather(
             city: String,
@@ -71,11 +74,13 @@ class WeatherRepository
                         return@flow
                     }
 
-                    // If no valid API key is provided, fall back to mock data
-                    if (apiKey.isBlank() || apiKey == "your_weatherapi_key_here" || apiKey == "demo_key") {
-                        Log.d("WeatherRepository", "No valid API key, using mock data")
-                        val mockWeatherInfo = createMockWeatherData(city)
-                        emit(NetworkResult.Success(mockWeatherInfo))
+                    // Get API key from settings
+                    val apiKey = getWeatherApiKey()
+
+                    // If no valid API key is provided, return error
+                    if (apiKey.isBlank()) {
+                        Log.w("WeatherRepository", "No API key configured for WeatherAPI.com")
+                        emit(NetworkResult.Error("Weather API key not configured. Please add your API key in Settings."))
                         return@flow
                     }
 
@@ -99,87 +104,21 @@ class WeatherRepository
                     }
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in getCurrentWeather: ${e.message}", e)
-                    when {
+                    val errorMessage = when {
                         e.message?.contains("CertificateException") == true ||
-                            e.message?.contains("Trust anchor") == true -> {
-                            Log.w(
-                                "WeatherRepository",
-                                "SSL Certificate error detected - falling back to mock data for limited connection",
-                            )
-                            val mockWeatherInfo = createMockWeatherData(city)
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        e.message?.contains("UnknownHostException") == true -> {
-                            Log.w(
-                                "WeatherRepository",
-                                "DNS resolution failed - falling back to mock data for limited connection",
-                            )
-                            val mockWeatherInfo = createMockWeatherData(city)
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        e.message?.contains("SocketTimeoutException") == true -> {
-                            Log.w(
-                                "WeatherRepository",
-                                "Connection timeout - falling back to mock data for limited connection",
-                            )
-                            val mockWeatherInfo = createMockWeatherData(city)
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        e.message?.contains("ConnectException") == true -> {
-                            Log.w(
-                                "WeatherRepository",
-                                "Connection failed - falling back to mock data for limited connection",
-                            )
-                            val mockWeatherInfo = createMockWeatherData(city)
-                            emit(NetworkResult.Success(mockWeatherInfo))
-                            return@flow
-                        }
-                        else -> {
-                            val errorMessage = "Failed to fetch weather data: ${e.message}"
-                            emit(NetworkResult.Error(errorMessage))
-                        }
+                            e.message?.contains("Trust anchor") == true ->
+                            "SSL Certificate error. Please check your internet connection."
+                        e.message?.contains("UnknownHostException") == true ->
+                            "DNS resolution failed. Please check your internet connection."
+                        e.message?.contains("SocketTimeoutException") == true ->
+                            "Connection timeout. Please check your internet connection."
+                        e.message?.contains("ConnectException") == true ->
+                            "Connection failed. Please check your internet connection."
+                        else -> "Failed to fetch weather data: ${e.message}"
                     }
+                    emit(NetworkResult.Error(errorMessage))
                 }
             }
-
-        private fun createMockWeatherData(city: String): WeatherInfo {
-            // Mock data for demonstration
-            return when (city.lowercase()) {
-                "colombo" ->
-                    WeatherInfo(
-                        temperature = 28.5,
-                        description = "Partly Cloudy",
-                        icon = "//cdn.weatherapi.com/weather/64x64/day/116.png",
-                        humidity = 75,
-                        feelsLike = 32.1,
-                        visibility = 10.0,
-                        uvIndex = 6.0,
-                    )
-                "kuala lumpur" ->
-                    WeatherInfo(
-                        temperature = 31.2,
-                        description = "Sunny",
-                        icon = "//cdn.weatherapi.com/weather/64x64/day/113.png",
-                        humidity = 68,
-                        feelsLike = 35.4,
-                        visibility = 15.0,
-                        uvIndex = 8.0,
-                    )
-                else ->
-                    WeatherInfo(
-                        temperature = 25.0,
-                        description = "Clear",
-                        icon = "//cdn.weatherapi.com/weather/64x64/day/113.png",
-                        humidity = 60,
-                        feelsLike = 27.0,
-                        visibility = 12.0,
-                        uvIndex = 5.0,
-                    )
-            }
-        }
 
         // New methods using MosqueClock API for accurate Sri Lankan weather
 
@@ -259,12 +198,44 @@ class WeatherRepository
                 try {
                     Log.d("WeatherRepository", "Fetching weather by coordinates: $latitude, $longitude")
 
-                    // If no valid API key is provided, fall back to mock data
-                    if (apiKey.isBlank() || apiKey == "your_weatherapi_key_here" || apiKey == "demo_key") {
-                        Log.d("WeatherRepository", "No valid API key, using mock data")
-                        val mockWeatherInfo = createMockWeatherData("location")
-                        emit(NetworkResult.Success(mockWeatherInfo))
-                        return@flow
+                    // Get API key from settings
+                    val apiKey = getWeatherApiKey()
+
+                    // If no valid API key is provided, try secondary provider
+                    if (apiKey.isBlank()) {
+                        Log.w("WeatherRepository", "No API key configured for WeatherAPI.com, trying secondary provider")
+                        // Try secondary weather provider (OpenWeatherMap)
+                        if (openWeatherMapService.isConfigured()) {
+                            Log.d("WeatherRepository", "🌤️ Trying secondary weather provider (OpenWeatherMap)")
+                            val openWeatherResult =
+                                openWeatherMapService.getCurrentWeatherByCoordinates(
+                                    latitude,
+                                    longitude,
+                                )
+
+                            when (openWeatherResult) {
+                                is NetworkResult.Success -> {
+                                    Log.d("WeatherRepository", "✅ Secondary weather provider successful")
+                                    emit(openWeatherResult)
+                                    return@flow
+                                }
+                                is NetworkResult.Error -> {
+                                    Log.w(
+                                        "WeatherRepository",
+                                        "⚠️ Secondary weather provider failed: ${openWeatherResult.message}",
+                                    )
+                                    emit(NetworkResult.Error("No weather API keys configured. Please add API keys in Settings."))
+                                    return@flow
+                                }
+                                else -> {
+                                    Log.w("WeatherRepository", "⚠️ Secondary weather provider returned unexpected result")
+                                }
+                            }
+                        } else {
+                            Log.w("WeatherRepository", "⚠️ No weather API keys configured")
+                            emit(NetworkResult.Error("Weather API key not configured. Please add your API key in Settings."))
+                            return@flow
+                        }
                     }
 
                     Log.d("WeatherRepository", "API Key available: ${apiKey.take(8)}... (${apiKey.length} chars)")
@@ -321,47 +292,18 @@ class WeatherRepository
                     emit(NetworkResult.Error("All weather providers failed", response.code()))
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in coordinates weather fetch: ${e.message}", e)
-                    val errorMessage =
-                        when {
-                            e.message?.contains("CertificateException") == true ||
-                                e.message?.contains("Trust anchor") == true -> {
-                                Log.w(
-                                    "WeatherRepository",
-                                    "SSL Certificate error detected - falling back to mock data for limited connection",
-                                )
-                                val mockWeatherInfo = createMockWeatherData("location")
-                                emit(NetworkResult.Success(mockWeatherInfo))
-                                return@flow
-                            }
-                            e.message?.contains("UnknownHostException") == true -> {
-                                Log.w(
-                                    "WeatherRepository",
-                                    "DNS resolution failed - falling back to mock data for limited connection",
-                                )
-                                val mockWeatherInfo = createMockWeatherData("location")
-                                emit(NetworkResult.Success(mockWeatherInfo))
-                                return@flow
-                            }
-                            e.message?.contains("SocketTimeoutException") == true -> {
-                                Log.w(
-                                    "WeatherRepository",
-                                    "Connection timeout - falling back to mock data for limited connection",
-                                )
-                                val mockWeatherInfo = createMockWeatherData("location")
-                                emit(NetworkResult.Success(mockWeatherInfo))
-                                return@flow
-                            }
-                            e.message?.contains("ConnectException") == true -> {
-                                Log.w(
-                                    "WeatherRepository",
-                                    "Connection failed - falling back to mock data for limited connection",
-                                )
-                                val mockWeatherInfo = createMockWeatherData("location")
-                                emit(NetworkResult.Success(mockWeatherInfo))
-                                return@flow
-                            }
-                            else -> "Failed to fetch weather data: ${e.message}"
-                        }
+                    val errorMessage = when {
+                        e.message?.contains("CertificateException") == true ||
+                            e.message?.contains("Trust anchor") == true ->
+                            "SSL Certificate error. Please check your internet connection."
+                        e.message?.contains("UnknownHostException") == true ->
+                            "DNS resolution failed. Please check your internet connection."
+                        e.message?.contains("SocketTimeoutException") == true ->
+                            "Connection timeout. Please check your internet connection."
+                        e.message?.contains("ConnectException") == true ->
+                            "Connection failed. Please check your internet connection."
+                        else -> "Failed to fetch weather data: ${e.message}"
+                    }
                     emit(NetworkResult.Error(errorMessage))
                 }
             }

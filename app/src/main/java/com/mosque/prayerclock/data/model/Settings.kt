@@ -38,6 +38,10 @@ data class AppSettings(
     val selectedRegion: String = "Colombo", // For third-party prayer time services
     val soundEnabled: Boolean = true, // Enable/disable beep countdown sound
     val fullScreenCountdownEnabled: Boolean = false, // Enable/disable full-screen countdown at 10 minutes before Azan/Iqamah
+    val weatherApiKey: String = "", // WeatherAPI.com API key
+    val openWeatherMapApiKey: String = "", // OpenWeatherMap API key
+    val mosqueClockBackendUrl: String = "", // MosqueClock backend URL
+    val mosqueClockBackendApiKey: String = "", // MosqueClock backend API key
 )
 
 enum class Language(

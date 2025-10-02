@@ -176,4 +176,30 @@
     <string name="open_android_settings" translatable="false">Open Android Settings</string>
     <string name="open_date_time_settings" translatable="false">Open Date &amp; Time Settings</string>
     <string name="quick_access" translatable="false">Quick Access</string>
+    
+    <!-- API Configuration -->
+    <string name="api_configuration" translatable="false">API Configuration</string>
+    <string name="api_configuration_description" translatable="false">Configure API keys and backend URL for services</string>
+    <string name="weather_api_key_label" translatable="false">WeatherAPI.com Key</string>
+    <string name="weather_api_key_hint" translatable="false">Enter WeatherAPI.com API key</string>
+    <string name="openweathermap_api_key_label" translatable="false">OpenWeatherMap Key</string>
+    <string name="openweathermap_api_key_hint" translatable="false">Enter OpenWeatherMap API key</string>
+    <string name="backend_url_label" translatable="false">Backend URL</string>
+    <string name="backend_url_hint" translatable="false">http://10.0.2.2:8000/</string>
+    <string name="backend_api_key_label" translatable="false">Backend API Key</string>
+    <string name="backend_api_key_hint" translatable="false">Enter backend API key</string>
+    
+    <!-- About/Version -->
+    <string name="about_app" translatable="false">About</string>
+    <string name="app_version" translatable="false">Version</string>
+    <string name="check_for_updates" translatable="false">Check for Updates</string>
+    <string name="checking_updates" translatable="false">Checking for updates…</string>
+    <string name="no_updates_available" translatable="false">You have the latest version</string>
+    <string name="update_available" translatable="false">Update available: v%s</string>
+    <string name="download_update" translatable="false">Download Update</string>
+    <string name="update_check_failed" translatable="false">Failed to check for updates</string>
+    <string name="developer" translatable="false">Developer</string>
+    <string name="developer_name" translatable="false">Mohamed Zumair</string>
+    <string name="open_source_licenses" translatable="false">Open Source Licenses</string>
+    <string name="github_repository" translatable="false">GitHub Repository</string>
 </resources>

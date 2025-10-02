@@ -23,35 +23,12 @@ android {
         // Generate universal APKs for all screen densities and ABIs
         vectorDrawables.useSupportLibrary = true
 
-        // Read API key from local.properties
-        val localProperties = Properties()
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localProperties.load(localPropertiesFile.inputStream())
-        }
-
-        buildConfigField(
-            "String",
-            "WEATHER_API_KEY",
-            localProperties.getProperty("weather_api_key", "\"\""),
-        )
-        buildConfigField(
-            "String",
-            "OPENWEATHERMAP_API_KEY",
-            localProperties.getProperty("openweathermap_api_key", "\"\""),
-        )
-
-        buildConfigField(
-            "String",
-            "MOSQUE_CLOCK_API_URL",
-            localProperties.getProperty("mosque_clock_api_url", "\"http://10.0.2.2:8000/\""),
-        )
-
-        buildConfigField(
-            "String",
-            "MOSQUE_CLOCK_API_KEY",
-            localProperties.getProperty("mosque_clock_api_key", "\"mosque-clock-api-key-2025\""),
-        )
+        // API keys and backend configuration are now managed via in-app settings
+        // No build-time configuration required - configure everything in Settings screen!
+        buildConfigField("String", "WEATHER_API_KEY", "\"\"")
+        buildConfigField("String", "OPENWEATHERMAP_API_KEY", "\"\"")
+        buildConfigField("String", "MOSQUE_CLOCK_API_URL", "\"http://10.0.2.2:8000/\"")
+        buildConfigField("String", "MOSQUE_CLOCK_API_KEY", "\"\"")
     }
 
     signingConfigs {

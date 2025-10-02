@@ -6,7 +6,9 @@ import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.OpenWeatherMapApi
 import com.mosque.prayerclock.data.network.toWeatherInfo
+import com.mosque.prayerclock.data.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,6 +18,7 @@ class OpenWeatherMapService
     @Inject
     constructor(
         private val openWeatherMapApi: OpenWeatherMapApi,
+        private val settingsRepository: SettingsRepository,
     ) {
         companion object {
             private const val TAG = "OpenWeatherMapService"
@@ -63,7 +66,11 @@ class OpenWeatherMapService
             private const val DEFAULT_LON = 80.68578
         }
 
-        private val apiKey = BuildConfig.OPENWEATHERMAP_API_KEY
+        // Get API key from settings at runtime
+        private suspend fun getApiKey(): String {
+            val settings = settingsRepository.getSettings().first()
+            return settings.openWeatherMapApiKey
+        }
 
         suspend fun getCurrentWeather(
             city: String,
@@ -92,6 +99,8 @@ class OpenWeatherMapService
             withContext(Dispatchers.IO) {
                 try {
                     Log.d(TAG, "🌤️ Fetching weather by coordinates: $latitude, $longitude using OpenWeatherMap")
+
+                    val apiKey = getApiKey()
 
                     if (apiKey.isBlank()) {
                         Log.e(TAG, "❌ OpenWeatherMap API key is missing")
@@ -146,5 +155,8 @@ class OpenWeatherMapService
             }
         }
 
-        fun isConfigured(): Boolean = apiKey.isNotBlank()
+        suspend fun isConfigured(): Boolean {
+            val apiKey = getApiKey()
+            return apiKey.isNotBlank()
+        }
     }

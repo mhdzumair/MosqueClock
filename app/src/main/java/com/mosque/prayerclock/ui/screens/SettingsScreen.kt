@@ -1,6 +1,7 @@
 package com.mosque.prayerclock.ui.screens
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -32,6 +33,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -68,7 +70,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.data.service.UpdateChecker
+import com.mosque.prayerclock.data.service.UpdateInfo
+import javax.inject.Inject
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
@@ -137,9 +143,13 @@ fun SettingsScreen(
                         selectedServiceType = settings.prayerServiceType,
                         selectedZone = settings.selectedZone,
                         selectedRegion = settings.selectedRegion,
+                        backendUrl = settings.mosqueClockBackendUrl,
+                        backendApiKey = settings.mosqueClockBackendApiKey,
                         onServiceTypeChange = viewModel::updatePrayerServiceType,
                         onZoneChange = viewModel::updateSelectedZone,
                         onRegionChange = viewModel::updateSelectedRegion,
+                        onBackendUrlChange = viewModel::updateMosqueClockBackendUrl,
+                        onBackendApiKeyChange = viewModel::updateMosqueClockBackendApiKey,
                     )
                 }
 
@@ -168,6 +178,10 @@ fun SettingsScreen(
                         onWeatherCityChange = viewModel::updateWeatherCity,
                         provider = settings.weatherProvider,
                         onProviderChange = viewModel::updateWeatherProvider,
+                        weatherApiKey = settings.weatherApiKey,
+                        openWeatherMapApiKey = settings.openWeatherMapApiKey,
+                        onWeatherApiKeyChange = viewModel::updateWeatherApiKey,
+                        onOpenWeatherMapApiKeyChange = viewModel::updateOpenWeatherMapApiKey,
                     )
                 }
 
@@ -211,6 +225,10 @@ fun SettingsScreen(
                         fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
                         onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
                     )
+                }
+
+                item {
+                    AboutSettings()
                 }
             }
         }
@@ -351,9 +369,13 @@ private fun PrayerServiceSettings(
     selectedServiceType: PrayerServiceType,
     selectedZone: Int,
     selectedRegion: String,
+    backendUrl: String,
+    backendApiKey: String,
     onServiceTypeChange: (PrayerServiceType) -> Unit,
     onZoneChange: (Int) -> Unit,
     onRegionChange: (String) -> Unit,
+    onBackendUrlChange: (String) -> Unit,
+    onBackendApiKeyChange: (String) -> Unit,
 ) {
     SettingsCard {
         Column {
@@ -392,6 +414,58 @@ private fun PrayerServiceSettings(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Backend configuration for MosqueClock API
+            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API) {
+                Text(
+                    text = "Backend Configuration",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = stringResource(R.string.backend_url_label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "Example: http://192.168.1.100:8000/ or https://api.yourdomain.com/",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ImprovedTextField(
+                    value = backendUrl,
+                    onValueChange = onBackendUrlChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(R.string.backend_url_hint),
+                    keyboardType = KeyboardType.Uri,
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = stringResource(R.string.backend_api_key_label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "Your backend authentication key",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ImprovedTextField(
+                    value = backendApiKey,
+                    onValueChange = onBackendApiKeyChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(R.string.backend_api_key_hint),
+                    keyboardType = KeyboardType.Text,
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Zone selection for MosqueClock backend and ACJU Direct (both use Sri Lankan zones)
             if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API ||
@@ -688,6 +762,10 @@ private fun WeatherSettings(
     onWeatherCityChange: (String) -> Unit,
     provider: WeatherProvider,
     onProviderChange: (WeatherProvider) -> Unit,
+    weatherApiKey: String,
+    openWeatherMapApiKey: String,
+    onWeatherApiKeyChange: (String) -> Unit,
+    onOpenWeatherMapApiKeyChange: (String) -> Unit,
 ) {
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -736,6 +814,53 @@ private fun WeatherSettings(
                         )
                     }
                 }
+                
+                // Show API key field for WeatherAPI.com
+                if (provider == WeatherProvider.WEATHER_API) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.weather_api_key_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Get free key from weatherapi.com",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ImprovedTextField(
+                        value = weatherApiKey,
+                        onValueChange = onWeatherApiKeyChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = stringResource(R.string.weather_api_key_hint),
+                        keyboardType = KeyboardType.Text,
+                    )
+                }
+                
+                // Show API key field for OpenWeatherMap
+                if (provider == WeatherProvider.OPEN_WEATHER_MAP) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.openweathermap_api_key_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Get free key from openweathermap.org/api",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ImprovedTextField(
+                        value = openWeatherMapApiKey,
+                        onValueChange = onOpenWeatherMapApiKeyChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = stringResource(R.string.openweathermap_api_key_hint),
+                        keyboardType = KeyboardType.Text,
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.weather_city),
@@ -1769,6 +1894,201 @@ private fun SystemSettingsAccess() {
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutSettings() {
+    val context = LocalContext.current
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var isChecking by remember { mutableStateOf(false) }
+    var updateCheckError by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    
+    // Get current version from BuildConfig
+    val currentVersion = BuildConfig.VERSION_NAME
+
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "ℹ️",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.about_app),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Mosque Prayer Clock",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Version Info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.app_version),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = currentVersion,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            // Developer Info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.developer),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.developer_name),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Check for Updates Button
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        isChecking = true
+                        updateCheckError = false
+                        try {
+                            val updateChecker = UpdateChecker()
+                            val result = updateChecker.checkForUpdates(currentVersion)
+                            updateInfo = result
+                            if (result == null) {
+                                updateCheckError = true
+                            }
+                        } catch (e: Exception) {
+                            updateCheckError = true
+                        } finally {
+                            isChecking = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isChecking,
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isChecking) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp).padding(end = 8.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Text(stringResource(R.string.checking_updates))
+                    } else {
+                        Text(stringResource(R.string.check_for_updates))
+                    }
+                }
+            }
+
+            // Update Status
+            if (updateInfo != null && !isChecking) {
+                if (updateInfo!!.hasUpdate) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = stringResource(R.string.update_available, updateInfo!!.latestVersion),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo!!.downloadUrl))
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.download_update))
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.no_updates_available),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            if (updateCheckError && !isChecking) {
+                Text(
+                    text = stringResource(R.string.update_check_failed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // GitHub Repository Button
+            OutlinedButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mhdzumair/MosqueClock"))
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "💻",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Text(stringResource(R.string.github_repository))
                 }
             }
         }

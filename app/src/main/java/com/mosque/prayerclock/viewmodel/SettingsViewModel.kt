@@ -185,4 +185,28 @@ class SettingsViewModel
                 settingsRepository.updateFullScreenCountdownEnabled(enabled)
             }
         }
+
+        fun updateWeatherApiKey(apiKey: String) {
+            viewModelScope.launch {
+                settingsRepository.updateWeatherApiKey(apiKey)
+            }
+        }
+
+        fun updateOpenWeatherMapApiKey(apiKey: String) {
+            viewModelScope.launch {
+                settingsRepository.updateOpenWeatherMapApiKey(apiKey)
+            }
+        }
+
+        fun updateMosqueClockBackendUrl(url: String) {
+            viewModelScope.launch {
+                settingsRepository.updateMosqueClockBackendUrl(url)
+            }
+        }
+
+        fun updateMosqueClockBackendApiKey(apiKey: String) {
+            viewModelScope.launch {
+                settingsRepository.updateMosqueClockBackendApiKey(apiKey)
+            }
+        }
     }

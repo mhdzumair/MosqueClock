@@ -69,6 +69,10 @@ class SettingsRepository
             val SELECTED_REGION = stringPreferencesKey("selected_region")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
             val FULL_SCREEN_COUNTDOWN_ENABLED = booleanPreferencesKey("full_screen_countdown_enabled")
+            val WEATHER_API_KEY = stringPreferencesKey("weather_api_key")
+            val OPENWEATHERMAP_API_KEY = stringPreferencesKey("openweathermap_api_key")
+            val MOSQUE_CLOCK_BACKEND_URL = stringPreferencesKey("mosque_clock_backend_url")
+            val MOSQUE_CLOCK_BACKEND_API_KEY = stringPreferencesKey("mosque_clock_backend_api_key")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -151,6 +155,10 @@ class SettingsRepository
                     selectedRegion = preferences[PreferencesKeys.SELECTED_REGION] ?: "Colombo",
                     soundEnabled = preferences[PreferencesKeys.SOUND_ENABLED] ?: true,
                     fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: false,
+                    weatherApiKey = preferences[PreferencesKeys.WEATHER_API_KEY] ?: "",
+                    openWeatherMapApiKey = preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] ?: "",
+                    mosqueClockBackendUrl = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_URL] ?: "",
+                    mosqueClockBackendApiKey = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] ?: "",
                 )
             }
 
@@ -303,5 +311,21 @@ class SettingsRepository
 
         suspend fun updateFullScreenCountdownEnabled(enabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] = enabled }
+        }
+
+        suspend fun updateWeatherApiKey(apiKey: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.WEATHER_API_KEY] = apiKey }
+        }
+
+        suspend fun updateOpenWeatherMapApiKey(apiKey: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] = apiKey }
+        }
+
+        suspend fun updateMosqueClockBackendUrl(url: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_URL] = url }
+        }
+
+        suspend fun updateMosqueClockBackendApiKey(apiKey: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] = apiKey }
         }
     }

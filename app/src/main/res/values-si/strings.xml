@@ -125,4 +125,12 @@
     <string name="countdown_label_minutes">මිනිත්තු</string>
     <string name="countdown_label_seconds">තත්පර</string>
     <string name="best_time_dua">දුආ කිරීමට හොඳම කාලය</string>
+    
+    <!-- System Settings Access -->
+    <string name="system_settings" translatable="false">පද්ධති සැකසුම්</string>
+    <string name="system_settings_description" translatable="false">Android පද්ධති සැකසුම් වෙත ප්‍රවේශ වන්න</string>
+    <string name="date_time_settings" translatable="false">දිනය සහ වේලාව</string>
+    <string name="android_settings" translatable="false">Android සැකසුම්</string>
+    <string name="open_android_settings" translatable="false">Android සැකසුම් විවෘත කරන්න</string>
+    <string name="open_date_time_settings" translatable="false">දිනය සහ වේලා සැකසුම් විවෘත කරන්න</string>
 </resources>

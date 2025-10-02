@@ -158,18 +158,10 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 ### Quick Start
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/mhdzumair/MosqueClock
 cd MosqueClock
 
-# Create local.properties file
-cp local.properties.example local.properties
-
-# Add your API keys to local.properties
-weather_api_key="your-weatherapi-key"
-openweathermap_api_key="your-openweathermap-key"
-mosque_clock_api_url="your-backend-url"
-
-# Build debug APK
+# Build debug APK (no configuration needed!)
 ./gradlew assembleDebug
 
 # Or build optimized release APK
@@ -179,29 +171,29 @@ mosque_clock_api_url="your-backend-url"
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
+**That's it!** No API keys or configuration files needed. Configure everything after installation:
+1. Open the app on your Android TV
+2. Go to **Settings** (gear icon)
+3. Scroll to **🔑 API Configuration**
+4. Enter your API keys:
+   - WeatherAPI.com: Get free key from https://www.weatherapi.com/
+   - OpenWeatherMap: Get free key from https://openweathermap.org/api
+   - Backend URL & API Key: Configure if using MosqueClock backend
+
 ### Build Instructions
 
 1. **Clone the Repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/mhdzumair/MosqueClock.git
    cd MosqueClock
    ```
 
-2. **Configure API Keys**
-   ```bash
-   # Create local.properties file
-   cp local.properties.example local.properties
-   # Add your API keys:
-   # WEATHER_API_KEY=your_openweather_api_key
-   # MOSQUE_CLOCK_API_KEY=your_mosque_clock_api_key
-   ```
-
-3. **Build the Project**
+2. **Build the Project** (no API keys required!)
    ```bash
    ./gradlew build
    ```
 
-4. **Install on Android TV**
+3. **Install on Android TV**
    ```bash
    ./gradlew installDebug
    ```
@@ -505,7 +497,8 @@ The app includes a custom FastAPI backend for enhanced features:
 - **Flexibility**: Perfect for mosques with specific timing requirements
 
 ### Weather Configuration
-- **OpenWeatherMap**: Requires API key in `local.properties`
+- **WeatherAPI.com**: Primary provider, configure API key in Settings
+- **OpenWeatherMap**: Secondary provider, configure API key in Settings
 - **MosqueClock Weather**: Uses custom backend weather service
 - **City Coordinates**: Automatic mapping for Sri Lankan cities
 
@@ -602,7 +595,7 @@ The app includes a custom FastAPI backend for enhanced features:
    - Check internet connection
    - Verify selected prayer service in settings
    - Try switching between API providers
-   - Check API keys in `local.properties`
+   - Check API keys in Settings → API Configuration
 
 2. **Weather Not Displaying**
    - Ensure weather is enabled in settings
@@ -663,6 +656,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **ACJU (All Ceylon Jamiyyathul Ulama)** for prayer times data
 - **Al-Adhan API** for international prayer times service
+- **WeatherAPI.com** for weather data
 - **OpenWeatherMap** for weather data
 
 ## 📞 Support

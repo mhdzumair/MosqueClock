@@ -167,4 +167,12 @@
     <string name="countdown_label_minutes">நிமிடங்கள்</string>
     <string name="countdown_label_seconds">விநாடிகள்</string>
     <string name="best_time_dua">துஆ செய்ய சிறந்த நேரம்</string>
+    
+    <!-- System Settings Access -->
+    <string name="system_settings" translatable="false">கணினி அமைப்புகள்</string>
+    <string name="system_settings_description" translatable="false">Android கணினி அமைப்புகளை அணுகவும்</string>
+    <string name="date_time_settings" translatable="false">தேதி மற்றும் நேரம்</string>
+    <string name="android_settings" translatable="false">Android அமைப்புகள்</string>
+    <string name="open_android_settings" translatable="false">Android அமைப்புகளைத் திறக்கவும்</string>
+    <string name="open_date_time_settings" translatable="false">தேதி மற்றும் நேர அமைப்புகளைத் திறக்கவும்</string>
 </resources>
