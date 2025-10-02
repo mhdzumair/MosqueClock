@@ -12,8 +12,14 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,15 +50,18 @@ class ApkDownloader
         private var downloadId: Long = -1
         private var downloadManager: DownloadManager? = null
         private var onDownloadCompleteReceiver: BroadcastReceiver? = null
+        private var progressMonitorJob: Job? = null
+        private val scope = CoroutineScope(Dispatchers.IO)
 
-        /**
-         * Download APK from the given URL
-         */
-        fun downloadApk(
-            context: Context,
-            downloadUrl: String,
-            version: String,
-        ) {
+    /**
+     * Download APK from the given URL
+     */
+    fun downloadApk(
+        context: Context,
+        downloadUrl: String,
+        version: String,
+        onComplete: (() -> Unit)? = null,
+    ) {
             try {
                 Log.d("ApkDownloader", "Starting download from: $downloadUrl")
 
@@ -78,14 +87,18 @@ class ApkDownloader
                 downloadId = downloadManager?.enqueue(request) ?: -1
 
                 if (downloadId != -1L) {
+                    Log.d("ApkDownloader", "Download started with ID: $downloadId")
                     _downloadProgress.value =
                         DownloadProgress(
                             downloadId = downloadId,
                             status = DownloadStatus.DOWNLOADING,
                         )
 
-                    // Register download complete receiver
-                    registerDownloadCompleteReceiver(context, fileName)
+                    // Start monitoring download progress (primary completion handler)
+                    startProgressMonitoring(context, fileName, onComplete)
+
+                    // Register download complete receiver (backup handler)
+                    registerDownloadCompleteReceiver(context, fileName, onComplete)
 
                     Toast.makeText(context, "Downloading update v$version", Toast.LENGTH_SHORT).show()
                 } else {
@@ -106,9 +119,60 @@ class ApkDownloader
         }
 
         /**
+         * Start monitoring download progress in background
+         */
+        private fun startProgressMonitoring(
+            context: Context,
+            fileName: String,
+            onComplete: (() -> Unit)? = null,
+        ) {
+            // Cancel existing monitoring job
+            progressMonitorJob?.cancel()
+
+            progressMonitorJob = scope.launch {
+                while (isActive && downloadId != -1L) {
+                    try {
+                        val progress = queryDownloadProgress(context)
+                        if (progress != null) {
+                            _downloadProgress.value = progress
+                            
+                            Log.d("ApkDownloader", "Progress: ${progress.progress}% " +
+                                    "(${formatBytes(progress.bytesDownloaded)}/${formatBytes(progress.totalBytes)}) " +
+                                    "Status: ${progress.status}")
+                            
+                            // If download completed, handle it directly
+                            // (BroadcastReceiver is a backup for this)
+                            if (progress.status == DownloadStatus.COMPLETED) {
+                                Log.d("ApkDownloader", "Download completed via progress monitor - triggering installation")
+                                
+                                // Notify callback
+                                onComplete?.invoke()
+                                
+                                // Open installer
+                                installApk(context, fileName)
+                                
+                                break
+                            }
+                            
+                            // Stop monitoring if failed
+                            if (progress.status == DownloadStatus.FAILED) {
+                                Log.e("ApkDownloader", "Download failed")
+                                break
+                            }
+                        }
+                        delay(500) // Update every 500ms
+                    } catch (e: Exception) {
+                        Log.e("ApkDownloader", "Error monitoring progress", e)
+                        break
+                    }
+                }
+            }
+        }
+
+        /**
          * Get current download progress
          */
-        fun getDownloadProgress(context: Context): DownloadProgress? {
+        private fun queryDownloadProgress(context: Context): DownloadProgress? {
             if (downloadId == -1L || downloadManager == null) return null
 
             val query = DownloadManager.Query().setFilterById(downloadId)
@@ -158,6 +222,12 @@ class ApkDownloader
          */
         fun cancelDownload(context: Context) {
             if (downloadId != -1L) {
+                Log.d("ApkDownloader", "Cancelling download: $downloadId")
+                
+                // Stop progress monitoring
+                progressMonitorJob?.cancel()
+                progressMonitorJob = null
+                
                 downloadManager?.remove(downloadId)
                 downloadId = -1
                 _downloadProgress.value = DownloadProgress(status = DownloadStatus.CANCELLED)
@@ -227,6 +297,7 @@ class ApkDownloader
         private fun registerDownloadCompleteReceiver(
             context: Context,
             fileName: String,
+            onComplete: (() -> Unit)?,
         ) {
             // Unregister existing receiver if any
             onDownloadCompleteReceiver?.let {
@@ -253,6 +324,9 @@ class ApkDownloader
                                     status = DownloadStatus.COMPLETED,
                                 )
 
+                            // Notify completion callback
+                            onComplete?.invoke()
+
                             // Automatically open installer
                             installApk(context, fileName)
 
@@ -267,7 +341,11 @@ class ApkDownloader
                 }
 
             val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            context.registerReceiver(onDownloadCompleteReceiver, filter)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(onDownloadCompleteReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                context.registerReceiver(onDownloadCompleteReceiver, filter)
+            }
         }
 
         /**

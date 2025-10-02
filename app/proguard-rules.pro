@@ -79,6 +79,16 @@
 -keep,allowobfuscation interface com.mosque.prayerclock.data.network.MosqueClockApi { *; }
 -keep,allowobfuscation interface com.mosque.prayerclock.data.network.PrayerTimesApi { *; }
 
+# Keep UpdateChecker API interface and data classes
+-keep,allowobfuscation interface com.mosque.prayerclock.data.service.GitHubApi { *; }
+-keep class com.mosque.prayerclock.data.service.GitHubRelease { *; }
+-keep class com.mosque.prayerclock.data.service.GitHubReleaseAsset { *; }
+-keep class com.mosque.prayerclock.data.service.UpdateInfo { *; }
+-keep class com.mosque.prayerclock.data.service.UpdateChecker { *; }
+-keepclassmembers class com.mosque.prayerclock.data.service.GitHubRelease { *; }
+-keepclassmembers class com.mosque.prayerclock.data.service.GitHubReleaseAsset { *; }
+-keepclassmembers class com.mosque.prayerclock.data.service.UpdateInfo { *; }
+
 # Keep all data classes in network package (API response models)
 -keep class com.mosque.prayerclock.data.network.** { *; }
 

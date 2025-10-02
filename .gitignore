@@ -143,3 +143,4 @@ keystore.properties
 
 # Generated JSON schema
 app/schemas/
+release/

@@ -1910,6 +1910,7 @@ private fun AboutSettings() {
     var isDownloading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val apkDownloader = remember { ApkDownloader() }
+    val downloadProgress by apkDownloader.downloadProgress.collectAsState()
     
     // Get current version from BuildConfig
     val currentVersion = BuildConfig.VERSION_NAME
@@ -2061,7 +2062,10 @@ private fun AboutSettings() {
                                     apkDownloader.downloadApk(
                                         context = context,
                                         downloadUrl = updateInfo!!.downloadUrl,
-                                        version = updateInfo!!.latestVersion
+                                        version = updateInfo!!.latestVersion,
+                                        onComplete = {
+                                            isDownloading = false
+                                        }
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -2077,11 +2081,31 @@ private fun AboutSettings() {
                                             strokeWidth = 2.dp,
                                             color = MaterialTheme.colorScheme.onPrimary,
                                         )
-                                        Text("Downloading...")
+                                        if (downloadProgress.progress > 0) {
+                                            Text("Downloading ${downloadProgress.progress}%")
+                                        } else {
+                                            Text("Downloading...")
+                                        }
                                     } else {
                                         Text(stringResource(R.string.download_update))
                                     }
                                 }
+                            }
+                            
+                            // Download Progress Bar
+                            if (isDownloading && downloadProgress.progress > 0) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                androidx.compose.material3.LinearProgressIndicator(
+                                    progress = downloadProgress.progress / 100f,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                                Text(
+                                    text = "${apkDownloader.formatBytes(downloadProgress.bytesDownloaded)} / ${apkDownloader.formatBytes(downloadProgress.totalBytes)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                )
                             }
                             
                             // Release Notes (if available)
