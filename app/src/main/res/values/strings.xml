@@ -168,6 +168,12 @@
     <string name="countdown_label_seconds">SECONDS</string>
     <string name="best_time_dua">Best time to make Dua</string>
     
+    <!-- Dua for Joining Saff (Prayer Row) -->
+    <string name="dua_joining_saff_title">Dua When Joining the Saff</string>
+    <string name="dua_joining_saff_arabic">اللَّهُمَّ آتِنِي أَفْضَلَ مَا تُؤْتِي عِبَادَكَ الصَّالِحِينَ</string>
+    <string name="dua_joining_saff_transliteration">Allāhumma āthinī afḍala mā tu\'tī ʿibādakaṣ-ṣāliḥīn</string>
+    <string name="dua_joining_saff_meaning">O Allah, grant me the best of what You grant to Your righteous servants.</string>
+    
     <!-- System Settings Access -->
     <string name="system_settings" translatable="false">System Settings</string>
     <string name="android_settings" translatable="false">Android Settings</string>

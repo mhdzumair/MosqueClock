@@ -130,6 +130,11 @@
     <string name="countdown_label_seconds">තත්පර</string>
     <string name="best_time_dua">දුආ කිරීමට හොඳම කාලය</string>
     
+    <!-- Dua for Joining Saff (Prayer Row) -->
+    <string name="dua_joining_saff_title">පේළියට එකතු වන විට කියන දුආව</string>
+    <string name="dua_joining_saff_transliteration">අල්ලාහුම්ම ආතිනී අෆ්දල මා තුඋති ඉබාදකස් සාලිහීන්</string>
+    <string name="dua_joining_saff_meaning">යා අල්ලාහ්, ඔබේ දැහැමි සේවකයන්ට ඔබ ලබා දෙන දෙයින් හොඳම දේ මට ලබා දෙන්න.</string>
+    
     <!-- System Settings Access -->
     <string name="system_settings" translatable="false">පද්ධති සැකසුම්</string>
     <string name="system_settings_description" translatable="false">Android පද්ධති සැකසුම් වෙත ප්‍රවේශ වන්න</string>

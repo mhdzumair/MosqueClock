@@ -71,6 +71,7 @@ import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.repository.HijriDateRepository
 import com.mosque.prayerclock.ui.components.AnalogClock
 import com.mosque.prayerclock.ui.components.DigitalClock
+import com.mosque.prayerclock.ui.components.DuaForJoiningSaff
 import com.mosque.prayerclock.ui.components.FlipClockDigitPair
 import com.mosque.prayerclock.ui.components.FullScreenCountdown
 import com.mosque.prayerclock.ui.components.NextPrayerSection
@@ -115,6 +116,17 @@ data class Sextuple<A, B, C, D, E, F>(
     val fourth: D,
     val fifth: E,
     val sixth: F,
+)
+
+// Helper data class for returning seven values
+data class Septuple<A, B, C, D, E, F, G>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E,
+    val sixth: F,
+    val seventh: G,
 )
 
 // Data class for full-screen countdown information
@@ -197,8 +209,8 @@ fun MainLayout(
         }
     }
 
-    // Calculate countdown visibility, prayer state, prayer-in-progress period, and full-screen countdown state
-    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, isPrayerInProgress, shouldShowFullScreenCountdown, fullScreenCountdownData) =
+    // Calculate countdown visibility, prayer state, prayer-in-progress period, full-screen countdown state, and dua display
+    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, isPrayerInProgress, shouldShowFullScreenCountdown, fullScreenCountdownData, shouldShowDua) =
         when (uiState) {
             is MainUiState.Success -> {
                 // Use centralized time source
@@ -318,6 +330,26 @@ fun MainLayout(
                                     false
                                 }
 
+                            // Check if we should show Dua for joining Saff (1 minute after Iqamah ends)
+                            val shouldShowDua =
+                                if (prayer.iqamahTime != null && prayer.type != PrayerType.SUNRISE) {
+                                    val iqamahEndTime = TimeUtils.addMinutesToTime(prayer.iqamahTime, 0)
+                                    val duaEndTime = TimeUtils.addMinutesToTime(iqamahEndTime, 1)
+                                    val isAfterIqamah =
+                                        TimeUtils.compareTimeStrings(
+                                            currentTimeString,
+                                            iqamahEndTime,
+                                        ) >= 0
+                                    val isBeforeDuaEnd =
+                                        TimeUtils.compareTimeStrings(
+                                            currentTimeString,
+                                            duaEndTime,
+                                        ) < 0
+                                    isAfterIqamah && isBeforeDuaEnd
+                                } else {
+                                    false
+                                }
+
                             // Check if full-screen countdown should be shown
                             // Show for 10 minutes before Azan, OR full Iqamah gap when counting to Iqamah
                             val maxCountdownMinutes =
@@ -354,21 +386,22 @@ fun MainLayout(
                                     null
                                 }
 
-                            Sextuple(
+                            Septuple(
                                 isCountdownVisible,
                                 currentTime,
                                 isCurrentPrayerLocal,
                                 isPrayerInProgress,
                                 shouldShowFullScreenCountdown,
                                 fullScreenCountdownData,
+                                shouldShowDua,
                             )
                         }
-                            ?: Sextuple(false, currentTime, false, false, false, null)
+                            ?: Septuple(false, currentTime, false, false, false, null, false)
                     }
 
                 calculatedValues
             }
-            else -> Sextuple(false, Clock.System.now(), false, false, false, null)
+            else -> Septuple(false, Clock.System.now(), false, false, false, null, false)
         }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -531,6 +564,13 @@ fun MainLayout(
                 isIqamah = fullScreenCountdownData.isIqamah,
                 minutes = fullScreenCountdownData.minutes,
                 seconds = fullScreenCountdownData.seconds,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Dua for joining Saff (shown for 1 minute after Iqamah ends)
+        if (shouldShowDua) {
+            DuaForJoiningSaff(
                 modifier = Modifier.fillMaxSize(),
             )
         }
