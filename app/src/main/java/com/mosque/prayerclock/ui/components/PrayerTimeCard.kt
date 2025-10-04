@@ -34,6 +34,8 @@ import com.mosque.prayerclock.ui.theme.ColorNextAzanTime
 import com.mosque.prayerclock.ui.theme.ColorNextIqamahTime
 import com.mosque.prayerclock.ui.theme.ColorNextSunriseTime
 import kotlin.math.min
+import com.mosque.prayerclock.R
+import com.mosque.prayerclock.ui.localizedStringResource
 
 /**
  * Compact Prayer Time Card Component
@@ -46,6 +48,7 @@ import kotlin.math.min
  * - Color-coded prayer times (Azan/Iqamah/Sunrise)
  * - Animated transitions between Azan and Iqamah times
  * - Highlighted border for the next prayer
+ * - Shows "Azan" or "Iqamah" label for prayers with iqamah times (excludes Sunrise and Jummah)
  */
 @Composable
 fun PrayerTimeCard(
@@ -140,26 +143,22 @@ fun PrayerTimeCard(
 
                 // Prayer name should scale independently based on available space
                 // It should be smaller than time but maximize available space
-                // Special handling for Sunrise which has longer name in some languages
+                // Sunrise can use 2 lines since it doesn't have Azan/Iqamah label
                 val calculatedNameFontSize =
                     with(density) {
                         // Name takes about 25% of card height
                         val heightBasedSize = (availableHeightPx * 0.25f).toSp()
 
-                        // Adjust character estimation based on prayer type
-                        // Sunrise names are longer in some languages (e.g., Tamil "சூரிய உதயம்")
-                        val estimatedNameChars = if (prayerInfo.type == PrayerType.SUNRISE) 12f else 10f
-                        val widthMultiplier = if (prayerInfo.type == PrayerType.SUNRISE) 1.6f else 2.0f
+                        // All prayers use same character estimation
+                        // Sunrise can wrap to 2 lines, so it doesn't need special handling
+                        val estimatedNameChars = 10f
+                        val widthMultiplier = 2.0f
                         val widthBasedSize = (availableWidthPx / estimatedNameChars * widthMultiplier).toSp()
 
                         // Use the smaller to ensure it fits, but cap at a percentage of time size
-                        // Sunrise gets a lower cap to ensure it fits on one line
+                        // All prayers get same cap since Sunrise can wrap to 2 lines
                         val dynamicSize = min(heightBasedSize.value, widthBasedSize.value)
-                        val maxAllowed = if (prayerInfo.type == PrayerType.SUNRISE) {
-                            calculatedTimeFontSize.value * 0.45f // Smaller for sunrise
-                        } else {
-                            calculatedTimeFontSize.value * 0.60f // Normal prayers
-                        }
+                        val maxAllowed = calculatedTimeFontSize.value * 0.80f
                         
                         min(dynamicSize, maxAllowed).sp
                     }
@@ -170,17 +169,64 @@ fun PrayerTimeCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        text = prayerInfo.name,
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontSize = calculatedNameFontSize,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                    )
+                    // Prayer name with Azan/Iqamah label (if iqamah time exists)
+                    if (prayerInfo.type != PrayerType.SUNRISE) {
+                        // Calculate label font size (smaller than prayer name)
+                        val calculatedLabelFontSize = with(LocalDensity.current) {
+                            (calculatedNameFontSize.value * 0.75f).sp
+                        }
+
+                        Text(
+                            text = prayerInfo.name,
+                            style =
+                                MaterialTheme.typography.titleSmall.copy(
+                                    fontSize = calculatedNameFontSize,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                        )
+
+                        // Show Azan/Iqamah label with animation
+                        AnimatedContent(
+                            targetState = globalShowAzan,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(800)) togetherWith
+                                    fadeOut(animationSpec = tween(800))
+                            },
+                        ) { isShowingAzan ->
+                            Text(
+                                text = if (isShowingAzan || prayerInfo.iqamahTime == null) {
+                                    localizedStringResource(R.string.azan_letter)
+                                } else {
+                                    localizedStringResource(R.string.iqamah_letter)
+                                },
+                                style =
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = calculatedLabelFontSize,
+                                        fontWeight = FontWeight.Normal,
+                                    ),
+                                color = prayerColor.copy(alpha = 0.8f),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                            )
+                        }
+                    } else {
+                        // For prayers without iqamah (Sunrise, Jummah), just show the name
+                        // Allow 2 lines for Sunrise since it has extra vertical space
+                        Text(
+                            text = prayerInfo.name,
+                            style =
+                                MaterialTheme.typography.titleSmall.copy(
+                                    fontSize = calculatedNameFontSize,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(spacingSize))
 

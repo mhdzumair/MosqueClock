@@ -89,11 +89,17 @@ fun FullScreenCountdown(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                // Prayer name + Azan/Iqamah title
-                val azanOrIqamah =
-                    localizedStringResource(if (isIqamah) R.string.iqamah else R.string.azan)
+                // Prayer name + Azan/Iqamah title (except for Sunrise which doesn't need the label)
+                val titleText = if (prayerType == PrayerType.SUNRISE) {
+                    prayerName
+                } else {
+                    val azanOrIqamah =
+                        localizedStringResource(if (isIqamah) R.string.iqamah else R.string.azan)
+                    "$prayerName $azanOrIqamah"
+                }
+                
                 Text(
-                    text = "$prayerName $azanOrIqamah",
+                    text = titleText,
                     style =
                         MaterialTheme.typography.headlineLarge.copy(
                             fontSize = calculatedTitleFontSize,
