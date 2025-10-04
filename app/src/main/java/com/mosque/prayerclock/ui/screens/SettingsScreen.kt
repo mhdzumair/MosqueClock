@@ -96,6 +96,7 @@ import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerZones
 import com.mosque.prayerclock.data.model.WeatherProvider
+import com.mosque.prayerclock.utils.LauncherHelper
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1983,19 +1984,8 @@ private fun SystemSettingsAccess() {
             // Date & Time Settings Button
             OutlinedButton(
                 onClick = {
-                    try {
-                        val intent = Intent(Settings.ACTION_DATE_SETTINGS)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        // Fallback to general settings if date/time settings not available
-                        try {
-                            val intent = Intent(Settings.ACTION_SETTINGS)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            context.startActivity(intent)
-                        } catch (e2: Exception) {
-                            android.util.Log.e("SettingsScreen", "Failed to open settings", e2)
-                        }
+                    if (!LauncherHelper.openDateTimeSettings(context)) {
+                        Toast.makeText(context, "Unable to open Date & Time settings", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -2035,12 +2025,8 @@ private fun SystemSettingsAccess() {
             // General Android Settings Button
             OutlinedButton(
                 onClick = {
-                    try {
-                        val intent = Intent(Settings.ACTION_SETTINGS)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        android.util.Log.e("SettingsScreen", "Failed to open settings", e)
+                    if (!LauncherHelper.openAndroidSettings(context)) {
+                        Toast.makeText(context, "Unable to open Android Settings", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -2070,6 +2056,129 @@ private fun SystemSettingsAccess() {
                         )
                         Text(
                             text = stringResource(R.string.open_android_settings),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
+
+            // App Drawer Button
+            OutlinedButton(
+                onClick = {
+                    if (!LauncherHelper.openAppChooser(context)) {
+                        Toast.makeText(context, "Unable to open app drawer", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "📱",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.open_app_drawer),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.open_app_drawer_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
+
+            // Switch Launcher Button
+            OutlinedButton(
+                onClick = {
+                    if (!LauncherHelper.openLauncherChooser(context)) {
+                        Toast.makeText(context, "Unable to switch launcher", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "🏠",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.choose_launcher),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.choose_launcher_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
+
+            // File Manager Button
+            OutlinedButton(
+                onClick = {
+                    if (!LauncherHelper.openFileManager(context)) {
+                        Toast.makeText(context, "No file manager found", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "📁",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.open_file_manager),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.open_file_manager_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         )

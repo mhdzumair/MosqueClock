@@ -178,10 +178,16 @@
     <string name="system_settings" translatable="false">System Settings</string>
     <string name="android_settings" translatable="false">Android Settings</string>
     <string name="date_time_settings" translatable="false">Date &amp; Time</string>
-    <string name="system_settings_description" translatable="false">Access Android system settings</string>
+    <string name="system_settings_description" translatable="false">Access Android system settings and other apps</string>
     <string name="open_android_settings" translatable="false">Open Android Settings</string>
     <string name="open_date_time_settings" translatable="false">Open Date &amp; Time Settings</string>
     <string name="quick_access" translatable="false">Quick Access</string>
+    <string name="open_app_drawer" translatable="false">Open App Drawer</string>
+    <string name="open_app_drawer_description" translatable="false">Access other installed applications</string>
+    <string name="choose_launcher" translatable="false">Switch Launcher</string>
+    <string name="choose_launcher_description" translatable="false">Temporarily switch to another launcher</string>
+    <string name="open_file_manager" translatable="false">File Manager</string>
+    <string name="open_file_manager_description" translatable="false">Browse files and folders</string>
     
     <!-- API Configuration -->
     <string name="api_configuration" translatable="false">API Configuration</string>
