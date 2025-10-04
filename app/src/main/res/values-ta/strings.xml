@@ -184,4 +184,5 @@
     <string name="android_settings" translatable="false">Android அமைப்புகள்</string>
     <string name="open_android_settings" translatable="false">Android அமைப்புகளைத் திறக்கவும்</string>
     <string name="open_date_time_settings" translatable="false">தேதி மற்றும் நேர அமைப்புகளைத் திறக்கவும்</string>
+    <string name="install_update" translatable="false">புதுப்பிப்பை நிறுவவும்</string>
 </resources>

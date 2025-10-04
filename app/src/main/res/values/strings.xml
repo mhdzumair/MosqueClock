@@ -207,6 +207,7 @@
     <string name="no_updates_available" translatable="false">You have the latest version</string>
     <string name="update_available" translatable="false">Update available: v%s</string>
     <string name="download_update" translatable="false">Download Update</string>
+    <string name="install_update" translatable="false">Install Update</string>
     <string name="update_check_failed" translatable="false">Failed to check for updates</string>
     <string name="developer" translatable="false">Developer</string>
     <string name="developer_name" translatable="false">Mohamed Zumair</string>

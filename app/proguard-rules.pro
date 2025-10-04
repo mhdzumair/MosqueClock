@@ -205,3 +205,7 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# Markdown Text Library (compose-markdown)
+-keep class dev.jeziellago.compose.markdowntext.** { *; }
+-dontwarn dev.jeziellago.compose.markdowntext.**

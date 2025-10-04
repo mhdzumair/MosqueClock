@@ -2,7 +2,12 @@ package com.mosque.prayerclock.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
 import android.provider.Settings
+import android.widget.Toast
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -79,6 +84,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.ui.components.MarkdownText
 import com.mosque.prayerclock.data.service.ApkDownloader
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
@@ -2081,12 +2087,23 @@ private fun AboutSettings() {
     var isChecking by remember { mutableStateOf(false) }
     var updateCheckError by remember { mutableStateOf(false) }
     var isDownloading by remember { mutableStateOf(false) }
+    var isFileAlreadyDownloaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val apkDownloader = remember { ApkDownloader() }
     val downloadProgress by apkDownloader.downloadProgress.collectAsState()
     
     // Get current version from BuildConfig
     val currentVersion = BuildConfig.VERSION_NAME
+    
+    // Check if APK is already downloaded when update info changes
+    LaunchedEffect(updateInfo) {
+        if (updateInfo?.hasUpdate == true) {
+            isFileAlreadyDownloaded = apkDownloader.isApkAlreadyDownloaded(
+                context = context,
+                version = updateInfo!!.latestVersion
+            )
+        }
+    }
 
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -2231,15 +2248,44 @@ private fun AboutSettings() {
                             // Download and Install Button
                             Button(
                                 onClick = {
-                                    isDownloading = true
-                                    apkDownloader.downloadApk(
-                                        context = context,
-                                        downloadUrl = updateInfo!!.downloadUrl,
-                                        version = updateInfo!!.latestVersion,
-                                        onComplete = {
-                                            isDownloading = false
+                                    if (isFileAlreadyDownloaded) {
+                                        // If file is already downloaded, just install it
+                                        val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)
+                                        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                                        
+                                        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                            FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                file,
+                                            )
+                                        } else {
+                                            Uri.fromFile(file)
                                         }
-                                    )
+
+                                        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                                            setDataAndType(uri, "application/vnd.android.package-archive")
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                        }
+
+                                        context.startActivity(installIntent)
+                                        Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        // Download the file
+                                        isDownloading = true
+                                        apkDownloader.downloadApk(
+                                            context = context,
+                                            downloadUrl = updateInfo!!.downloadUrl,
+                                            version = updateInfo!!.latestVersion,
+                                            onComplete = {
+                                                isDownloading = false
+                                                isFileAlreadyDownloaded = true
+                                            }
+                                        )
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !isDownloading,
@@ -2260,7 +2306,12 @@ private fun AboutSettings() {
                                             Text("Downloading...")
                                         }
                                     } else {
-                                        Text(stringResource(R.string.download_update))
+                                        Text(
+                                            if (isFileAlreadyDownloaded) 
+                                                stringResource(R.string.install_update) 
+                                            else 
+                                                stringResource(R.string.download_update)
+                                        )
                                     }
                                 }
                             }
@@ -2289,11 +2340,12 @@ private fun AboutSettings() {
                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
-                                Text(
-                                    text = updateInfo!!.releaseNotes.take(200) + if (updateInfo!!.releaseNotes.length > 200) "..." else "",
-                                    style = MaterialTheme.typography.bodySmall,
+                                // Show full release notes with markdown formatting
+                                MarkdownText(
+                                    markdown = updateInfo!!.releaseNotes,
+                                    modifier = Modifier.fillMaxWidth(),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                                    maxLines = 4,
+                                    style = MaterialTheme.typography.bodySmall,
                                 )
                             }
                         }

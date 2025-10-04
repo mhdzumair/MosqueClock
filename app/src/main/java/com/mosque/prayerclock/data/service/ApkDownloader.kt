@@ -54,6 +54,25 @@ class ApkDownloader
         private val scope = CoroutineScope(Dispatchers.IO)
 
     /**
+     * Check if APK file is already downloaded
+     */
+    fun isApkAlreadyDownloaded(
+        context: Context,
+        version: String,
+    ): Boolean {
+        val fileName = "MosqueClock-v$version.apk"
+        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+        return file.exists()
+    }
+
+    /**
+     * Get the file name for a version
+     */
+    fun getApkFileName(version: String): String {
+        return "MosqueClock-v$version.apk"
+    }
+
+    /**
      * Download APK from the given URL
      */
     fun downloadApk(

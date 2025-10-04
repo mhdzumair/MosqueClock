@@ -142,4 +142,5 @@
     <string name="android_settings" translatable="false">Android සැකසුම්</string>
     <string name="open_android_settings" translatable="false">Android සැකසුම් විවෘත කරන්න</string>
     <string name="open_date_time_settings" translatable="false">දිනය සහ වේලා සැකසුම් විවෘත කරන්න</string>
+    <string name="install_update" translatable="false">යාවත්කාලීනය ස්ථාපනය කරන්න</string>
 </resources>
