@@ -6,8 +6,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import android.widget.Toast
-import androidx.core.content.FileProvider
-import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -33,19 +31,19 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -80,27 +78,29 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.R
-import com.mosque.prayerclock.ui.components.MarkdownText
-import com.mosque.prayerclock.data.service.ApkDownloader
-import com.mosque.prayerclock.data.service.UpdateChecker
-import com.mosque.prayerclock.data.service.UpdateInfo
-import javax.inject.Inject
 import com.mosque.prayerclock.data.model.AppSettings
-import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerZones
 import com.mosque.prayerclock.data.model.WeatherProvider
+import com.mosque.prayerclock.data.service.ApkDownloader
+import com.mosque.prayerclock.data.service.UpdateChecker
+import com.mosque.prayerclock.data.service.UpdateInfo
+import com.mosque.prayerclock.ui.components.MarkdownText
+import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.utils.LauncherHelper
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
+import javax.inject.Inject
 
 @Composable
 fun SettingsScreen(
@@ -446,7 +446,7 @@ private fun PrayerServiceSettings(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
                     text = stringResource(R.string.backend_url_label),
                     style = MaterialTheme.typography.bodyMedium,
@@ -465,9 +465,9 @@ private fun PrayerServiceSettings(
                     placeholder = stringResource(R.string.backend_url_hint),
                     keyboardType = KeyboardType.Uri,
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 Text(
                     text = stringResource(R.string.backend_api_key_label),
                     style = MaterialTheme.typography.bodyMedium,
@@ -486,7 +486,7 @@ private fun PrayerServiceSettings(
                     placeholder = stringResource(R.string.backend_api_key_hint),
                     keyboardType = KeyboardType.Text,
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -837,7 +837,7 @@ private fun WeatherSettings(
                         )
                     }
                 }
-                
+
                 // Show API key field for WeatherAPI.com
                 if (provider == WeatherProvider.WEATHER_API) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -860,7 +860,7 @@ private fun WeatherSettings(
                         keyboardType = KeyboardType.Text,
                     )
                 }
-                
+
                 // Show API key field for OpenWeatherMap
                 if (provider == WeatherProvider.OPEN_WEATHER_MAP) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -883,7 +883,7 @@ private fun WeatherSettings(
                         keyboardType = KeyboardType.Text,
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.weather_city),
@@ -1800,15 +1800,16 @@ private fun ColorThemeSettings(
 ) {
     val allThemes = AppColorThemes.getAllThemes()
     var isExpanded by remember { mutableStateOf(false) }
-    
+
     SettingsCard {
         Column {
             // Header with icon and title
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded }
-                    .padding(vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -1832,7 +1833,7 @@ private fun ColorThemeSettings(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         )
-                        
+
                         // Show currently selected theme name
                         val currentTheme = allThemes.find { it.id == selectedThemeId }
                         currentTheme?.let {
@@ -1845,14 +1846,14 @@ private fun ColorThemeSettings(
                         }
                     }
                 }
-                
+
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            
+
             // Expandable theme grid
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
@@ -1880,40 +1881,47 @@ private fun ThemeOption(
     onSelect: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onSelect() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onSelect() },
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+            ),
+        border =
+            if (isSelected) {
+                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
             } else {
-                MaterialTheme.colorScheme.surface
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             },
-        ),
-        border = if (isSelected) {
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        } else {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-        },
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = theme.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    ),
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        ),
+                    color =
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
                 Text(
                     text = theme.description,
@@ -1922,7 +1930,7 @@ private fun ThemeOption(
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            
+
             // Color preview squares
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -1940,20 +1948,29 @@ private fun ThemeOption(
 @Composable
 private fun ColorPreviewBox(color: androidx.compose.ui.graphics.Color) {
     Box(
-        modifier = Modifier
-            .size(32.dp)
-            .background(color, shape = RoundedCornerShape(4.dp))
-            .border(
-                width = 1.dp,
-                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(4.dp),
-            ),
+        modifier =
+            Modifier
+                .size(32.dp)
+                .background(color, shape = RoundedCornerShape(4.dp))
+                .border(
+                    width = 1.dp,
+                    color =
+                        androidx.compose.ui.graphics.Color.White
+                            .copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(4.dp),
+                ),
     )
 }
 
 @Composable
 private fun SystemSettingsAccess() {
     val context = LocalContext.current
+    var isDefaultLauncher by remember { mutableStateOf(false) }
+
+    // Check if app is default launcher when composable is first created
+    LaunchedEffect(Unit) {
+        isDefaultLauncher = LauncherHelper.isDefaultLauncher(context)
+    }
 
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -2185,6 +2202,102 @@ private fun SystemSettingsAccess() {
                     }
                 }
             }
+
+// Set as Default Launcher Button (only show if not already default)
+            if (!isDefaultLauncher) {
+                OutlinedButton(
+                    onClick = {
+                        if (LauncherHelper.setAsDefaultLauncher(context)) {
+                            Toast
+                                .makeText(
+                                    context,
+                                    "Select MosqueClock and choose 'Always'",
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            // Recheck status after a delay
+                            android.os
+                                .Handler(android.os.Looper.getMainLooper())
+                                .postDelayed(
+                                    {
+                                        isDefaultLauncher =
+                                            LauncherHelper.isDefaultLauncher(context)
+                                    },
+                                    2000,
+                                )
+                        } else {
+                            Toast
+                                .makeText(context, "Unable to open launcher settings", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            containerColor =
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "🏡",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
+                        Column {
+                            Text(
+                                text = stringResource(R.string.set_as_default_launcher),
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = stringResource(R.string.set_as_default_launcher_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Show status card when already set as default
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        ),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "✅",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.already_default_launcher),
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
@@ -2200,17 +2313,18 @@ private fun AboutSettings() {
     val scope = rememberCoroutineScope()
     val apkDownloader = remember { ApkDownloader() }
     val downloadProgress by apkDownloader.downloadProgress.collectAsState()
-    
+
     // Get current version from BuildConfig
     val currentVersion = BuildConfig.VERSION_NAME
-    
+
     // Check if APK is already downloaded when update info changes
     LaunchedEffect(updateInfo) {
         if (updateInfo?.hasUpdate == true) {
-            isFileAlreadyDownloaded = apkDownloader.isApkAlreadyDownloaded(
-                context = context,
-                version = updateInfo!!.latestVersion
-            )
+            isFileAlreadyDownloaded =
+                apkDownloader.isApkAlreadyDownloaded(
+                    context = context,
+                    version = updateInfo!!.latestVersion,
+                )
         }
     }
 
@@ -2351,34 +2465,42 @@ private fun AboutSettings() {
                                     )
                                 }
                             }
-                            
+
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             // Download and Install Button
                             Button(
                                 onClick = {
                                     if (isFileAlreadyDownloaded) {
                                         // If file is already downloaded, just install it
                                         val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)
-                                        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-                                        
-                                        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                            FileProvider.getUriForFile(
-                                                context,
-                                                "${context.packageName}.fileprovider",
-                                                file,
+                                        val file =
+                                            File(
+                                                Environment.getExternalStoragePublicDirectory(
+                                                    Environment.DIRECTORY_DOWNLOADS,
+                                                ),
+                                                fileName,
                                             )
-                                        } else {
-                                            Uri.fromFile(file)
-                                        }
 
-                                        val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                                            setDataAndType(uri, "application/vnd.android.package-archive")
-                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        val uri: Uri =
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    file,
+                                                )
+                                            } else {
+                                                Uri.fromFile(file)
                                             }
-                                        }
+
+                                        val installIntent =
+                                            Intent(Intent.ACTION_VIEW).apply {
+                                                setDataAndType(uri, "application/vnd.android.package-archive")
+                                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                }
+                                            }
 
                                         context.startActivity(installIntent)
                                         Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
@@ -2392,7 +2514,7 @@ private fun AboutSettings() {
                                             onComplete = {
                                                 isDownloading = false
                                                 isFileAlreadyDownloaded = true
-                                            }
+                                            },
                                         )
                                     }
                                 },
@@ -2416,15 +2538,16 @@ private fun AboutSettings() {
                                         }
                                     } else {
                                         Text(
-                                            if (isFileAlreadyDownloaded) 
-                                                stringResource(R.string.install_update) 
-                                            else 
+                                            if (isFileAlreadyDownloaded) {
+                                                stringResource(R.string.install_update)
+                                            } else {
                                                 stringResource(R.string.download_update)
+                                            },
                                         )
                                     }
                                 }
                             }
-                            
+
                             // Download Progress Bar
                             if (isDownloading && downloadProgress.progress > 0) {
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -2435,12 +2558,14 @@ private fun AboutSettings() {
                                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                 )
                                 Text(
-                                    text = "${apkDownloader.formatBytes(downloadProgress.bytesDownloaded)} / ${apkDownloader.formatBytes(downloadProgress.totalBytes)}",
+                                    text = "${apkDownloader.formatBytes(
+                                        downloadProgress.bytesDownloaded,
+                                    )} / ${apkDownloader.formatBytes(downloadProgress.totalBytes)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                                 )
                             }
-                            
+
                             // Release Notes (if available)
                             if (updateInfo!!.releaseNotes.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(8.dp))

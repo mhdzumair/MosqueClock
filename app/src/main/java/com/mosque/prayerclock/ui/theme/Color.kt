@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Mosque Clock Theme Colors
- * 
+ *
  * Dynamic color system that adapts based on the selected theme.
  * These are composable properties that read from the current theme.
  */
@@ -217,33 +217,34 @@ data class ThemeColors(
  * Helper function to get all theme colors at once (for use in non-@Composable contexts like Canvas)
  */
 @Composable
-fun rememberThemeColors() = ThemeColors(
-    primaryAccent = ColorPrimaryAccent,
-    primaryAccentLight = ColorPrimaryAccentLight,
-    primaryAccentDark = ColorPrimaryAccentDark,
-    surfacePrimary = ColorSurfacePrimary,
-    surfaceSecondary = ColorSurfaceSecondary,
-    surfaceTertiary = ColorSurfaceTertiary,
-    surfaceDark = ColorSurfaceDark,
-    surfaceCenter = ColorSurfaceCenter,
-    secondaryAccent = ColorSecondaryAccent,
-    azanTime = ColorAzanTime,
-    iqamahTime = ColorIqamahTime,
-    sunriseTime = ColorSunriseTime,
-    nextAzanTime = ColorNextAzanTime,
-    nextIqamahTime = ColorNextIqamahTime,
-    nextSunriseTime = ColorNextSunriseTime,
-    backgroundMain = ColorBackgroundMain,
-    surfaceCard = ColorSurfaceCard,
-    cardBackground = ColorCardBackground,
-    uiPrimary = ColorUIPrimary,
-    uiSecondary = ColorUISecondary,
-    uiTertiary = ColorUITertiary,
-    textPrimary = ColorTextPrimary,
-    textSecondary = ColorTextSecondary,
-    shadowColor = ColorShadow,
-    overlayColor = ColorOverlay,
-)
+fun rememberThemeColors() =
+    ThemeColors(
+        primaryAccent = ColorPrimaryAccent,
+        primaryAccentLight = ColorPrimaryAccentLight,
+        primaryAccentDark = ColorPrimaryAccentDark,
+        surfacePrimary = ColorSurfacePrimary,
+        surfaceSecondary = ColorSurfaceSecondary,
+        surfaceTertiary = ColorSurfaceTertiary,
+        surfaceDark = ColorSurfaceDark,
+        surfaceCenter = ColorSurfaceCenter,
+        secondaryAccent = ColorSecondaryAccent,
+        azanTime = ColorAzanTime,
+        iqamahTime = ColorIqamahTime,
+        sunriseTime = ColorSunriseTime,
+        nextAzanTime = ColorNextAzanTime,
+        nextIqamahTime = ColorNextIqamahTime,
+        nextSunriseTime = ColorNextSunriseTime,
+        backgroundMain = ColorBackgroundMain,
+        surfaceCard = ColorSurfaceCard,
+        cardBackground = ColorCardBackground,
+        uiPrimary = ColorUIPrimary,
+        uiSecondary = ColorUISecondary,
+        uiTertiary = ColorUITertiary,
+        textPrimary = ColorTextPrimary,
+        textSecondary = ColorTextSecondary,
+        shadowColor = ColorShadow,
+        overlayColor = ColorOverlay,
+    )
 
 // ==================== Helper Extensions ====================
 

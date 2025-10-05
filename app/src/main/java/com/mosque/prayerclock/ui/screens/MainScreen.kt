@@ -411,149 +411,149 @@ fun MainLayout(
         ) {
             // Main content row with revamped layout
             Row(
-            modifier = Modifier.weight(0.75f),
-            horizontalArrangement = Arrangement.spacedBy(4.dp), // Reduced spacing between columns
-            verticalAlignment = Alignment.Top,
-        ) {
-            // Left column - Header and Clock section
-            Column(
-                modifier = Modifier.weight(1.6f), // Increased weight to give more space to clock
-                verticalArrangement = Arrangement.Top, // Remove spacing between header and clock
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(0.75f),
+                horizontalArrangement = Arrangement.spacedBy(4.dp), // Reduced spacing between columns
+                verticalAlignment = Alignment.Top,
             ) {
-                // Mosque header at top of left column
-                if (settings.mosqueName.isNotEmpty()) {
-                    MosqueHeader(
-                        mosqueName = settings.mosqueName,
+                // Left column - Header and Clock section
+                Column(
+                    modifier = Modifier.weight(1.6f), // Increased weight to give more space to clock
+                    verticalArrangement = Arrangement.Top, // Remove spacing between header and clock
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // Mosque header at top of left column
+                    if (settings.mosqueName.isNotEmpty()) {
+                        MosqueHeader(
+                            mosqueName = settings.mosqueName,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    // Clock section below header
+                    ClockSection(
+                        settings = settings,
+                        onClockClick = onOpenSettings,
+                        currentTime = globalCurrentTime,
+                        hijriDateRepository = viewModel.hijriDateRepository,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
-                // Clock section below header
-                ClockSection(
-                    settings = settings,
-                    onClockClick = onOpenSettings,
-                    currentTime = globalCurrentTime,
-                    hijriDateRepository = viewModel.hijriDateRepository,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            // Right column - Next Prayer and Weather section
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1.0f)
-                        .fillMaxHeight(),
-                // Fill available height for proper scaling
-                verticalArrangement = Arrangement.spacedBy(4.dp), // Reduced spacing to give more room
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                // Next prayer timer - Auto-scales based on available space
-                when (uiState) {
-                    is MainUiState.Loading -> {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .weight(if (settings.showWeather) 2f else 1f),
-                            // Adjust weight based on weather visibility
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(48.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                    is MainUiState.Success -> {
-                        NextPrayerSection(
-                            prayerTimes = uiState.prayerTimes,
-                            nextPrayer = uiState.nextPrayer,
-                            nextDayFajr = uiState.nextDayFajr,
-                            show24Hour = settings.show24HourFormat,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .weight(if (settings.showWeather) 2f else 1f),
-                            // Dynamic weight
-                            onPrayerTransition = { viewModel.updateNextPrayer() },
-                            showCountdown = isCountdownVisibleForWeight,
-                            currentTime = currentTimeGlobal,
-                            isCurrentPrayer = isCurrentPrayerGlobal,
-                            isPrayerInProgress = isPrayerInProgress,
-                        )
-                    }
-                    is MainUiState.Error -> {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .weight(if (settings.showWeather) 2f else 1f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = getFriendlyErrorMessage(uiState.message),
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-
-                // Weather section (if enabled and successful) - Auto-scales with remaining space
-                if (settings.showWeather) {
-                    when (weatherState) {
-                        is WeatherUiState.Loading -> {
+                // Right column - Next Prayer and Weather section
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1.0f)
+                            .fillMaxHeight(),
+                    // Fill available height for proper scaling
+                    verticalArrangement = Arrangement.spacedBy(4.dp), // Reduced spacing to give more room
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // Next prayer timer - Auto-scales based on available space
+                    when (uiState) {
+                        is MainUiState.Loading -> {
                             Box(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .weight(1f),
-                                // Takes proportional space
+                                        .weight(if (settings.showWeather) 2f else 1f),
+                                // Adjust weight based on weather visibility
                                 contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
+                                    modifier = Modifier.size(48.dp),
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
                         }
-                        is WeatherUiState.Success -> {
-                            WeatherCard(
-                                weatherInfo = weatherState.weatherInfo,
+                        is MainUiState.Success -> {
+                            NextPrayerSection(
+                                prayerTimes = uiState.prayerTimes,
+                                nextPrayer = uiState.nextPrayer,
+                                nextDayFajr = uiState.nextDayFajr,
+                                show24Hour = settings.show24HourFormat,
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .weight(1f),
-                                // Takes proportional space
+                                        .weight(if (settings.showWeather) 2f else 1f),
+                                // Dynamic weight
+                                onPrayerTransition = { viewModel.updateNextPrayer() },
+                                showCountdown = isCountdownVisibleForWeight,
+                                currentTime = currentTimeGlobal,
+                                isCurrentPrayer = isCurrentPrayerGlobal,
+                                isPrayerInProgress = isPrayerInProgress,
                             )
                         }
-                        is WeatherUiState.Error -> {
-                            // Hide weather section completely on error
+                        is MainUiState.Error -> {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .weight(if (settings.showWeather) 2f else 1f),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = getFriendlyErrorMessage(uiState.message),
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    }
+
+                    // Weather section (if enabled and successful) - Auto-scales with remaining space
+                    if (settings.showWeather) {
+                        when (weatherState) {
+                            is WeatherUiState.Loading -> {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                    // Takes proportional space
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                            is WeatherUiState.Success -> {
+                                WeatherCard(
+                                    weatherInfo = weatherState.weatherInfo,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                    // Takes proportional space
+                                )
+                            }
+                            is WeatherUiState.Error -> {
+                                // Hide weather section completely on error
+                            }
                         }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // Prayer times at bottom with animation
-        when (uiState) {
-            is MainUiState.Success -> {
-                AnimatedPrayerTimesSection(
-                    prayerTimes = uiState.prayerTimes,
-                    nextPrayer = uiState.nextPrayer,
-                    show24Hour = settings.show24HourFormat,
-                    globalShowAzan = globalShowAzan,
-                )
+            // Prayer times at bottom with animation
+            when (uiState) {
+                is MainUiState.Success -> {
+                    AnimatedPrayerTimesSection(
+                        prayerTimes = uiState.prayerTimes,
+                        nextPrayer = uiState.nextPrayer,
+                        show24Hour = settings.show24HourFormat,
+                        globalShowAzan = globalShowAzan,
+                    )
+                }
+                else -> {
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
             }
-            else -> {
-                Spacer(modifier = Modifier.height(100.dp))
-            }
-        }
         }
 
         // Full-screen countdown overlay (shown when enabled and 10 minutes or less remain)
@@ -750,8 +750,8 @@ private fun getFriendlyErrorMessage(technicalMessage: String): String =
         // Generic fallback for any other technical errors
         else -> {
             "Unable to load prayer times.\nPlease check your internet connection and try again."
+        }
     }
-}
 
 @Composable
 fun AnimatedPrayerTimesSection(

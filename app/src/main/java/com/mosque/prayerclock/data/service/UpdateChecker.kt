@@ -54,8 +54,8 @@ class UpdateChecker
         private val repoOwner = "mhdzumair" // Replace with your GitHub username
         private val repoName = "MosqueClock" // Replace with your repository name
 
-        suspend fun checkForUpdates(currentVersion: String): UpdateInfo? {
-            return try {
+        suspend fun checkForUpdates(currentVersion: String): UpdateInfo? =
+            try {
                 Log.d("UpdateChecker", "Checking for updates. Current version: $currentVersion")
                 val response = githubApi.getLatestRelease()
 
@@ -88,7 +88,6 @@ class UpdateChecker
                 Log.e("UpdateChecker", "Error checking for updates", e)
                 null
             }
-        }
 
         /**
          * Compare two version strings
@@ -116,4 +115,3 @@ class UpdateChecker
             return 0
         }
     }
-

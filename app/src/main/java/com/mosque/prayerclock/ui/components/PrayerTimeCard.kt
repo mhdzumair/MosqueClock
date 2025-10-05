@@ -25,24 +25,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerType
+import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.ColorAzanTime
 import com.mosque.prayerclock.ui.theme.ColorIqamahTime
-import com.mosque.prayerclock.ui.theme.ColorSunriseTime
 import com.mosque.prayerclock.ui.theme.ColorNextAzanTime
 import com.mosque.prayerclock.ui.theme.ColorNextIqamahTime
 import com.mosque.prayerclock.ui.theme.ColorNextSunriseTime
+import com.mosque.prayerclock.ui.theme.ColorSunriseTime
 import kotlin.math.min
-import com.mosque.prayerclock.R
-import com.mosque.prayerclock.ui.localizedStringResource
 
 /**
  * Compact Prayer Time Card Component
- * 
+ *
  * Displays prayer name and time with dynamic font scaling.
  * Used in the prayer times row at the bottom of the main screen.
- * 
+ *
  * Features:
  * - Dynamic font sizing based on available space
  * - Color-coded prayer times (Azan/Iqamah/Sunrise)
@@ -69,13 +69,14 @@ fun PrayerTimeCard(
 
     // Get the prayer color based on current state
     // Use theme-specific "next" colors when isNext is true for better emphasis
-    val prayerColor = if (prayerInfo.type == PrayerType.SUNRISE) {
-        if (isNext) ColorNextSunriseTime else ColorSunriseTime
-    } else if (isShowingAzan) {
-        if (isNext) ColorNextAzanTime else ColorAzanTime
-    } else {
-        if (isNext) ColorNextIqamahTime else ColorIqamahTime
-    }
+    val prayerColor =
+        if (prayerInfo.type == PrayerType.SUNRISE) {
+            if (isNext) ColorNextSunriseTime else ColorSunriseTime
+        } else if (isShowingAzan) {
+            if (isNext) ColorNextAzanTime else ColorAzanTime
+        } else {
+            if (isNext) ColorNextIqamahTime else ColorIqamahTime
+        }
 
     Card(
         modifier =
@@ -159,10 +160,10 @@ fun PrayerTimeCard(
                         // All prayers get same cap since Sunrise can wrap to 2 lines
                         val dynamicSize = min(heightBasedSize.value, widthBasedSize.value)
                         val maxAllowed = calculatedTimeFontSize.value * 0.80f
-                        
+
                         min(dynamicSize, maxAllowed).sp
                     }
-                
+
                 val spacingSize = 1.dp
 
                 Column(
@@ -172,9 +173,10 @@ fun PrayerTimeCard(
                     // Prayer name with Azan/Iqamah label (if iqamah time exists)
                     if (prayerInfo.type != PrayerType.SUNRISE) {
                         // Calculate label font size (smaller than prayer name)
-                        val calculatedLabelFontSize = with(LocalDensity.current) {
-                            (calculatedNameFontSize.value * 0.75f).sp
-                        }
+                        val calculatedLabelFontSize =
+                            with(LocalDensity.current) {
+                                (calculatedNameFontSize.value * 0.75f).sp
+                            }
 
                         Text(
                             text = prayerInfo.name,
@@ -197,11 +199,12 @@ fun PrayerTimeCard(
                             },
                         ) { isShowingAzan ->
                             Text(
-                                text = if (isShowingAzan || prayerInfo.iqamahTime == null) {
-                                    localizedStringResource(R.string.azan_letter)
-                                } else {
-                                    localizedStringResource(R.string.iqamah_letter)
-                                },
+                                text =
+                                    if (isShowingAzan || prayerInfo.iqamahTime == null) {
+                                        localizedStringResource(R.string.azan_letter)
+                                    } else {
+                                        localizedStringResource(R.string.iqamah_letter)
+                                    },
                                 style =
                                     MaterialTheme.typography.labelSmall.copy(
                                         fontSize = calculatedLabelFontSize,

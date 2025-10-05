@@ -188,6 +188,9 @@
     <string name="choose_launcher_description" translatable="false">Temporarily switch to another launcher</string>
     <string name="open_file_manager" translatable="false">File Manager</string>
     <string name="open_file_manager_description" translatable="false">Browse files and folders</string>
+    <string name="set_as_default_launcher" translatable="false">Set as Default Launcher</string>
+    <string name="set_as_default_launcher_description" translatable="false">Make MosqueClock your home screen</string>
+    <string name="already_default_launcher" translatable="false">Already set as default launcher</string>
     
     <!-- API Configuration -->
     <string name="api_configuration" translatable="false">API Configuration</string>

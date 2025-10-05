@@ -53,34 +53,32 @@ class ApkDownloader
         private var progressMonitorJob: Job? = null
         private val scope = CoroutineScope(Dispatchers.IO)
 
-    /**
-     * Check if APK file is already downloaded
-     */
-    fun isApkAlreadyDownloaded(
-        context: Context,
-        version: String,
-    ): Boolean {
-        val fileName = "MosqueClock-v$version.apk"
-        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-        return file.exists()
-    }
+        /**
+         * Check if APK file is already downloaded
+         */
+        fun isApkAlreadyDownloaded(
+            context: Context,
+            version: String,
+        ): Boolean {
+            val fileName = "MosqueClock-v$version.apk"
+            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+            return file.exists()
+        }
 
-    /**
-     * Get the file name for a version
-     */
-    fun getApkFileName(version: String): String {
-        return "MosqueClock-v$version.apk"
-    }
+        /**
+         * Get the file name for a version
+         */
+        fun getApkFileName(version: String): String = "MosqueClock-v$version.apk"
 
-    /**
-     * Download APK from the given URL
-     */
-    fun downloadApk(
-        context: Context,
-        downloadUrl: String,
-        version: String,
-        onComplete: (() -> Unit)? = null,
-    ) {
+        /**
+         * Download APK from the given URL
+         */
+        fun downloadApk(
+            context: Context,
+            downloadUrl: String,
+            version: String,
+            onComplete: (() -> Unit)? = null,
+        ) {
             try {
                 Log.d("ApkDownloader", "Starting download from: $downloadUrl")
 
@@ -148,44 +146,53 @@ class ApkDownloader
             // Cancel existing monitoring job
             progressMonitorJob?.cancel()
 
-            progressMonitorJob = scope.launch {
-                while (isActive && downloadId != -1L) {
-                    try {
-                        val progress = queryDownloadProgress(context)
-                        if (progress != null) {
-                            _downloadProgress.value = progress
-                            
-                            Log.d("ApkDownloader", "Progress: ${progress.progress}% " +
-                                    "(${formatBytes(progress.bytesDownloaded)}/${formatBytes(progress.totalBytes)}) " +
-                                    "Status: ${progress.status}")
-                            
-                            // If download completed, handle it directly
-                            // (BroadcastReceiver is a backup for this)
-                            if (progress.status == DownloadStatus.COMPLETED) {
-                                Log.d("ApkDownloader", "Download completed via progress monitor - triggering installation")
-                                
-                                // Notify callback
-                                onComplete?.invoke()
-                                
-                                // Open installer
-                                installApk(context, fileName)
-                                
-                                break
+            progressMonitorJob =
+                scope.launch {
+                    while (isActive && downloadId != -1L) {
+                        try {
+                            val progress = queryDownloadProgress(context)
+                            if (progress != null) {
+                                _downloadProgress.value = progress
+
+                                Log.d(
+                                    "ApkDownloader",
+                                    "Progress: ${progress.progress}% " +
+                                        "(${formatBytes(
+                                            progress.bytesDownloaded,
+                                        )}/${formatBytes(progress.totalBytes)}) " +
+                                        "Status: ${progress.status}",
+                                )
+
+                                // If download completed, handle it directly
+                                // (BroadcastReceiver is a backup for this)
+                                if (progress.status == DownloadStatus.COMPLETED) {
+                                    Log.d(
+                                        "ApkDownloader",
+                                        "Download completed via progress monitor - triggering installation",
+                                    )
+
+                                    // Notify callback
+                                    onComplete?.invoke()
+
+                                    // Open installer
+                                    installApk(context, fileName)
+
+                                    break
+                                }
+
+                                // Stop monitoring if failed
+                                if (progress.status == DownloadStatus.FAILED) {
+                                    Log.e("ApkDownloader", "Download failed")
+                                    break
+                                }
                             }
-                            
-                            // Stop monitoring if failed
-                            if (progress.status == DownloadStatus.FAILED) {
-                                Log.e("ApkDownloader", "Download failed")
-                                break
-                            }
+                            delay(500) // Update every 500ms
+                        } catch (e: Exception) {
+                            Log.e("ApkDownloader", "Error monitoring progress", e)
+                            break
                         }
-                        delay(500) // Update every 500ms
-                    } catch (e: Exception) {
-                        Log.e("ApkDownloader", "Error monitoring progress", e)
-                        break
                     }
                 }
-            }
         }
 
         /**
@@ -242,11 +249,11 @@ class ApkDownloader
         fun cancelDownload(context: Context) {
             if (downloadId != -1L) {
                 Log.d("ApkDownloader", "Cancelling download: $downloadId")
-                
+
                 // Stop progress monitoring
                 progressMonitorJob?.cancel()
                 progressMonitorJob = null
-                
+
                 downloadManager?.remove(downloadId)
                 downloadId = -1
                 _downloadProgress.value = DownloadProgress(status = DownloadStatus.CANCELLED)
@@ -271,7 +278,8 @@ class ApkDownloader
             fileName: String,
         ) {
             try {
-                val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                val file =
+                    File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
 
                 if (!file.exists()) {
                     Log.e("ApkDownloader", "APK file not found: ${file.absolutePath}")
@@ -370,12 +378,10 @@ class ApkDownloader
         /**
          * Format bytes to human-readable string
          */
-        fun formatBytes(bytes: Long): String {
-            return when {
+        fun formatBytes(bytes: Long): String =
+            when {
                 bytes < 1024 -> "$bytes B"
                 bytes < 1024 * 1024 -> "${bytes / 1024} KB"
                 else -> "${bytes / (1024 * 1024)} MB"
             }
-        }
     }
-

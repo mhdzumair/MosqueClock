@@ -23,10 +23,11 @@ class ApiKeyInterceptor
             val originalRequest = chain.request()
 
             // Get API key from settings (runtime configuration only)
-            val apiKey = runBlocking {
-                val settings = settingsRepository.getSettings().first()
-                settings.mosqueClockBackendApiKey
-            }
+            val apiKey =
+                runBlocking {
+                    val settings = settingsRepository.getSettings().first()
+                    settings.mosqueClockBackendApiKey
+                }
 
             // Add API key to all requests (only if configured)
             val request =

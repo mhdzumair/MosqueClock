@@ -12,7 +12,7 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**
  * Composable that renders markdown text using the compose-markdown library.
- * 
+ *
  * @param markdown The markdown text to render
  * @param modifier Modifier for the markdown text
  * @param color Text color
@@ -36,4 +36,3 @@ fun MarkdownText(
         linkifyMask = Linkify.ALL, // Linkify all types of links
     )
 }
-

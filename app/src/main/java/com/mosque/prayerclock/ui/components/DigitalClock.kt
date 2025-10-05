@@ -237,10 +237,11 @@ fun DigitalClock(
                                 ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            ),
+                            border =
+                                BorderStroke(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                ),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Column(
@@ -250,39 +251,39 @@ fun DigitalClock(
                                         .padding(calculatedCardPadding),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                            Text(
-                                text = animatedMonth,
-                                style =
-                                    MaterialTheme.typography.headlineLarge.copy(
-                                        fontSize = calculatedFontSize * 0.3f,
-                                        fontWeight = FontWeight.Bold,
-                                    ),
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                            )
+                                Text(
+                                    text = animatedMonth,
+                                    style =
+                                        MaterialTheme.typography.headlineLarge.copy(
+                                            fontSize = calculatedFontSize * 0.3f,
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                )
 
-                            Text(
-                                text = animatedDate.day.toString(),
-                                style =
-                                    MaterialTheme.typography.displayLarge.copy(
-                                        fontSize = calculatedFontSize * 0.55f,
-                                        fontWeight = FontWeight.Bold,
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center,
-                            )
+                                Text(
+                                    text = animatedDate.day.toString(),
+                                    style =
+                                        MaterialTheme.typography.displayLarge.copy(
+                                            fontSize = calculatedFontSize * 0.55f,
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                )
 
-                            Text(
-                                text = animatedDate.year.toString(),
-                                style =
-                                    MaterialTheme.typography.headlineMedium.copy(
-                                        fontSize = calculatedFontSize * 0.28f,
-                                        fontWeight = FontWeight.Medium,
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                textAlign = TextAlign.Center,
-                            )
+                                Text(
+                                    text = animatedDate.year.toString(),
+                                    style =
+                                        MaterialTheme.typography.headlineMedium.copy(
+                                            fontSize = calculatedFontSize * 0.28f,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center,
+                                )
                             }
                         }
                     }
@@ -305,10 +306,11 @@ fun DigitalClock(
                             ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        ),
+                        border =
+                            BorderStroke(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            ),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Column(
@@ -318,39 +320,39 @@ fun DigitalClock(
                                     .padding(calculatedCardPadding),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                        Text(
-                            text = monthYearStr.split(" ")[0], // Month name
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontSize = calculatedFontSize * 0.3f,
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color = MaterialTheme.colorScheme.secondary,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                        )
+                            Text(
+                                text = monthYearStr.split(" ")[0], // Month name
+                                style =
+                                    MaterialTheme.typography.headlineLarge.copy(
+                                        fontSize = calculatedFontSize * 0.3f,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                color = MaterialTheme.colorScheme.secondary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                            )
 
-                        Text(
-                            text = dayOfMonth.toString(),
-                            style =
-                                MaterialTheme.typography.displayLarge.copy(
-                                    fontSize = calculatedFontSize * 0.55f,
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                        )
+                            Text(
+                                text = dayOfMonth.toString(),
+                                style =
+                                    MaterialTheme.typography.displayLarge.copy(
+                                        fontSize = calculatedFontSize * 0.55f,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                            )
 
-                        Text(
-                            text = monthYearStr.split(" ")[1], // Year
-                            style =
-                                MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = calculatedFontSize * 0.28f,
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center,
-                        )
+                            Text(
+                                text = monthYearStr.split(" ")[1], // Year
+                                style =
+                                    MaterialTheme.typography.headlineMedium.copy(
+                                        fontSize = calculatedFontSize * 0.28f,
+                                        fontWeight = FontWeight.Medium,
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center,
+                            )
                         }
                     }
                 }

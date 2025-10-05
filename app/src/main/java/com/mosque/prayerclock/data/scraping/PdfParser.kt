@@ -191,30 +191,31 @@ class PdfParser
             val prayerTimes = mutableListOf<DailyPrayerTime>()
 
             // Try multiple patterns to handle different PDF formats
-            val patterns = listOf(
-                // Pattern 1: Format with mixed AM/PM (11:57 AM for Dhuhr, rest as expected)
-                // Example: 1-Oct 4:37 AM 5:54 AM 11:57 AM 3:12 PM 5:59 PM 7:07 PM
-                Regex(
-                    """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM""",
-                    RegexOption.IGNORE_CASE,
-                ),
-                // Pattern 2: Standard format with AM/PM (all PM after sunrise)
-                Regex(
-                    """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM""",
-                    RegexOption.IGNORE_CASE,
-                ),
-                // Pattern 3: Format without AM/PM markers
-                Regex(
-                    """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
-                ),
-                // Pattern 4: Format with varied whitespace
-                Regex(
-                    """(\d{1,2})-(\w{3})\s*[:\s]\s*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
-                ),
-            )
+            val patterns =
+                listOf(
+                    // Pattern 1: Format with mixed AM/PM (11:57 AM for Dhuhr, rest as expected)
+                    // Example: 1-Oct 4:37 AM 5:54 AM 11:57 AM 3:12 PM 5:59 PM 7:07 PM
+                    Regex(
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM""",
+                        RegexOption.IGNORE_CASE,
+                    ),
+                    // Pattern 2: Standard format with AM/PM (all PM after sunrise)
+                    Regex(
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM""",
+                        RegexOption.IGNORE_CASE,
+                    ),
+                    // Pattern 3: Format without AM/PM markers
+                    Regex(
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
+                    ),
+                    // Pattern 4: Format with varied whitespace
+                    Regex(
+                        """(\d{1,2})-(\w{3})\s*[:\s]\s*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
+                    ),
+                )
 
             var matches = listOf<MatchResult>()
-            
+
             for (pattern in patterns) {
                 matches = pattern.findAll(text).toList()
                 if (matches.isNotEmpty()) {
@@ -227,7 +228,7 @@ class PdfParser
                 // Try to find any date patterns to debug
                 val datePattern = Regex("""(\d{1,2})-(\w{3})""")
                 val dateMatches = datePattern.findAll(text).toList()
-                
+
                 if (dateMatches.isNotEmpty()) {
                     Log.d(TAG, "Found ${dateMatches.size} date patterns but couldn't match complete prayer times")
                     // Log first entry context for debugging
@@ -247,11 +248,12 @@ class PdfParser
                 val sunrise24 = convertTo24Hour(sunrise, "AM")
                 // Dhuhr might be "11:57 AM" or "12:01 PM" depending on the PDF format
                 // If it starts with 11: it's AM, if 12: or 1: it's PM
-                val dhuhr24 = if (dhuhr.startsWith("11:")) {
-                    convertTo24Hour(dhuhr, "AM")
-                } else {
-                    convertTo24Hour(dhuhr, "PM")
-                }
+                val dhuhr24 =
+                    if (dhuhr.startsWith("11:")) {
+                        convertTo24Hour(dhuhr, "AM")
+                    } else {
+                        convertTo24Hour(dhuhr, "PM")
+                    }
                 val asr24 = convertTo24Hour(asr, "PM")
                 val maghrib24 = convertTo24Hour(maghrib, "PM")
                 val isha24 = convertTo24Hour(isha, "PM")
@@ -290,7 +292,10 @@ class PdfParser
             }
 
             if (prayerTimes.isNotEmpty()) {
-                Log.d(TAG, "✅ Parsed ${prayerTimes.size} prayer times (${prayerTimes.first().date} to ${prayerTimes.last().date})")
+                Log.d(
+                    TAG,
+                    "✅ Parsed ${prayerTimes.size} prayer times (${prayerTimes.first().date} to ${prayerTimes.last().date})",
+                )
             } else {
                 Log.w(TAG, "⚠️ No prayer times were parsed from PDF")
             }

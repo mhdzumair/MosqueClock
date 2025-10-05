@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
-            
+
             // Get the selected color theme
             val selectedColorTheme = AppColorThemes.getThemeById(settings.colorTheme)
 

@@ -164,7 +164,7 @@ fun AnalogClock(
 
         // Remember theme colors for use in Canvas (non-@Composable context)
         val colors = rememberThemeColors()
-        
+
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -711,7 +711,7 @@ private fun DrawScope.drawModernNumbers(
 
     // Calculate dynamic text size based on radius (12% of radius)
     val dynamicTextSize = radius * 0.12f
-    
+
     // Background circle size proportional to text (about 1.25x of text size)
     val backgroundRadius = dynamicTextSize * 1.25f
 

@@ -50,10 +50,10 @@ import kotlin.math.min
 
 /**
  * Next Prayer Countdown Section Component
- * 
+ *
  * Displays the next prayer name, time, and countdown timer.
  * This is the prominent card shown in the middle of the main screen.
- * 
+ *
  * Features:
  * - Dynamic font sizing based on available space
  * - Color-coded prayer times (Azan/Iqamah/Sunrise)
@@ -329,28 +329,30 @@ private fun SilentPhoneSection() {
         val availableWidthPx = with(density) { maxWidth.toPx() }
 
         // Calculate dynamic image size (use most of the available space, about 90%)
-        val imageSize = with(density) {
-            val heightBasedSize = (availableHeightPx * 0.90f).toDp()
-            val widthBasedSize = (availableWidthPx * 0.90f).toDp()
-            // Use the smaller dimension to ensure it fits
-            if (heightBasedSize < widthBasedSize) heightBasedSize else widthBasedSize
-        }
+        val imageSize =
+            with(density) {
+                val heightBasedSize = (availableHeightPx * 0.90f).toDp()
+                val widthBasedSize = (availableWidthPx * 0.90f).toDp()
+                // Use the smaller dimension to ensure it fits
+                if (heightBasedSize < widthBasedSize) heightBasedSize else widthBasedSize
+            }
 
         // Calculate dynamic text size based on available space
-        val textSize = with(density) {
-            // Use 12% of available height for better visibility
-            val heightBasedSize = (availableHeightPx * 0.12f).toSp()
-            
-            // Also consider width - estimate about 20-25 characters for longest localized text
-            val estimatedChars = 25f
-            val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
-            
-            // Use the smaller to ensure text fits, but allow it to be large
-            val calculatedSize = min(heightBasedSize.value, widthBasedSize.value).sp
-            
-            // Clamp between reasonable bounds
-            calculatedSize.value.coerceIn(20f, 80f).sp
-        }
+        val textSize =
+            with(density) {
+                // Use 12% of available height for better visibility
+                val heightBasedSize = (availableHeightPx * 0.12f).toSp()
+
+                // Also consider width - estimate about 20-25 characters for longest localized text
+                val estimatedChars = 25f
+                val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
+
+                // Use the smaller to ensure text fits, but allow it to be large
+                val calculatedSize = min(heightBasedSize.value, widthBasedSize.value).sp
+
+                // Clamp between reasonable bounds
+                calculatedSize.value.coerceIn(20f, 80f).sp
+            }
 
         // Background image - fills most of the space
         Image(
@@ -362,10 +364,11 @@ private fun SilentPhoneSection() {
         // Overlay text on top of the image
         Text(
             text = localizedStringResource(R.string.silent_your_phone),
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = textSize,
-                fontWeight = FontWeight.Bold,
-            ),
+            style =
+                MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = textSize,
+                    fontWeight = FontWeight.Bold,
+                ),
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -611,4 +614,3 @@ data class CountdownData(
     val totalMinutes: Long,
     val totalSeconds: Long,
 )
-

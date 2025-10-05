@@ -80,7 +80,9 @@ class WeatherRepository
                     // If no valid API key is provided, return error
                     if (apiKey.isBlank()) {
                         Log.w("WeatherRepository", "No API key configured for WeatherAPI.com")
-                        emit(NetworkResult.Error("Weather API key not configured. Please add your API key in Settings."))
+                        emit(
+                            NetworkResult.Error("Weather API key not configured. Please add your API key in Settings."),
+                        )
                         return@flow
                     }
 
@@ -104,18 +106,19 @@ class WeatherRepository
                     }
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in getCurrentWeather: ${e.message}", e)
-                    val errorMessage = when {
-                        e.message?.contains("CertificateException") == true ||
-                            e.message?.contains("Trust anchor") == true ->
-                            "SSL Certificate error. Please check your internet connection."
-                        e.message?.contains("UnknownHostException") == true ->
-                            "DNS resolution failed. Please check your internet connection."
-                        e.message?.contains("SocketTimeoutException") == true ->
-                            "Connection timeout. Please check your internet connection."
-                        e.message?.contains("ConnectException") == true ->
-                            "Connection failed. Please check your internet connection."
-                        else -> "Failed to fetch weather data: ${e.message}"
-                    }
+                    val errorMessage =
+                        when {
+                            e.message?.contains("CertificateException") == true ||
+                                e.message?.contains("Trust anchor") == true ->
+                                "SSL Certificate error. Please check your internet connection."
+                            e.message?.contains("UnknownHostException") == true ->
+                                "DNS resolution failed. Please check your internet connection."
+                            e.message?.contains("SocketTimeoutException") == true ->
+                                "Connection timeout. Please check your internet connection."
+                            e.message?.contains("ConnectException") == true ->
+                                "Connection failed. Please check your internet connection."
+                            else -> "Failed to fetch weather data: ${e.message}"
+                        }
                     emit(NetworkResult.Error(errorMessage))
                 }
             }
@@ -203,7 +206,10 @@ class WeatherRepository
 
                     // If no valid API key is provided, try secondary provider
                     if (apiKey.isBlank()) {
-                        Log.w("WeatherRepository", "No API key configured for WeatherAPI.com, trying secondary provider")
+                        Log.w(
+                            "WeatherRepository",
+                            "No API key configured for WeatherAPI.com, trying secondary provider",
+                        )
                         // Try secondary weather provider (OpenWeatherMap)
                         if (openWeatherMapService.isConfigured()) {
                             Log.d("WeatherRepository", "🌤️ Trying secondary weather provider (OpenWeatherMap)")
@@ -224,16 +230,27 @@ class WeatherRepository
                                         "WeatherRepository",
                                         "⚠️ Secondary weather provider failed: ${openWeatherResult.message}",
                                     )
-                                    emit(NetworkResult.Error("No weather API keys configured. Please add API keys in Settings."))
+                                    emit(
+                                        NetworkResult.Error(
+                                            "No weather API keys configured. Please add API keys in Settings.",
+                                        ),
+                                    )
                                     return@flow
                                 }
                                 else -> {
-                                    Log.w("WeatherRepository", "⚠️ Secondary weather provider returned unexpected result")
+                                    Log.w(
+                                        "WeatherRepository",
+                                        "⚠️ Secondary weather provider returned unexpected result",
+                                    )
                                 }
                             }
                         } else {
                             Log.w("WeatherRepository", "⚠️ No weather API keys configured")
-                            emit(NetworkResult.Error("Weather API key not configured. Please add your API key in Settings."))
+                            emit(
+                                NetworkResult.Error(
+                                    "Weather API key not configured. Please add your API key in Settings.",
+                                ),
+                            )
                             return@flow
                         }
                     }
@@ -292,18 +309,19 @@ class WeatherRepository
                     emit(NetworkResult.Error("All weather providers failed", response.code()))
                 } catch (e: Exception) {
                     Log.e("WeatherRepository", "Exception in coordinates weather fetch: ${e.message}", e)
-                    val errorMessage = when {
-                        e.message?.contains("CertificateException") == true ||
-                            e.message?.contains("Trust anchor") == true ->
-                            "SSL Certificate error. Please check your internet connection."
-                        e.message?.contains("UnknownHostException") == true ->
-                            "DNS resolution failed. Please check your internet connection."
-                        e.message?.contains("SocketTimeoutException") == true ->
-                            "Connection timeout. Please check your internet connection."
-                        e.message?.contains("ConnectException") == true ->
-                            "Connection failed. Please check your internet connection."
-                        else -> "Failed to fetch weather data: ${e.message}"
-                    }
+                    val errorMessage =
+                        when {
+                            e.message?.contains("CertificateException") == true ||
+                                e.message?.contains("Trust anchor") == true ->
+                                "SSL Certificate error. Please check your internet connection."
+                            e.message?.contains("UnknownHostException") == true ->
+                                "DNS resolution failed. Please check your internet connection."
+                            e.message?.contains("SocketTimeoutException") == true ->
+                                "Connection timeout. Please check your internet connection."
+                            e.message?.contains("ConnectException") == true ->
+                                "Connection failed. Please check your internet connection."
+                            else -> "Failed to fetch weather data: ${e.message}"
+                        }
                     emit(NetworkResult.Error(errorMessage))
                 }
             }

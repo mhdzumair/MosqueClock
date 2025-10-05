@@ -31,28 +31,28 @@ import kotlin.math.min
 /**
  * Dua for Joining the Prayer Row (Saff)
  * Shows for 1 minute after Iqamah time ends
- * 
+ *
  * Displays:
  * - Arabic text at top
  * - Transliteration in selected language
  * - Meaning in selected language
  */
 @Composable
-fun DuaForJoiningSaff(
-    modifier: Modifier = Modifier,
-) {
-
+fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-                    ),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(
+                    brush =
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                                ),
+                        ),
                 ),
-            ),
     ) {
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize(),
@@ -62,36 +62,42 @@ fun DuaForJoiningSaff(
             val availableHeightPx = with(density) { maxHeight.toPx() }
 
             // Calculate dynamic font sizes
-            val arabicFontSize = with(density) {
-                min((availableHeightPx * 0.15f).toSp().value, 48f).sp
-            }
-            val transliterationFontSize = with(density) {
-                min((availableHeightPx * 0.06f).toSp().value, 32f).sp
-            }
-            val meaningFontSize = with(density) {
-                min((availableHeightPx * 0.05f).toSp().value, 28f).sp
-            }
-            val titleFontSize = with(density) {
-                min((availableHeightPx * 0.05f).toSp().value, 24f).sp
-            }
+            val arabicFontSize =
+                with(density) {
+                    min((availableHeightPx * 0.15f).toSp().value, 48f).sp
+                }
+            val transliterationFontSize =
+                with(density) {
+                    min((availableHeightPx * 0.06f).toSp().value, 32f).sp
+                }
+            val meaningFontSize =
+                with(density) {
+                    min((availableHeightPx * 0.05f).toSp().value, 28f).sp
+                }
+            val titleFontSize =
+                with(density) {
+                    min((availableHeightPx * 0.05f).toSp().value, 24f).sp
+                }
 
             val scrollState = rememberScrollState()
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(32.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 // Title
                 Text(
                     text = "🕌 ${localizedStringResource(R.string.dua_joining_saff_title)}",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontSize = titleFontSize,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style =
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.Bold,
+                        ),
                     color = ColorPrimaryAccent,
                     textAlign = TextAlign.Center,
                 )
@@ -101,11 +107,12 @@ fun DuaForJoiningSaff(
                 // Arabic Text
                 Text(
                     text = localizedStringResource(R.string.dua_joining_saff_arabic),
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontSize = arabicFontSize,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = arabicFontSize * 1.5f,
-                    ),
+                    style =
+                        MaterialTheme.typography.displaySmall.copy(
+                            fontSize = arabicFontSize,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = arabicFontSize * 1.5f,
+                        ),
                     color = ColorPrimaryAccent,
                     textAlign = TextAlign.Center,
                 )
@@ -115,11 +122,12 @@ fun DuaForJoiningSaff(
                 // Transliteration
                 Text(
                     text = localizedStringResource(R.string.dua_joining_saff_transliteration),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = transliterationFontSize,
-                        fontWeight = FontWeight.Medium,
-                        lineHeight = transliterationFontSize * 1.4f,
-                    ),
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontSize = transliterationFontSize,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = transliterationFontSize * 1.4f,
+                        ),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     textAlign = TextAlign.Center,
                 )
@@ -129,11 +137,12 @@ fun DuaForJoiningSaff(
                 // Meaning
                 Text(
                     text = localizedStringResource(R.string.dua_joining_saff_meaning),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = meaningFontSize,
-                        fontWeight = FontWeight.Normal,
-                        lineHeight = meaningFontSize * 1.5f,
-                    ),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontSize = meaningFontSize,
+                            fontWeight = FontWeight.Normal,
+                            lineHeight = meaningFontSize * 1.5f,
+                        ),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
                 )
@@ -141,4 +150,3 @@ fun DuaForJoiningSaff(
         }
     }
 }
-
