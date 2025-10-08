@@ -5,10 +5,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -69,6 +71,52 @@ class ApkDownloader
          * Get the file name for a version
          */
         fun getApkFileName(version: String): String = "MosqueClock-v$version.apk"
+
+        /**
+         * Check if app has permission to install packages
+         * Required for Android 8.0 (API 26) and above
+         */
+        fun canInstallPackages(context: Context): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.packageManager.canRequestPackageInstalls()
+            } else {
+                true // Permission not required for older Android versions
+            }
+        }
+
+        /**
+         * Request install packages permission
+         * Opens the system settings page where user can grant the permission
+         */
+        fun requestInstallPermission(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    
+                    if (intent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(intent)
+                        Log.d("ApkDownloader", "Opening install permission settings")
+                    } else {
+                        Log.w("ApkDownloader", "Install permission settings not available on this device")
+                        Toast.makeText(
+                            context,
+                            "Cannot open install permission settings. Please enable manually in Settings > Apps > Special access > Install unknown apps",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("ApkDownloader", "Error opening install permission settings", e)
+                    Toast.makeText(
+                        context,
+                        "Error opening settings: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
 
         /**
          * Download APK from the given URL
@@ -277,44 +325,119 @@ class ApkDownloader
             context: Context,
             fileName: String,
         ) {
-            try {
-                val file =
-                    File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+            // Launch installation in a coroutine with a small delay to ensure file is fully written
+            scope.launch {
+                try {
+                    // Small delay to ensure file is completely written to disk
+                    delay(500)
 
-                if (!file.exists()) {
-                    Log.e("ApkDownloader", "APK file not found: ${file.absolutePath}")
-                    Toast.makeText(context, "Download failed: File not found", Toast.LENGTH_SHORT).show()
-                    return
-                }
-
-                Log.d("ApkDownloader", "Installing APK from: ${file.absolutePath}")
-
-                val uri: Uri =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        // Use FileProvider for Android N and above
-                        FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            file,
-                        )
-                    } else {
-                        Uri.fromFile(file)
-                    }
-
-                val installIntent =
-                    Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "application/vnd.android.package-archive")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    // Check if app has install permission (Android 8.0+)
+                    if (!canInstallPackages(context)) {
+                        Log.w("ApkDownloader", "Install packages permission not granted")
+                        launch(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Please grant install permission in Settings to install updates",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
+                        // Don't return - continue to attempt installation, which will trigger the system permission dialog
                     }
 
-                context.startActivity(installIntent)
-                Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Log.e("ApkDownloader", "Error installing APK", e)
-                Toast.makeText(context, "Installation failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    val file =
+                        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+
+                    if (!file.exists()) {
+                        Log.e("ApkDownloader", "APK file not found: ${file.absolutePath}")
+                        launch(Dispatchers.Main) {
+                            Toast.makeText(context, "Download failed: File not found", Toast.LENGTH_SHORT).show()
+                        }
+                        return@launch
+                    }
+
+                    // Verify file is readable and has content
+                    if (!file.canRead()) {
+                        Log.e("ApkDownloader", "APK file is not readable: ${file.absolutePath}")
+                        launch(Dispatchers.Main) {
+                            Toast.makeText(context, "Cannot read APK file", Toast.LENGTH_SHORT).show()
+                        }
+                        return@launch
+                    }
+
+                    if (file.length() == 0L) {
+                        Log.e("ApkDownloader", "APK file is empty: ${file.absolutePath}")
+                        launch(Dispatchers.Main) {
+                            Toast.makeText(context, "Downloaded file is empty", Toast.LENGTH_SHORT).show()
+                        }
+                        return@launch
+                    }
+
+                    Log.d("ApkDownloader", "Installing APK from: ${file.absolutePath} (${file.length()} bytes)")
+
+                    val uri: Uri =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            // Use FileProvider for Android N and above
+                            try {
+                                FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file,
+                                )
+                            } catch (e: IllegalArgumentException) {
+                                Log.e(
+                                    "ApkDownloader",
+                                    "FileProvider failed - file path not covered by provider paths",
+                                    e,
+                                )
+                                Log.e("ApkDownloader", "File absolute path: ${file.absolutePath}")
+                                Log.e("ApkDownloader", "File canonical path: ${file.canonicalPath}")
+                                launch(Dispatchers.Main) {
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            "FileProvider error: ${e.message}",
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                }
+                                return@launch
+                            }
+                        } else {
+                            Uri.fromFile(file)
+                        }
+
+                    Log.d("ApkDownloader", "Generated URI: $uri")
+
+                    val installIntent =
+                        Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "application/vnd.android.package-archive")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                        }
+
+                    // Verify that there's an activity to handle the intent
+                    if (installIntent.resolveActivity(context.packageManager) == null) {
+                        Log.e("ApkDownloader", "No activity found to handle install intent")
+                        launch(Dispatchers.Main) {
+                            Toast.makeText(context, "No installer app found", Toast.LENGTH_LONG).show()
+                        }
+                        return@launch
+                    }
+
+                    context.startActivity(installIntent)
+                    launch(Dispatchers.Main) {
+                        Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("ApkDownloader", "Error installing APK", e)
+                    Log.e("ApkDownloader", "Exception type: ${e.javaClass.name}")
+                    Log.e("ApkDownloader", "Exception message: ${e.message}")
+                    e.printStackTrace()
+                    launch(Dispatchers.Main) {
+                        Toast.makeText(context, "Installation failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
 

@@ -2310,12 +2310,18 @@ private fun AboutSettings() {
     var updateCheckError by remember { mutableStateOf(false) }
     var isDownloading by remember { mutableStateOf(false) }
     var isFileAlreadyDownloaded by remember { mutableStateOf(false) }
+    var hasInstallPermission by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val apkDownloader = remember { ApkDownloader() }
     val downloadProgress by apkDownloader.downloadProgress.collectAsState()
 
     // Get current version from BuildConfig
     val currentVersion = BuildConfig.VERSION_NAME
+
+    // Check install permission on composition
+    LaunchedEffect(Unit) {
+        hasInstallPermission = apkDownloader.canInstallPackages(context)
+    }
 
     // Check if APK is already downloaded when update info changes
     LaunchedEffect(updateInfo) {
@@ -2325,6 +2331,8 @@ private fun AboutSettings() {
                     context = context,
                     version = updateInfo!!.latestVersion,
                 )
+            // Also re-check permission
+            hasInstallPermission = apkDownloader.canInstallPackages(context)
         }
     }
 
@@ -2468,9 +2476,59 @@ private fun AboutSettings() {
 
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            // Install permission warning (Android 8.0+)
+                            if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                                    ),
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                    ) {
+                                        Text(
+                                            text = "⚠️ Install Permission Required",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "To install updates, you need to grant install permission for this app.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Button(
+                                            onClick = {
+                                                apkDownloader.requestInstallPermission(context)
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.error,
+                                            ),
+                                        ) {
+                                            Text("Grant Install Permission")
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
                             // Download and Install Button
                             Button(
                                 onClick = {
+                                    // Check permission first
+                                    if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        apkDownloader.requestInstallPermission(context)
+                                        Toast.makeText(
+                                            context,
+                                            "Please grant install permission first",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        return@Button
+                                    }
+
                                     if (isFileAlreadyDownloaded) {
                                         // If file is already downloaded, just install it
                                         val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)

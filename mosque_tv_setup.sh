@@ -25,6 +25,10 @@ adb shell pm grant com.mosque.prayerclock android.permission.INTERNET
 adb shell pm grant com.mosque.prayerclock android.permission.ACCESS_NETWORK_STATE
 adb shell pm grant com.mosque.prayerclock android.permission.RECEIVE_BOOT_COMPLETED
 
+# Install packages permission for auto-update (Android 8.0+)
+echo "📦 Granting install packages permission for auto-updates..."
+adb shell appops set com.mosque.prayerclock REQUEST_INSTALL_PACKAGES allow
+
 # Battery optimization
 echo "🔋 Removing battery optimization..."
 adb shell dumpsys deviceidle whitelist +com.mosque.prayerclock
