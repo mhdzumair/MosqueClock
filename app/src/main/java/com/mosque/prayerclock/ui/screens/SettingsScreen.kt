@@ -1283,66 +1283,158 @@ private fun ImprovedTextField(
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
-    val focusManager = LocalFocusManager.current
+    var showDialog by remember { mutableStateOf(false) }
 
-    // Use TextFieldValue to control cursor position
-    var textFieldValue by
-        remember(value) {
-            mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
-        }
-
-    // Update textFieldValue when external value changes
-    LaunchedEffect(value) {
-        if (textFieldValue.text != value) {
-            textFieldValue = TextFieldValue(text = value, selection = TextRange(value.length))
+    // Clickable card that displays current value
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .clickable { showDialog = true },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                if (label != null) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                Text(
+                    text = value.ifEmpty { placeholder },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (value.isEmpty()) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
+            
+            // Edit icon indicator
+            Text(
+                text = "✏️",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
     }
 
-    OutlinedTextField(
-        value = textFieldValue,
-        onValueChange = { newValue ->
-            textFieldValue = newValue
-            onValueChange(newValue.text)
-        },
-        modifier =
-            modifier.defaultMinSize(minHeight = 56.dp).fillMaxWidth().onFocusChanged { focusState ->
-                // When field gains focus, move cursor to end
-                if (focusState.isFocused &&
-                    textFieldValue.selection.start != textFieldValue.text.length
+    // Show dialog when clicked
+    if (showDialog) {
+        TextInputDialog(
+            title = label ?: "Edit",
+            initialValue = value,
+            placeholder = placeholder,
+            keyboardType = keyboardType,
+            onDismiss = { showDialog = false },
+            onConfirm = { newValue ->
+                onValueChange(newValue)
+                showDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun TextInputDialog(
+    title: String,
+    initialValue: String,
+    placeholder: String,
+    keyboardType: KeyboardType,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var textValue by remember { mutableStateOf(initialValue) }
+    val focusManager = LocalFocusManager.current
+
+    // Handle back button to dismiss dialog
+    BackHandler { onDismiss() }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = textValue,
+                    onValueChange = { textValue = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(placeholder) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = keyboardType,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            onConfirm(textValue)
+                        }
+                    ),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    textFieldValue =
-                        textFieldValue.copy(
-                            selection = TextRange(textFieldValue.text.length),
-                        )
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = { onConfirm(textValue) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Save")
+                    }
                 }
-            },
-        label = label?.let { { Text(it) } },
-        placeholder =
-            if (placeholder.isNotEmpty()) {
-                { Text(placeholder) }
-            } else {
-                null
-            },
-        colors =
-            OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-            ),
-        keyboardOptions =
-            KeyboardOptions(
-                keyboardType = keyboardType,
-                imeAction = ImeAction.Next,
-            ),
-        keyboardActions =
-            KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) },
-                onDone = { focusManager.clearFocus() },
-            ),
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge,
-    )
+            }
+        }
+    }
 }
 
 @Composable
