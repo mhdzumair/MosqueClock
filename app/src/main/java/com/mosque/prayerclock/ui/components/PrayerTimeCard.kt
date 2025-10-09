@@ -35,6 +35,7 @@ import com.mosque.prayerclock.ui.theme.ColorNextAzanTime
 import com.mosque.prayerclock.ui.theme.ColorNextIqamahTime
 import com.mosque.prayerclock.ui.theme.ColorNextSunriseTime
 import com.mosque.prayerclock.ui.theme.ColorSunriseTime
+import com.mosque.prayerclock.utils.TimeUtils
 import kotlin.math.min
 
 /**
@@ -228,6 +229,7 @@ fun PrayerTimeCard(
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
+                            lineHeight = calculatedNameFontSize * 1.1f,
                         )
                     }
 
@@ -244,9 +246,9 @@ fun PrayerTimeCard(
                         Text(
                             text =
                                 if (isShowingAzan || prayerInfo.iqamahTime == null) {
-                                    formatTimeBasedOnPreference(prayerInfo.azanTime, show24Hour)
+                                    TimeUtils.formatTimeBasedOnPreference(prayerInfo.azanTime, show24Hour)
                                 } else {
-                                    formatTimeBasedOnPreference(
+                                    TimeUtils.formatTimeBasedOnPreference(
                                         prayerInfo.iqamahTime,
                                         show24Hour,
                                     )
@@ -268,28 +270,3 @@ fun PrayerTimeCard(
     }
 }
 
-/**
- * Helper function to format time based on user preference (12H/24H)
- */
-private fun formatTimeBasedOnPreference(
-    time: String,
-    show24Hour: Boolean,
-): String {
-    if (show24Hour) {
-        return time
-    }
-
-    // Convert 24-hour format to 12-hour format
-    val parts = time.split(":")
-    if (parts.size != 2) return time
-
-    val hour = parts[0].toIntOrNull() ?: return time
-    val minute = parts[1]
-
-    return when {
-        hour == 0 -> "12:$minute AM"
-        hour < 12 -> "$hour:$minute AM"
-        hour == 12 -> "12:$minute PM"
-        else -> "${hour - 12}:$minute PM"
-    }
-}

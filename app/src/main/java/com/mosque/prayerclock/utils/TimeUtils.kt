@@ -83,4 +83,34 @@ object TimeUtils {
         // Remove timezone if present (e.g., "12:30 +05:30" -> "12:30")
         return time.split(" ").first()
     }
+
+    /**
+     * Format time based on user preference (12H/24H)
+     * Converts 24-hour format to 12-hour format with AM/PM if needed
+     */
+    fun formatTimeBasedOnPreference(
+        time: String,
+        show24Hour: Boolean,
+    ): String {
+        if (show24Hour) {
+            return time
+        }
+
+        // Convert 24-hour format to 12-hour format
+        val parts = time.split(":")
+        if (parts.size != 2) return time
+
+        val hour = parts[0].toIntOrNull() ?: return time
+        val minute = parts[1]
+
+        val period = if (hour >= 12) "PM" else "AM"
+        val displayHour =
+            when (hour) {
+                0 -> 12
+                in 1..12 -> hour
+                else -> hour - 12
+            }
+
+        return "$displayHour:$minute $period"
+    }
 }

@@ -28,6 +28,7 @@ import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.AlphaValues
 import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
+import com.mosque.prayerclock.utils.TimeUtils
 import kotlin.math.min
 
 @Composable
@@ -37,6 +38,8 @@ fun FullScreenCountdown(
     isIqamah: Boolean,
     minutes: Long,
     seconds: Long,
+    azanTime: String,
+    show24Hour: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -76,6 +79,9 @@ fun FullScreenCountdown(
             // Prayer title is 40% of digit size
             val calculatedTitleFontSize = calculatedDigitSize * 0.4f
 
+            // Azan time display is 35% of digit size
+            val calculatedAzanTimeFontSize = calculatedDigitSize * 0.4f
+
             // Dua message is 25% of digit size
             val calculatedDuaFontSize = calculatedDigitSize * 0.25f
 
@@ -110,6 +116,23 @@ fun FullScreenCountdown(
                     color = ColorPrimaryAccent, // Primary accent color
                     textAlign = TextAlign.Center,
                 )
+
+                // Show Azan time only when counting down to Azan (not Iqamah)
+                if (!isIqamah) {
+                    Spacer(modifier = Modifier.height(duaSpacing))
+                    
+                    Text(
+                        text = TimeUtils.formatTimeBasedOnPreference(azanTime, show24Hour),
+                        style =
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = calculatedAzanTimeFontSize,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = with(density) { (calculatedAzanTimeFontSize.toPx() * 0.04f).toSp() },
+                            ),
+                        color = com.mosque.prayerclock.ui.theme.ColorAzanTime,
+                        textAlign = TextAlign.Center,
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(titleSpacing))
 

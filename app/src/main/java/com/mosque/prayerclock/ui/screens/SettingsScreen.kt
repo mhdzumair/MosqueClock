@@ -187,6 +187,15 @@ fun SettingsScreen(
                 }
 
                 item {
+                    PrayerDisplaySettings(
+                        jummahDurationMinutes = settings.jummahDurationMinutes,
+                        duaDisplayDurationMinutes = settings.duaDisplayDurationMinutes,
+                        onJummahDurationChange = viewModel::updateJummahDurationMinutes,
+                        onDuaDisplayDurationChange = viewModel::updateDuaDisplayDurationMinutes,
+                    )
+                }
+
+                item {
                     WeatherSettings(
                         showWeather = settings.showWeather,
                         onToggleShowWeather = viewModel::updateShowWeather,
@@ -1017,6 +1026,106 @@ private fun IqamahGapSettings(
                 gap = settings.ishaIqamahGap,
                 onGapChange = { onUpdateIqamahGap("isha", it) },
             )
+        }
+    }
+}
+
+@Composable
+private fun PrayerDisplaySettings(
+    jummahDurationMinutes: Int,
+    duaDisplayDurationMinutes: Int,
+    onJummahDurationChange: (Int) -> Unit,
+    onDuaDisplayDurationChange: (Int) -> Unit,
+) {
+    SettingsCard {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp),
+            ) {
+                Text(
+                    text = "⏰",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Prayer Display Settings",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Text(
+                text = "How long to show Jumu'ah (Friday) prayer as active after Azan",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Jumu'ah Duration",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+
+                NumberPickerField(
+                    value = jummahDurationMinutes,
+                    onValueChange = onJummahDurationChange,
+                    modifier = Modifier.width(160.dp),
+                    range = 30..120,
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "min",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "How long to show 'Dua for Joining Saff' after Iqamah time",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Dua Duration",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+
+                NumberPickerField(
+                    value = duaDisplayDurationMinutes,
+                    onValueChange = onDuaDisplayDurationChange,
+                    modifier = Modifier.width(160.dp),
+                    range = 1..15,
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "min",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
         }
     }
 }

@@ -74,6 +74,8 @@ class SettingsRepository
             val OPENWEATHERMAP_API_KEY = stringPreferencesKey("openweathermap_api_key")
             val MOSQUE_CLOCK_BACKEND_URL = stringPreferencesKey("mosque_clock_backend_url")
             val MOSQUE_CLOCK_BACKEND_API_KEY = stringPreferencesKey("mosque_clock_backend_api_key")
+            val JUMMAH_DURATION_MINUTES = intPreferencesKey("jummah_duration_minutes")
+            val DUA_DISPLAY_DURATION_MINUTES = intPreferencesKey("dua_display_duration_minutes")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -161,6 +163,8 @@ class SettingsRepository
                     openWeatherMapApiKey = preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] ?: "",
                     mosqueClockBackendUrl = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_URL] ?: "",
                     mosqueClockBackendApiKey = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] ?: "",
+                    jummahDurationMinutes = preferences[PreferencesKeys.JUMMAH_DURATION_MINUTES] ?: 60,
+                    duaDisplayDurationMinutes = preferences[PreferencesKeys.DUA_DISPLAY_DURATION_MINUTES] ?: 5,
                 )
             }
 
@@ -333,5 +337,13 @@ class SettingsRepository
 
         suspend fun updateMosqueClockBackendApiKey(apiKey: String) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] = apiKey }
+        }
+
+        suspend fun updateJummahDurationMinutes(minutes: Int) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.JUMMAH_DURATION_MINUTES] = minutes }
+        }
+
+        suspend fun updateDuaDisplayDurationMinutes(minutes: Int) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.DUA_DISPLAY_DURATION_MINUTES] = minutes }
         }
     }

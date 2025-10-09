@@ -43,6 +43,8 @@ data class AppSettings(
     val openWeatherMapApiKey: String = "", // OpenWeatherMap API key
     val mosqueClockBackendUrl: String = "", // MosqueClock backend URL
     val mosqueClockBackendApiKey: String = "", // MosqueClock backend API key
+    val jummahDurationMinutes: Int = 60, // Duration for Jummah (Friday) prayer in minutes (default: 60 minutes = 1 hour)
+    val duaDisplayDurationMinutes: Int = 5, // Duration to display Dua for Joining Saff after Iqamah in minutes (default: 5 minutes)
 )
 
 enum class Language(

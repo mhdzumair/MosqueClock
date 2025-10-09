@@ -58,7 +58,6 @@ import kotlin.math.min
  * - Dynamic font sizing based on available space
  * - Color-coded prayer times (Azan/Iqamah/Sunrise)
  * - Animated flip clock countdown
- * - Silent phone reminder during prayer-in-progress
  * - Automatic transition detection between prayers
  */
 @Composable
@@ -72,7 +71,6 @@ fun NextPrayerSection(
     showCountdown: Boolean = false,
     currentTime: Instant = Clock.System.now(),
     isCurrentPrayer: Boolean = false,
-    isPrayerInProgress: Boolean = false,
 ) {
     val prayerInfoList = createPrayerInfoList(prayerTimes, currentTime)
 
@@ -148,231 +146,163 @@ fun NextPrayerSection(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    // Show silent phone image during prayer-in-progress period
-                    if (isPrayerInProgress) {
-                        SilentPhoneSection()
-                    } else {
-                        // Use BoxWithConstraints for dynamic font sizing
-                        BoxWithConstraints(
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            val density = LocalDensity.current
-                            val availableHeightPx = with(density) { maxHeight.toPx() }
-                            val availableWidthPx = with(density) { maxWidth.toPx() }
+                    // Use BoxWithConstraints for dynamic font sizing
+                    BoxWithConstraints(
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        val density = LocalDensity.current
+                        val availableHeightPx = with(density) { maxHeight.toPx() }
+                        val availableWidthPx = with(density) { maxWidth.toPx() }
 
-                            // Calculate dynamic font sizes based on available space
-                            // Adjust based on whether countdown is visible
-                            val calculatedTimeFontSize =
-                                with(density) {
-                                    // When countdown is visible, use less height (18% instead of 25%)
-                                    // When no countdown, prayer time can use more (30%)
-                                    val heightPercentage = if (showCountdown) 0.18f else 0.30f
-                                    val heightBasedSize = (availableHeightPx * heightPercentage).toSp()
+                        // Calculate dynamic font sizes based on available space
+                        // Adjust based on whether countdown is visible
+                        val calculatedTimeFontSize =
+                            with(density) {
+                                // When countdown is visible, use less height (18% instead of 25%)
+                                // When no countdown, prayer time can use more (30%)
+                                val heightPercentage = if (showCountdown) 0.18f else 0.30f
+                                val heightBasedSize = (availableHeightPx * heightPercentage).toSp()
 
-                                    // Consider width for time display (typical: "12:00 PM" = 8 chars)
-                                    val widthBasedSize = (availableWidthPx / 8f * 1.5f).toSp()
+                                // Consider width for time display (typical: "12:00 PM" = 8 chars)
+                                val widthBasedSize = (availableWidthPx / 8f * 1.5f).toSp()
 
-                                    // Use smaller to ensure it fits
-                                    min(heightBasedSize.value, widthBasedSize.value).sp
-                                }
+                                // Use smaller to ensure it fits
+                                min(heightBasedSize.value, widthBasedSize.value).sp
+                            }
 
-                            // Prayer name calculation considers text length to fit in one line
-                            val calculatedPrayerNameFontSize =
-                                with(density) {
-                                    // Estimate max chars for prayer name with suffix (e.g., "ஜுஹ்ர் அதான்" = ~12 chars in Tamil)
-                                    val estimatedChars = 15f // Conservative estimate for longest prayer name + suffix
-                                    val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
+                        // Prayer name calculation considers text length to fit in one line
+                        val calculatedPrayerNameFontSize =
+                            with(density) {
+                                // Estimate max chars for prayer name with suffix (e.g., "ஜுஹ்ர் அதான்" = ~12 chars in Tamil)
+                                val estimatedChars = 15f // Conservative estimate for longest prayer name + suffix
+                                val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
 
-                                    // Also constrain by time font size (should be smaller)
-                                    val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
+                                // Also constrain by time font size (should be smaller)
+                                val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
 
-                                    // Use smaller to ensure single line
-                                    min(widthBasedSize.value, maxSize.value).sp
-                                }
+                                // Use smaller to ensure single line
+                                min(widthBasedSize.value, maxSize.value).sp
+                            }
 
-                            // Title is 45% of time size
-                            val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f
+                        // Title is 45% of time size
+                        val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f
 
-                            // Minimal padding to maximize space for content
-                            val paddingSize = if (showCountdown) 6.dp else 2.dp
+                        // Minimal padding to maximize space for content
+                        val paddingSize = if (showCountdown) 6.dp else 2.dp
 
-                            Column(
-                                modifier = Modifier.fillMaxSize().padding(paddingSize),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement =
-                                    if (showCountdown) {
-                                        Arrangement.SpaceEvenly // Distribute space evenly when countdown is visible
-                                    } else {
-                                        Arrangement.SpaceBetween // Use space between when no countdown
-                                    },
-                            ) {
-                                // Top section - Next/Current Prayer text (if not sunrise)
-                                if (nextPrayerInfo.type != PrayerType.SUNRISE) {
-                                    Text(
-                                        text =
-                                            if (isCurrentPrayer) {
-                                                localizedStringResource(R.string.current_prayer)
-                                            } else {
-                                                localizedStringResource(R.string.next_prayer)
-                                            },
-                                        style =
-                                            MaterialTheme.typography.titleLarge.copy(
-                                                fontSize = calculatedTitleFontSize,
-                                            ),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                        fontWeight = FontWeight.Medium,
-                                    )
-                                } else {
-                                    // Add empty spacer for sunrise to maintain layout balance
-                                    Spacer(modifier = Modifier.height(1.dp))
-                                }
-
-                                // Middle section - Prayer name
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    // Display prayer name with Azan/Iqamah suffix for prayers (not sunrise/jummah)
-                                    val displayText =
-                                        when {
-                                            nextPrayerInfo.iqamahTime == null -> nextPrayerInfo.name // Sunrise or Jummah
-                                            shouldShowIqamah ->
-                                                "${nextPrayerInfo.name} ${localizedStringResource(R.string.iqamah)}"
-                                            else -> "${nextPrayerInfo.name} ${localizedStringResource(R.string.azan)}"
-                                        }
-
-                                    Text(
-                                        text = displayText,
-                                        style =
-                                            MaterialTheme.typography.headlineLarge.copy(
-                                                fontSize = calculatedPrayerNameFontSize,
-                                                fontWeight = FontWeight.Bold,
-                                            ),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                    )
-
-                                    // Dynamic spacing based on countdown visibility
-                                    Spacer(modifier = Modifier.height(if (showCountdown) 8.dp else 16.dp))
-
-                                    // Prayer time display
-                                    val timeToShow =
-                                        if (shouldShowIqamah) {
-                                            // Show Iqamah time if we're past Azan time
-                                            nextPrayerInfo.iqamahTime ?: nextPrayerInfo.azanTime
-                                        } else {
-                                            // Show Azan time by default (or sunrise time for sunrise)
-                                            nextPrayerInfo.azanTime
-                                        }
-
-                                    // Apply color coding to time display
-                                    val timeColor =
-                                        if (nextPrayerInfo.type == PrayerType.SUNRISE) {
-                                            ColorSunriseTime // Sunrise time indicator
-                                        } else if (shouldShowIqamah) {
-                                            ColorIqamahTime // Iqamah time indicator
-                                        } else {
-                                            ColorAzanTime // Azan time indicator
-                                        }
-
-                                    Text(
-                                        text = formatTimeBasedOnPreference(timeToShow, show24Hour),
-                                        style =
-                                            MaterialTheme.typography.displayLarge.copy(
-                                                fontSize = calculatedTimeFontSize,
-                                                fontWeight = FontWeight.Bold,
-                                            ),
-                                        color = timeColor,
-                                    )
-                                }
-
-                                // Bottom section - Countdown (if visible) or spacer
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(paddingSize),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement =
                                 if (showCountdown) {
-                                    // Give countdown more space by wrapping in a Box that can expand
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        CountdownDisplay(
-                                            hours = countdownData.hours,
-                                            minutes = countdownData.minutes,
-                                            seconds = countdownData.seconds,
-                                        )
-                                    }
+                                    Arrangement.SpaceEvenly // Distribute space evenly when countdown is visible
                                 } else {
-                                    // Add flexible spacer when no countdown to push content up
-                                    Spacer(modifier = Modifier.height(1.dp))
+                                    Arrangement.SpaceBetween // Use space between when no countdown
+                                },
+                        ) {
+                            // Top section - Next/Current Prayer text (if not sunrise)
+                            if (nextPrayerInfo.type != PrayerType.SUNRISE) {
+                                Text(
+                                    text =
+                                        if (isCurrentPrayer) {
+                                            localizedStringResource(R.string.current_prayer)
+                                        } else {
+                                            localizedStringResource(R.string.next_prayer)
+                                        },
+                                    style =
+                                        MaterialTheme.typography.titleLarge.copy(
+                                            fontSize = calculatedTitleFontSize,
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            } else {
+                                // Add empty spacer for sunrise to maintain layout balance
+                                Spacer(modifier = Modifier.height(1.dp))
+                            }
+
+                            // Middle section - Prayer name
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                // Display prayer name with Azan/Iqamah suffix for prayers (not sunrise/jummah)
+                                val displayText =
+                                    when {
+                                        nextPrayerInfo.iqamahTime == null -> nextPrayerInfo.name // Sunrise or Jummah
+                                        shouldShowIqamah ->
+                                            "${nextPrayerInfo.name} ${localizedStringResource(R.string.iqamah)}"
+                                        else -> "${nextPrayerInfo.name} ${localizedStringResource(R.string.azan)}"
+                                    }
+
+                                Text(
+                                    text = displayText,
+                                    style =
+                                        MaterialTheme.typography.headlineLarge.copy(
+                                            fontSize = calculatedPrayerNameFontSize,
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                )
+
+                                // Dynamic spacing based on countdown visibility
+                                Spacer(modifier = Modifier.height(if (showCountdown) 8.dp else 16.dp))
+
+                                // Prayer time display
+                                val timeToShow =
+                                    if (shouldShowIqamah) {
+                                        // Show Iqamah time if we're past Azan time
+                                        nextPrayerInfo.iqamahTime ?: nextPrayerInfo.azanTime
+                                    } else {
+                                        // Show Azan time by default (or sunrise time for sunrise)
+                                        nextPrayerInfo.azanTime
+                                    }
+
+                                // Apply color coding to time display
+                                val timeColor =
+                                    if (nextPrayerInfo.type == PrayerType.SUNRISE) {
+                                        ColorSunriseTime // Sunrise time indicator
+                                    } else if (shouldShowIqamah) {
+                                        ColorIqamahTime // Iqamah time indicator
+                                    } else {
+                                        ColorAzanTime // Azan time indicator
+                                    }
+
+                                Text(
+                                    text = TimeUtils.formatTimeBasedOnPreference(timeToShow, show24Hour),
+                                    style =
+                                        MaterialTheme.typography.displayLarge.copy(
+                                            fontSize = calculatedTimeFontSize,
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    color = timeColor,
+                                )
+                            }
+
+                            // Bottom section - Countdown (if visible) or spacer
+                            if (showCountdown) {
+                                // Give countdown more space by wrapping in a Box that can expand
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CountdownDisplay(
+                                        hours = countdownData.hours,
+                                        minutes = countdownData.minutes,
+                                        seconds = countdownData.seconds,
+                                    )
                                 }
+                            } else {
+                                // Add flexible spacer when no countdown to push content up
+                                Spacer(modifier = Modifier.height(1.dp))
                             }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-/**
- * Silent Phone Section
- * Shows a reminder to silence phones during prayer
- * Text is overlaid on top of the image with dynamic sizing
- */
-@Composable
-private fun SilentPhoneSection() {
-    BoxWithConstraints(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        val density = LocalDensity.current
-        val availableHeightPx = with(density) { maxHeight.toPx() }
-        val availableWidthPx = with(density) { maxWidth.toPx() }
-
-        // Calculate dynamic image size (use most of the available space, about 90%)
-        val imageSize =
-            with(density) {
-                val heightBasedSize = (availableHeightPx * 0.90f).toDp()
-                val widthBasedSize = (availableWidthPx * 0.90f).toDp()
-                // Use the smaller dimension to ensure it fits
-                if (heightBasedSize < widthBasedSize) heightBasedSize else widthBasedSize
-            }
-
-        // Calculate dynamic text size based on available space
-        val textSize =
-            with(density) {
-                // Use 12% of available height for better visibility
-                val heightBasedSize = (availableHeightPx * 0.12f).toSp()
-
-                // Also consider width - estimate about 20-25 characters for longest localized text
-                val estimatedChars = 25f
-                val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
-
-                // Use the smaller to ensure text fits, but allow it to be large
-                val calculatedSize = min(heightBasedSize.value, widthBasedSize.value).sp
-
-                // Clamp between reasonable bounds
-                calculatedSize.value.coerceIn(20f, 80f).sp
-            }
-
-        // Background image - fills most of the space
-        Image(
-            painter = painterResource(id = R.drawable.silent_phone),
-            contentDescription = "Silent phone reminder",
-            modifier = Modifier.size(imageSize),
-        )
-
-        // Overlay text on top of the image
-        Text(
-            text = localizedStringResource(R.string.silent_your_phone),
-            style =
-                MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = textSize,
-                    fontWeight = FontWeight.Bold,
-                ),
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
     }
 }
 
@@ -517,31 +447,6 @@ fun getCountdownData(
     }
 }
 
-/**
- * Helper function to format time based on user preference (12H/24H)
- */
-private fun formatTimeBasedOnPreference(
-    time: String,
-    show24Hour: Boolean,
-): String {
-    if (show24Hour) {
-        return time
-    }
-
-    // Convert 24-hour format to 12-hour format
-    val parts = time.split(":")
-    if (parts.size != 2) return time
-
-    val hour = parts[0].toIntOrNull() ?: return time
-    val minute = parts[1]
-
-    return when {
-        hour == 0 -> "12:$minute AM"
-        hour < 12 -> "$hour:$minute AM"
-        hour == 12 -> "12:$minute PM"
-        else -> "${hour - 12}:$minute PM"
-    }
-}
 
 /**
  * Helper function to create prayer info list from prayer times

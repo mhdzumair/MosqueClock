@@ -215,4 +215,16 @@ class SettingsViewModel
                 settingsRepository.updateMosqueClockBackendApiKey(apiKey)
             }
         }
+
+        fun updateJummahDurationMinutes(minutes: Int) {
+            viewModelScope.launch {
+                settingsRepository.updateJummahDurationMinutes(minutes)
+            }
+        }
+
+        fun updateDuaDisplayDurationMinutes(minutes: Int) {
+            viewModelScope.launch {
+                settingsRepository.updateDuaDisplayDurationMinutes(minutes)
+            }
+        }
     }

@@ -202,6 +202,7 @@ class MainViewModel
             val currentTime =
                 "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
             val isFriday = now.dayOfWeek == DayOfWeek.FRIDAY
+            val currentSettings = settings.value
 
             // Check if we're in the 5-minute buffer after any Iqamah time
             val prayers =
@@ -219,24 +220,24 @@ class MainViewModel
                     PrayerType.ISHA to Pair(prayerTimes.ishaAzan, prayerTimes.ishaIqamah),
                 )
 
-            // First check if we're between Azan and Iqamah time OR within 5 minutes after Iqamah
+            // First check if we're between Azan and Iqamah time OR within Dua duration after Iqamah
             for ((prayerType, times) in prayers) {
                 val azanTime = times.first
                 val iqamahTime = times.second
 
                 if (iqamahTime != null) { // Only check if Iqamah time exists
-                    val bufferTime = TimeUtils.addMinutesToTime(iqamahTime, 5)
+                    val bufferTime = TimeUtils.addMinutesToTime(iqamahTime, currentSettings.duaDisplayDurationMinutes)
 
-                    // Check if we're between Azan and Iqamah + 5min buffer
+                    // Check if we're between Azan and Iqamah + Dua duration buffer
                     if (TimeUtils.compareTimeStrings(azanTime, currentTime) <= 0 &&
                         TimeUtils.compareTimeStrings(currentTime, bufferTime) < 0
                     ) {
-                        // We're in the current prayer period (from Azan to Iqamah + 5min)
+                        // We're in the current prayer period (from Azan to Iqamah + Dua duration)
                         return prayerType
                     }
                 } else if (prayerType == PrayerType.DHUHR && isFriday) {
-                    // For Friday, give 1 hour after Azan for Bayan
-                    val bayanEndTime = TimeUtils.addMinutesToTime(times.first, 60)
+                    // For Friday, use configurable Jummah duration after Azan for Bayan
+                    val bayanEndTime = TimeUtils.addMinutesToTime(times.first, currentSettings.jummahDurationMinutes)
                     if (TimeUtils.compareTimeStrings(times.first, currentTime) <= 0 &&
                         TimeUtils.compareTimeStrings(currentTime, bayanEndTime) < 0
                     ) {
