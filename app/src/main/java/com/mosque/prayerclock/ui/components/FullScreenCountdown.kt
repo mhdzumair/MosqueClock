@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerType
+import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.AlphaValues
 import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
@@ -63,6 +64,10 @@ fun FullScreenCountdown(
         ) {
             val density = LocalDensity.current
 
+            // Get effective language and font scaling
+            val effectiveLanguage = LocalEffectiveLanguage.current
+            val fontScale = getLanguageFontScale(effectiveLanguage)
+
             // Calculate available space
             val availableWidthPx = with(density) { maxWidth.toPx() }
             val availableHeightPx = with(density) { maxHeight.toPx() }
@@ -76,14 +81,14 @@ fun FullScreenCountdown(
                     min(heightBasedSize.value, widthBasedSize.value).sp
                 }
 
-            // Prayer title is 40% of digit size
-            val calculatedTitleFontSize = calculatedDigitSize * 0.4f
+            // Prayer title is 40% of digit size (with language scaling)
+            val calculatedTitleFontSize = calculatedDigitSize * 0.4f * fontScale
 
-            // Azan time display is 35% of digit size
-            val calculatedAzanTimeFontSize = calculatedDigitSize * 0.4f
+            // Azan time display is 35% of digit size (with language scaling)
+            val calculatedAzanTimeFontSize = calculatedDigitSize * 0.4f * fontScale
 
-            // Dua message is 25% of digit size
-            val calculatedDuaFontSize = calculatedDigitSize * 0.25f
+            // Dua message is 25% of digit size (with language scaling)
+            val calculatedDuaFontSize = calculatedDigitSize * 0.25f * fontScale
 
             // Dynamic padding and spacing
             val dynamicPadding = with(density) { (availableHeightPx * 0.04f).toDp().coerceIn(24.dp, 64.dp) }

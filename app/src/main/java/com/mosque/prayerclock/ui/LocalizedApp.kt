@@ -15,6 +15,7 @@ import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.utils.LocaleManager
 
 val LocalLocalizedContext = compositionLocalOf<Context> { error("No localized context provided") }
+val LocalEffectiveLanguage = compositionLocalOf<Language> { error("No effective language provided") }
 
 @Composable
 fun LocalizedApp(
@@ -31,6 +32,7 @@ fun LocalizedApp(
 
     CompositionLocalProvider(
         LocalLocalizedContext provides localizedContext,
+        LocalEffectiveLanguage provides language,
     ) {
         content()
     }

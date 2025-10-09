@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
 import kotlin.math.min
@@ -74,34 +75,53 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
         ) {
             val density = LocalDensity.current
             val availableHeightPx = with(density) { maxHeight.toPx() }
-            val availableWidthPx = with(density) { maxWidth.toPx() }
 
-            // Calculate dynamic font sizes
+            // Get effective language and font scaling
+            val effectiveLanguage = LocalEffectiveLanguage.current
+            val fontScale = getLanguageFontScale(effectiveLanguage)
+
+            // Calculate dynamic font sizes based on screen size with language-specific scaling
             val arabicFontSize =
                 with(density) {
-                    min((availableHeightPx * 0.15f).toSp().value, 48f).sp
+                    val calculatedSize = (availableHeightPx * 0.12f * fontScale).toSp().value
+                    calculatedSize.coerceIn(48f, 140f).sp
                 }
             val transliterationFontSize =
                 with(density) {
-                    min((availableHeightPx * 0.06f).toSp().value, 32f).sp
+                    val calculatedSize = (availableHeightPx * 0.055f * fontScale).toSp().value
+                    calculatedSize.coerceIn(28f, 80f).sp
                 }
             val meaningFontSize =
                 with(density) {
-                    min((availableHeightPx * 0.05f).toSp().value, 28f).sp
+                    val calculatedSize = (availableHeightPx * 0.05f * fontScale).toSp().value
+                    calculatedSize.coerceIn(24f, 72f).sp
                 }
             val titleFontSize =
                 with(density) {
-                    min((availableHeightPx * 0.05f).toSp().value, 24f).sp
+                    val calculatedSize = (availableHeightPx * 0.05f * fontScale).toSp().value
+                    calculatedSize.coerceIn(24f, 64f).sp
                 }
 
             // Calculate silent phone text size (larger for prominence)
             val silentPhoneTextSize =
                 with(density) {
-                    val heightBasedSize = (availableHeightPx * 0.08f).toSp()
-                    val widthBasedSize = (availableWidthPx / 25f * 2.0f).toSp()
-                    val calculatedSize = min(heightBasedSize.value, widthBasedSize.value)
-                    calculatedSize.coerceIn(24f, 64f).sp
+                    val calculatedSize = (availableHeightPx * 0.06f * fontScale).toSp().value
+                    calculatedSize.coerceIn(32f, 80f).sp
                 }
+
+            // Dynamic spacing based on screen height (same for all languages)
+            val sectionSpacing = with(density) { (availableHeightPx * 0.02f).toDp() }.coerceIn(12.dp, 36.dp)
+            val topPadding = with(density) { (availableHeightPx * 0.015f).toDp() }.coerceIn(12.dp, 28.dp)
+            val sidePadding = 16.dp
+            val bottomPadding = 16.dp
+            val textHorizontalPadding = 12.dp
+
+            // Line height multipliers (same for all languages)
+            val arabicLineHeight = 1.5f
+            val transliterationLineHeight = 1.35f
+            val meaningLineHeight = 1.45f
+            val titleLineHeight = 1.2f
+            val silentPhoneLineHeight = 1.2f
 
             val scrollState = rememberScrollState()
 
@@ -110,7 +130,7 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .padding(24.dp),
+                        .padding(start = sidePadding, end = sidePadding, top = topPadding, bottom = bottomPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -121,14 +141,14 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                         MaterialTheme.typography.headlineMedium.copy(
                             fontSize = silentPhoneTextSize,
                             fontWeight = FontWeight.Bold,
-                            lineHeight = silentPhoneTextSize * 1.1f,
+                            lineHeight = silentPhoneTextSize * silentPhoneLineHeight,
                         ),
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(horizontal = textHorizontalPadding),
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(sectionSpacing))
 
                 // Title
                 Text(
@@ -137,12 +157,14 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                         MaterialTheme.typography.headlineMedium.copy(
                             fontSize = titleFontSize,
                             fontWeight = FontWeight.Bold,
+                            lineHeight = titleFontSize * titleLineHeight,
                         ),
                     color = ColorPrimaryAccent,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = textHorizontalPadding),
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(sectionSpacing))
 
                 // Arabic Text
                 Text(
@@ -151,13 +173,14 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                         MaterialTheme.typography.displaySmall.copy(
                             fontSize = arabicFontSize,
                             fontWeight = FontWeight.Bold,
-                            lineHeight = arabicFontSize * 1.5f,
+                            lineHeight = arabicFontSize * arabicLineHeight,
                         ),
                     color = ColorPrimaryAccent,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = textHorizontalPadding),
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(sectionSpacing))
 
                 // Transliteration
                 Text(
@@ -166,13 +189,14 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                         MaterialTheme.typography.titleLarge.copy(
                             fontSize = transliterationFontSize,
                             fontWeight = FontWeight.Medium,
-                            lineHeight = transliterationFontSize * 1.4f,
+                            lineHeight = transliterationFontSize * transliterationLineHeight,
                         ),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = textHorizontalPadding),
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(sectionSpacing))
 
                 // Meaning
                 Text(
@@ -181,10 +205,11 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                         MaterialTheme.typography.titleMedium.copy(
                             fontSize = meaningFontSize,
                             fontWeight = FontWeight.Normal,
-                            lineHeight = meaningFontSize * 1.5f,
+                            lineHeight = meaningFontSize * meaningLineHeight,
                         ),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = textHorizontalPadding),
                 )
             }
         }

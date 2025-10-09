@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.ColorPrimaryAccent
 import kotlin.math.min
@@ -79,12 +80,16 @@ fun JummahInProgress(
             val availableHeightPx = with(density) { maxHeight.toPx() }
             val availableWidthPx = with(density) { maxWidth.toPx() }
 
-            // Calculate dynamic font sizes
+            // Get effective language and font scaling
+            val effectiveLanguage = LocalEffectiveLanguage.current
+            val fontScale = getLanguageFontScale(effectiveLanguage)
+
+            // Calculate dynamic font sizes (with language scaling)
             val titleFontSize =
                 with(density) {
-                    val heightBasedSize = (availableHeightPx * 0.08f).toSp()
-                    val widthBasedSize = (availableWidthPx / 20f).toSp()
-                    min(heightBasedSize.value, widthBasedSize.value).coerceIn(32f, 72f).sp
+                    val heightBasedSize = (availableHeightPx * 0.07f * fontScale).toSp()
+                    val widthBasedSize = (availableWidthPx / 22f * fontScale).toSp()
+                    min(heightBasedSize.value, widthBasedSize.value).coerceIn(28f, 70f).sp
                 }
 
             val countdownDigitSize =
@@ -97,17 +102,17 @@ fun JummahInProgress(
 
             val reminderTextSize =
                 with(density) {
-                    val heightBasedSize = (availableHeightPx * 0.05f).toSp()
-                    val widthBasedSize = (availableWidthPx / 30f).toSp()
-                    min(heightBasedSize.value, widthBasedSize.value).coerceIn(18f, 36f).sp
+                    val heightBasedSize = (availableHeightPx * 0.05f * fontScale).toSp()
+                    val widthBasedSize = (availableWidthPx / 32f * fontScale).toSp()
+                    min(heightBasedSize.value, widthBasedSize.value).coerceIn(18f, 34f).sp
                 }
 
             val silentPhoneTextSize =
                 with(density) {
-                    val heightBasedSize = (availableHeightPx * 0.06f).toSp()
-                    val widthBasedSize = (availableWidthPx / 25f * 2.0f).toSp()
+                    val heightBasedSize = (availableHeightPx * 0.06f * fontScale).toSp()
+                    val widthBasedSize = (availableWidthPx / 28f * fontScale).toSp()
                     val calculatedSize = min(heightBasedSize.value, widthBasedSize.value)
-                    calculatedSize.coerceIn(24f, 54f).sp
+                    calculatedSize.coerceIn(22f, 52f).sp
                 }
 
             val dynamicSpacing = with(density) { (availableHeightPx * 0.04f).toDp().coerceIn(20.dp, 48.dp) }
@@ -183,7 +188,7 @@ fun JummahInProgress(
                         MaterialTheme.typography.headlineMedium.copy(
                             fontSize = reminderTextSize * 1.3f,
                             fontWeight = FontWeight.Bold,
-                            lineHeight = reminderTextSize * 1.8f,
+                            lineHeight = reminderTextSize * 1.5f,
                         ),
                     color = ColorPrimaryAccent,
                     textAlign = TextAlign.Center,
