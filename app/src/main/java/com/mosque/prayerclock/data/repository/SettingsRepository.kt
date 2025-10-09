@@ -76,6 +76,7 @@ class SettingsRepository
             val MOSQUE_CLOCK_BACKEND_API_KEY = stringPreferencesKey("mosque_clock_backend_api_key")
             val JUMMAH_DURATION_MINUTES = intPreferencesKey("jummah_duration_minutes")
             val DUA_DISPLAY_DURATION_MINUTES = intPreferencesKey("dua_display_duration_minutes")
+            val SHOW_JUMMAH_SCREEN = booleanPreferencesKey("show_jummah_screen")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -158,13 +159,14 @@ class SettingsRepository
                     selectedZone = preferences[PreferencesKeys.SELECTED_ZONE] ?: 1,
                     selectedRegion = preferences[PreferencesKeys.SELECTED_REGION] ?: "Colombo",
                     soundEnabled = preferences[PreferencesKeys.SOUND_ENABLED] ?: true,
-                    fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: false,
+                    fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: true,
                     weatherApiKey = preferences[PreferencesKeys.WEATHER_API_KEY] ?: "",
                     openWeatherMapApiKey = preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] ?: "",
                     mosqueClockBackendUrl = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_URL] ?: "",
                     mosqueClockBackendApiKey = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] ?: "",
                     jummahDurationMinutes = preferences[PreferencesKeys.JUMMAH_DURATION_MINUTES] ?: 60,
                     duaDisplayDurationMinutes = preferences[PreferencesKeys.DUA_DISPLAY_DURATION_MINUTES] ?: 5,
+                    showJummahScreen = preferences[PreferencesKeys.SHOW_JUMMAH_SCREEN] ?: true,
                 )
             }
 
@@ -345,5 +347,9 @@ class SettingsRepository
 
         suspend fun updateDuaDisplayDurationMinutes(minutes: Int) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.DUA_DISPLAY_DURATION_MINUTES] = minutes }
+        }
+
+        suspend fun updateShowJummahScreen(show: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.SHOW_JUMMAH_SCREEN] = show }
         }
     }

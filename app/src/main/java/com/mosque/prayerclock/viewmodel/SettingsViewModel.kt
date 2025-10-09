@@ -227,4 +227,10 @@ class SettingsViewModel
                 settingsRepository.updateDuaDisplayDurationMinutes(minutes)
             }
         }
+
+        fun updateShowJummahScreen(show: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateShowJummahScreen(show)
+            }
+        }
     }

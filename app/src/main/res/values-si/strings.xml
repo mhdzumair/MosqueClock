@@ -18,6 +18,7 @@
     <string name="next_prayer">මීලඟ</string>
     <string name="time_remaining">ඉතිරි කාලය</string>
     <string name="current_prayer">දැන්</string>
+    <string name="in_progress">ක්‍රියාත්මක වේ</string>
 
     <!-- Days and Dates -->
     <string name="today">අද</string>
@@ -134,6 +135,10 @@
     <string name="dua_joining_saff_title">පේළියට එකතු වන විට කියන දුආව</string>
     <string name="dua_joining_saff_transliteration">අල්ලාහුම්ම ආතිනී අෆ්දල මා තුඋති ඉබාදකස් සාලිහීන්</string>
     <string name="dua_joining_saff_meaning">යා අල්ලාහ්, ඔබේ දැහැමි සේවකයන්ට ඔබ ලබා දෙන දෙයින් හොඳම දේ මට ලබා දෙන්න.</string>
+    
+    <!-- Jumu'ah Prayer -->
+    <string name="jummah_in_progress_title">කුත්බා දේශනාව</string>
+    <string name="jummah_prayer_reminder">දේශනාවට හොඳින් සවන් දෙන්න, අල්ලාහ්ව සිහිපත් කරන්න, සහ නබි ﷺ තුමාණන්ට බහුල ලෙස සලවාත් කියන්න</string>
     
     <!-- System Settings Access -->
     <string name="system_settings" translatable="false">පද්ධති සැකසුම්</string>

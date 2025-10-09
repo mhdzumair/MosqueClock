@@ -18,6 +18,7 @@
     <string name="next_prayer">Next</string>
     <string name="time_remaining">Time Remaining</string>
     <string name="current_prayer">Now</string>
+    <string name="in_progress">In Progress</string>
     
     <!-- Days and Dates -->
     <string name="today">Today</string>
@@ -173,6 +174,11 @@
     <string name="dua_joining_saff_arabic">اللَّهُمَّ آتِنِي أَفْضَلَ مَا تُؤْتِي عِبَادَكَ الصَّالِحِينَ</string>
     <string name="dua_joining_saff_transliteration">Allāhumma āthinī afḍala mā tu\'tī ʿibādakaṣ-ṣāliḥīn</string>
     <string name="dua_joining_saff_meaning">O Allah, grant me the best of what You grant to Your righteous servants.</string>
+    
+    <!-- Jumu'ah Prayer -->
+    <string name="jummah_in_progress_title">Khutbah Sermon</string>
+    <string name="jummah_prayer_reminder">Listen to the Khutbah attentively, remember Allah, and send abundant blessings upon the Prophet ﷺ</string>
+    <string name="salawat_arabic" translatable="false">ٱللَّٰهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلىٰ آلِ مُحَمَّدٍ</string>
     
     <!-- System Settings Access -->
     <string name="system_settings" translatable="false">System Settings</string>

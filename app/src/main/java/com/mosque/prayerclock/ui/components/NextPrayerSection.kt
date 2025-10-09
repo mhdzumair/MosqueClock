@@ -170,19 +170,6 @@ fun NextPrayerSection(
                                 min(heightBasedSize.value, widthBasedSize.value).sp
                             }
 
-                        // Prayer name calculation considers text length to fit in one line
-                        val calculatedPrayerNameFontSize =
-                            with(density) {
-                                // Estimate max chars for prayer name with suffix (e.g., "ஜுஹ்ர் அதான்" = ~12 chars in Tamil)
-                                val estimatedChars = 15f // Conservative estimate for longest prayer name + suffix
-                                val widthBasedSize = (availableWidthPx / estimatedChars * 1.8f).toSp()
-
-                                // Also constrain by time font size (should be smaller)
-                                val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
-
-                                // Use smaller to ensure single line
-                                min(widthBasedSize.value, maxSize.value).sp
-                            }
 
                         // Title is 45% of time size
                         val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f
@@ -235,11 +222,24 @@ fun NextPrayerSection(
                                         else -> "${nextPrayerInfo.name} ${localizedStringResource(R.string.azan)}"
                                     }
 
+                                // Calculate dynamic font size based on actual text length
+                                val dynamicPrayerNameFontSize =
+                                    with(density) {
+                                        val textLength = displayText.length.toFloat() + 3f
+                                        val widthBasedSize = (availableWidthPx / textLength * 1.5f).toSp()
+                                        
+                                        // Also constrain by time font size (should be smaller)
+                                        val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
+                                        
+                                        // Use smaller to ensure single line
+                                        min(widthBasedSize.value, maxSize.value).sp
+                                    }
+
                                 Text(
                                     text = displayText,
                                     style =
                                         MaterialTheme.typography.headlineLarge.copy(
-                                            fontSize = calculatedPrayerNameFontSize,
+                                            fontSize = dynamicPrayerNameFontSize,
                                             fontWeight = FontWeight.Bold,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurface,

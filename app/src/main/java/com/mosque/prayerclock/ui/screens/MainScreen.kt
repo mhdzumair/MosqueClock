@@ -74,6 +74,7 @@ import com.mosque.prayerclock.ui.components.DigitalClock
 import com.mosque.prayerclock.ui.components.DuaForJoiningSaff
 import com.mosque.prayerclock.ui.components.FlipClockDigitPair
 import com.mosque.prayerclock.ui.components.FullScreenCountdown
+import com.mosque.prayerclock.ui.components.JummahInProgress
 import com.mosque.prayerclock.ui.components.NextPrayerSection
 import com.mosque.prayerclock.ui.components.PrayerTimeCard
 import com.mosque.prayerclock.ui.components.WeatherCard
@@ -137,6 +138,12 @@ data class FullScreenCountdownData(
     val minutes: Long,
     val seconds: Long,
     val azanTime: String, // The actual Azan time to display
+)
+
+// Data class for Jummah in progress information
+data class JummahData(
+    val minutesRemaining: Long,
+    val secondsRemaining: Long,
 )
 
 @Composable
@@ -210,8 +217,8 @@ fun MainLayout(
         }
     }
 
-    // Calculate countdown visibility, prayer state, full-screen countdown state, and dua display
-    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, shouldShowFullScreenCountdown, fullScreenCountdownData, shouldShowDua) =
+    // Calculate countdown visibility, prayer state, full-screen countdown state, dua display, and Jummah display
+    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, shouldShowFullScreenCountdown, fullScreenCountdownData, shouldShowDua, jummahData) =
         when (uiState) {
             is MainUiState.Success -> {
                 // Use centralized time source
@@ -379,21 +386,57 @@ fun MainLayout(
                                     null
                                 }
 
-                            Sextuple(
+                            // Check if we should show Jummah in progress screen
+                            val jummahData =
+                                if (settings.showJummahScreen &&
+                                    prayer.type == PrayerType.DHUHR &&
+                                    now.dayOfWeek == DayOfWeek.FRIDAY &&
+                                    prayer.iqamahTime == null
+                                ) {
+                                    // It's Jummah (Friday Dhuhr with no Iqamah)
+                                    val jummahEndTime =
+                                        TimeUtils.addMinutesToTime(prayer.azanTime, settings.jummahDurationMinutes)
+                                    val isAfterJummahAzan =
+                                        TimeUtils.compareTimeStrings(
+                                            prayer.azanTime,
+                                            currentTimeString,
+                                        ) <= 0
+                                    val isBeforeJummahEnd =
+                                        TimeUtils.compareTimeStrings(
+                                            currentTimeString,
+                                            jummahEndTime,
+                                        ) < 0
+
+                                    if (isAfterJummahAzan && isBeforeJummahEnd) {
+                                        // Calculate countdown to Jummah end
+                                        val jummahCountdown = getCountdownData(jummahEndTime, currentTime)
+                                        JummahData(
+                                            minutesRemaining = jummahCountdown.minutes,
+                                            secondsRemaining = jummahCountdown.seconds,
+                                        )
+                                    } else {
+                                        null
+                                    }
+                                } else {
+                                    null
+                                }
+
+                            Septuple(
                                 isCountdownVisible,
                                 currentTime,
                                 isCurrentPrayerLocal,
                                 shouldShowFullScreenCountdown,
                                 fullScreenCountdownData,
                                 shouldShowDua,
+                                jummahData,
                             )
                         }
-                            ?: Sextuple(false, currentTime, false, false, null, false)
+                            ?: Septuple(false, currentTime, false, false, null, false, null)
                     }
 
                 calculatedValues
             }
-            else -> Sextuple(false, Clock.System.now(), false, false, null, false)
+            else -> Septuple(false, Clock.System.now(), false, false, null, false, null)
         }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -561,9 +604,18 @@ fun MainLayout(
             )
         }
 
-        // Dua for joining Saff (shown for 1 minute after Iqamah ends)
+        // Dua for joining Saff (shown for configurable duration after Iqamah ends)
         if (shouldShowDua) {
             DuaForJoiningSaff(
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Jummah in progress screen (shown during Jummah prayer time if enabled)
+        if (jummahData != null) {
+            JummahInProgress(
+                minutesRemaining = jummahData.minutesRemaining,
+                secondsRemaining = jummahData.secondsRemaining,
                 modifier = Modifier.fillMaxSize(),
             )
         }

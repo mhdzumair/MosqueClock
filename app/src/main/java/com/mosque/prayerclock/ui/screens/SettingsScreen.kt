@@ -16,6 +16,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -78,6 +79,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -190,8 +192,10 @@ fun SettingsScreen(
                     PrayerDisplaySettings(
                         jummahDurationMinutes = settings.jummahDurationMinutes,
                         duaDisplayDurationMinutes = settings.duaDisplayDurationMinutes,
+                        showJummahScreen = settings.showJummahScreen,
                         onJummahDurationChange = viewModel::updateJummahDurationMinutes,
                         onDuaDisplayDurationChange = viewModel::updateDuaDisplayDurationMinutes,
+                        onShowJummahScreenChange = viewModel::updateShowJummahScreen,
                     )
                 }
 
@@ -1034,8 +1038,10 @@ private fun IqamahGapSettings(
 private fun PrayerDisplaySettings(
     jummahDurationMinutes: Int,
     duaDisplayDurationMinutes: Int,
+    showJummahScreen: Boolean,
     onJummahDurationChange: (Int) -> Unit,
     onDuaDisplayDurationChange: (Int) -> Unit,
+    onShowJummahScreenChange: (Boolean) -> Unit,
 ) {
     SettingsCard {
         Column {
@@ -1087,6 +1093,32 @@ private fun PrayerDisplaySettings(
                     text = "min",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show Jummah Screen toggle
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Show Jumu'ah Screen",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Display full-screen countdown during Jumu'ah prayer",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+                Switch(
+                    checked = showJummahScreen,
+                    onCheckedChange = onShowJummahScreenChange,
                 )
             }
 
@@ -1474,71 +1506,124 @@ private fun TextInputDialog(
     // Handle back button to dismiss dialog
     BackHandler { onDismiss() }
 
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+    Dialog(onDismissRequest = onDismiss) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val availableWidth = maxWidth
+            val availableHeight = maxHeight
+            
+            // Calculate dynamic sizes based on screen dimensions
+            val dialogWidth = (availableWidth * 0.85f).coerceAtMost(600.dp)
+            
+            val dialogPadding = (availableWidth * 0.04f).coerceIn(16.dp, 32.dp)
+            
+            val titleFontSize = with(density) {
+                val sp = (availableWidth.toPx() * 0.025f).toSp()
+                sp.value.coerceIn(18f, 28f).sp
+            }
+            
+            val textFieldFontSize = with(density) {
+                val sp = (availableWidth.toPx() * 0.022f).toSp()
+                sp.value.coerceIn(16f, 24f).sp
+            }
+            
+            val buttonFontSize = with(density) {
+                val sp = (availableWidth.toPx() * 0.02f).toSp()
+                sp.value.coerceIn(14f, 22f).sp
+            }
+            
+            val verticalSpacing = (availableHeight * 0.02f).coerceIn(12.dp, 24.dp)
+
+            Card(
+                modifier = Modifier
+                    .width(dialogWidth)
+                    .padding(dialogPadding),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = textValue,
-                    onValueChange = { textValue = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(placeholder) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    ),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = keyboardType,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            focusManager.clearFocus()
-                            onConfirm(textValue)
-                        }
-                    ),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                Column(
+                    modifier = Modifier.padding(dialogPadding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text("Cancel")
-                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = titleFontSize,
+                        ),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
 
-                    Button(
-                        onClick = { onConfirm(textValue) },
-                        modifier = Modifier.weight(1f),
+                    Spacer(modifier = Modifier.height(verticalSpacing))
+
+                    OutlinedTextField(
+                        value = textValue,
+                        onValueChange = { textValue = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { 
+                            Text(placeholder) 
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = keyboardType,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                onConfirm(textValue)
+                            }
+                        ),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = textFieldFontSize,
+                        ),
+                    )
+
+                    Spacer(modifier = Modifier.height(verticalSpacing * 1.5f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text("Save")
+                        val buttonHeight = (availableHeight * 0.06f).coerceIn(48.dp, 64.dp)
+                        
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = buttonHeight),
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontSize = buttonFontSize,
+                                ),
+                            )
+                        }
+
+                        Button(
+                            onClick = { onConfirm(textValue) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = buttonHeight),
+                        ) {
+                            Text(
+                                text = "Save",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontSize = buttonFontSize,
+                                ),
+                            )
+                        }
                     }
                 }
             }

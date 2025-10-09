@@ -38,13 +38,14 @@ data class AppSettings(
     val selectedZone: Int = 1, // For MosqueClock backend zones
     val selectedRegion: String = "Colombo", // For third-party prayer time services
     val soundEnabled: Boolean = true, // Enable/disable beep countdown sound
-    val fullScreenCountdownEnabled: Boolean = false, // Enable/disable full-screen countdown at 10 minutes before Azan/Iqamah
+    val fullScreenCountdownEnabled: Boolean = true, // Enable/disable full-screen countdown at 10 minutes before Azan/Iqamah
     val weatherApiKey: String = "", // WeatherAPI.com API key
     val openWeatherMapApiKey: String = "", // OpenWeatherMap API key
     val mosqueClockBackendUrl: String = "", // MosqueClock backend URL
     val mosqueClockBackendApiKey: String = "", // MosqueClock backend API key
     val jummahDurationMinutes: Int = 60, // Duration for Jummah (Friday) prayer in minutes (default: 60 minutes = 1 hour)
     val duaDisplayDurationMinutes: Int = 5, // Duration to display Dua for Joining Saff after Iqamah in minutes (default: 5 minutes)
+    val showJummahScreen: Boolean = true, // Show full-screen Jummah in progress display during Jummah prayer time
 )
 
 enum class Language(

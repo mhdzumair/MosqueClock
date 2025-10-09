@@ -18,6 +18,7 @@
     <string name="next_prayer">அடுத்து</string>
     <string name="time_remaining">எஞ்சிய நேரம்</string>
     <string name="current_prayer">தற்போது</string>
+    <string name="in_progress">நடைபெறுகிறது</string>
 
     <!-- Days and Dates -->
     <string name="today">இன்று</string>
@@ -176,6 +177,10 @@
     <string name="dua_joining_saff_title">வரிசையில் சேரும் போது ஓதும் துஆ</string>
     <string name="dua_joining_saff_transliteration">அல்லாஹும்மா ஆத்தினீ அப்தல மா துஃத்தீ இபாதகஸ் ஸாலிஹீன்</string>
     <string name="dua_joining_saff_meaning">யா அல்லாஹ், உன் நல்லடியார்களுக்கு நீ வழங்குவதில் சிறந்ததை எனக்கு வழங்குவாயாக.</string>
+    
+    <!-- Jumu'ah Prayer -->
+    <string name="jummah_in_progress_title">குத்பா பிரசங்கம்</string>
+    <string name="jummah_prayer_reminder">குத்பாவை காது தாழ்த்தி கேளுங்கள், அல்லாஹ்வை நினைவு கூருங்கள், மற்றும் நபி ﷺ அவர்கள் மீது அதிகம் ஸலவாத் சொல்லுங்கள்</string>
     
     <!-- System Settings Access -->
     <string name="system_settings" translatable="false">கணினி அமைப்புகள்</string>
