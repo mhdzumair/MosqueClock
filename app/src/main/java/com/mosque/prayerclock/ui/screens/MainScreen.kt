@@ -218,7 +218,15 @@ fun MainLayout(
     }
 
     // Calculate countdown visibility, prayer state, full-screen countdown state, dua display, and Jummah display
-    val (isCountdownVisibleForWeight, currentTimeGlobal, isCurrentPrayerGlobal, shouldShowFullScreenCountdown, fullScreenCountdownData, shouldShowDua, jummahData) =
+    val (
+        isCountdownVisibleForWeight,
+        currentTimeGlobal,
+        isCurrentPrayerGlobal,
+        shouldShowFullScreenCountdown,
+        fullScreenCountdownData,
+        shouldShowDua,
+        jummahData,
+    ) =
         when (uiState) {
             is MainUiState.Success -> {
                 // Use centralized time source
@@ -273,7 +281,10 @@ fun MainLayout(
                                     // For prayers with Iqamah: current from Azan
                                     // time until Iqamah + Dua duration buffer
                                     val bufferTime =
-                                        TimeUtils.addMinutesToTime(prayer.iqamahTime, settings.duaDisplayDurationMinutes)
+                                        TimeUtils.addMinutesToTime(
+                                            prayer.iqamahTime,
+                                            settings.duaDisplayDurationMinutes,
+                                        )
                                     isAfterAzan &&
                                         TimeUtils.compareTimeStrings(
                                             currentTimeString,
@@ -283,11 +294,12 @@ fun MainLayout(
                                     // For prayers without Iqamah: current from Azan time until Azan + buffer
                                     // Use Jummah duration for Dhuhr on Friday, otherwise 60min for Sunrise
                                     val isFriday = now.dayOfWeek == DayOfWeek.FRIDAY
-                                    val bufferMinutes = if (prayer.type == PrayerType.DHUHR && isFriday) {
-                                        settings.jummahDurationMinutes
-                                    } else {
-                                        60 // Default 60 minutes for Sunrise
-                                    }
+                                    val bufferMinutes =
+                                        if (prayer.type == PrayerType.DHUHR && isFriday) {
+                                            settings.jummahDurationMinutes
+                                        } else {
+                                            60 // Default 60 minutes for Sunrise
+                                        }
                                     val extendedTime =
                                         TimeUtils.addMinutesToTime(prayer.azanTime, bufferMinutes)
                                     isAfterAzan &&
@@ -309,11 +321,12 @@ fun MainLayout(
                                     // Hide countdown after Azan + buffer for prayers without Iqamah
                                     // Use Jummah duration for Dhuhr on Friday, otherwise 60min for Sunrise
                                     val isFriday = now.dayOfWeek == DayOfWeek.FRIDAY
-                                    val bufferMinutes = if (prayer.type == PrayerType.DHUHR && isFriday) {
-                                        settings.jummahDurationMinutes
-                                    } else {
-                                        60 // Default 60 minutes for Sunrise
-                                    }
+                                    val bufferMinutes =
+                                        if (prayer.type == PrayerType.DHUHR && isFriday) {
+                                            settings.jummahDurationMinutes
+                                        } else {
+                                            60 // Default 60 minutes for Sunrise
+                                        }
                                     val extendedTime =
                                         TimeUtils.addMinutesToTime(prayer.azanTime, bufferMinutes)
                                     TimeUtils.compareTimeStrings(
@@ -333,7 +346,11 @@ fun MainLayout(
                             val shouldShowDua =
                                 if (prayer.iqamahTime != null && prayer.type != PrayerType.SUNRISE) {
                                     val iqamahEndTime = TimeUtils.addMinutesToTime(prayer.iqamahTime, 0)
-                                    val duaEndTime = TimeUtils.addMinutesToTime(iqamahEndTime, settings.duaDisplayDurationMinutes)
+                                    val duaEndTime =
+                                        TimeUtils.addMinutesToTime(
+                                            iqamahEndTime,
+                                            settings.duaDisplayDurationMinutes,
+                                        )
                                     val isAfterIqamah =
                                         TimeUtils.compareTimeStrings(
                                             currentTimeString,

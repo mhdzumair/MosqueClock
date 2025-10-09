@@ -170,7 +170,6 @@ fun NextPrayerSection(
                                 min(heightBasedSize.value, widthBasedSize.value).sp
                             }
 
-
                         // Title is 45% of time size
                         val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f
 
@@ -227,10 +226,10 @@ fun NextPrayerSection(
                                     with(density) {
                                         val textLength = displayText.length.toFloat() + 3f
                                         val widthBasedSize = (availableWidthPx / textLength * 1.5f).toSp()
-                                        
+
                                         // Also constrain by time font size (should be smaller)
                                         val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
-                                        
+
                                         // Use smaller to ensure single line
                                         min(widthBasedSize.value, maxSize.value).sp
                                     }
@@ -446,7 +445,6 @@ fun getCountdownData(
         return CountdownData(0, 0, 0, 0, -1)
     }
 }
-
 
 /**
  * Helper function to create prayer info list from prayer times

@@ -76,13 +76,12 @@ class ApkDownloader
          * Check if app has permission to install packages
          * Required for Android 8.0 (API 26) and above
          */
-        fun canInstallPackages(context: Context): Boolean {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        fun canInstallPackages(context: Context): Boolean =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.packageManager.canRequestPackageInstalls()
             } else {
                 true // Permission not required for older Android versions
             }
-        }
 
         /**
          * Request install packages permission
@@ -91,29 +90,32 @@ class ApkDownloader
         fun requestInstallPermission(context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 try {
-                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                        data = Uri.parse("package:${context.packageName}")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    
+                    val intent =
+                        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+
                     if (intent.resolveActivity(context.packageManager) != null) {
                         context.startActivity(intent)
                         Log.d("ApkDownloader", "Opening install permission settings")
                     } else {
                         Log.w("ApkDownloader", "Install permission settings not available on this device")
-                        Toast.makeText(
-                            context,
-                            "Cannot open install permission settings. Please enable manually in Settings > Apps > Special access > Install unknown apps",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast
+                            .makeText(
+                                context,
+                                "Cannot open install permission settings. Please enable manually in Settings > Apps > Special access > Install unknown apps",
+                                Toast.LENGTH_LONG,
+                            ).show()
                     }
                 } catch (e: Exception) {
                     Log.e("ApkDownloader", "Error opening install permission settings", e)
-                    Toast.makeText(
-                        context,
-                        "Error opening settings: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            "Error opening settings: ${e.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
                 }
             }
         }
@@ -335,11 +337,12 @@ class ApkDownloader
                     if (!canInstallPackages(context)) {
                         Log.w("ApkDownloader", "Install packages permission not granted")
                         launch(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Please grant install permission in Settings to install updates",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            Toast
+                                .makeText(
+                                    context,
+                                    "Please grant install permission in Settings to install updates",
+                                    Toast.LENGTH_LONG,
+                                ).show()
                         }
                         // Don't return - continue to attempt installation, which will trigger the system permission dialog
                     }

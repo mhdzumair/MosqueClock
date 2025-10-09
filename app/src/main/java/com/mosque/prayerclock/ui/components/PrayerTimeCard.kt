@@ -269,4 +269,3 @@ fun PrayerTimeCard(
         }
     }
 }
-

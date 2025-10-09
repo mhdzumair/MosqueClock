@@ -1428,24 +1428,27 @@ private fun ImprovedTextField(
 
     // Clickable card that displays current value
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .defaultMinSize(minHeight = 56.dp)
-            .clickable { showDialog = true },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 56.dp)
+                .clickable { showDialog = true },
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 if (label != null) {
                     Text(
@@ -1458,19 +1461,20 @@ private fun ImprovedTextField(
                 Text(
                     text = value.ifEmpty { placeholder },
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (value.isEmpty()) {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    color =
+                        if (value.isEmpty()) {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
             }
-            
+
             // Edit icon indicator
             Text(
                 text = "✏️",
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 8.dp),
             )
         }
     }
@@ -1486,7 +1490,7 @@ private fun ImprovedTextField(
             onConfirm = { newValue ->
                 onValueChange(newValue)
                 showDialog = false
-            }
+            },
         )
     }
 }
@@ -1514,37 +1518,42 @@ private fun TextInputDialog(
             val density = androidx.compose.ui.platform.LocalDensity.current
             val availableWidth = maxWidth
             val availableHeight = maxHeight
-            
+
             // Calculate dynamic sizes based on screen dimensions
             val dialogWidth = (availableWidth * 0.85f).coerceAtMost(600.dp)
-            
+
             val dialogPadding = (availableWidth * 0.04f).coerceIn(16.dp, 32.dp)
-            
-            val titleFontSize = with(density) {
-                val sp = (availableWidth.toPx() * 0.025f).toSp()
-                sp.value.coerceIn(18f, 28f).sp
-            }
-            
-            val textFieldFontSize = with(density) {
-                val sp = (availableWidth.toPx() * 0.022f).toSp()
-                sp.value.coerceIn(16f, 24f).sp
-            }
-            
-            val buttonFontSize = with(density) {
-                val sp = (availableWidth.toPx() * 0.02f).toSp()
-                sp.value.coerceIn(14f, 22f).sp
-            }
-            
+
+            val titleFontSize =
+                with(density) {
+                    val sp = (availableWidth.toPx() * 0.025f).toSp()
+                    sp.value.coerceIn(18f, 28f).sp
+                }
+
+            val textFieldFontSize =
+                with(density) {
+                    val sp = (availableWidth.toPx() * 0.022f).toSp()
+                    sp.value.coerceIn(16f, 24f).sp
+                }
+
+            val buttonFontSize =
+                with(density) {
+                    val sp = (availableWidth.toPx() * 0.02f).toSp()
+                    sp.value.coerceIn(14f, 22f).sp
+                }
+
             val verticalSpacing = (availableHeight * 0.02f).coerceIn(12.dp, 24.dp)
 
             Card(
-                modifier = Modifier
-                    .width(dialogWidth)
-                    .padding(dialogPadding),
+                modifier =
+                    Modifier
+                        .width(dialogWidth)
+                        .padding(dialogPadding),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             ) {
                 Column(
@@ -1553,9 +1562,10 @@ private fun TextInputDialog(
                 ) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontSize = titleFontSize,
-                        ),
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontSize = titleFontSize,
+                            ),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -1566,27 +1576,31 @@ private fun TextInputDialog(
                         value = textValue,
                         onValueChange = { textValue = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { 
-                            Text(placeholder) 
+                        placeholder = {
+                            Text(placeholder)
                         },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        ),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = keyboardType,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                onConfirm(textValue)
-                            }
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            ),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = keyboardType,
+                                imeAction = ImeAction.Done,
+                            ),
+                        keyboardActions =
+                            KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    onConfirm(textValue)
+                                },
+                            ),
                         singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = textFieldFontSize,
-                        ),
+                        textStyle =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = textFieldFontSize,
+                            ),
                     )
 
                     Spacer(modifier = Modifier.height(verticalSpacing * 1.5f))
@@ -1596,32 +1610,36 @@ private fun TextInputDialog(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         val buttonHeight = (availableHeight * 0.06f).coerceIn(48.dp, 64.dp)
-                        
+
                         OutlinedButton(
                             onClick = onDismiss,
-                            modifier = Modifier
-                                .weight(1f)
-                                .defaultMinSize(minHeight = buttonHeight),
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .defaultMinSize(minHeight = buttonHeight),
                         ) {
                             Text(
                                 text = "Cancel",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontSize = buttonFontSize,
-                                ),
+                                style =
+                                    MaterialTheme.typography.labelLarge.copy(
+                                        fontSize = buttonFontSize,
+                                    ),
                             )
                         }
 
                         Button(
                             onClick = { onConfirm(textValue) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .defaultMinSize(minHeight = buttonHeight),
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .defaultMinSize(minHeight = buttonHeight),
                         ) {
                             Text(
                                 text = "Save",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontSize = buttonFontSize,
-                                ),
+                                style =
+                                    MaterialTheme.typography.labelLarge.copy(
+                                        fontSize = buttonFontSize,
+                                    ),
                             )
                         }
                     }
@@ -2766,21 +2784,29 @@ private fun AboutSettings() {
                             if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
-                                    ),
+                                    colors =
+                                        CardDefaults.cardColors(
+                                            containerColor =
+                                                MaterialTheme.colorScheme.errorContainer.copy(
+                                                    alpha = 0.3f,
+                                                ),
+                                        ),
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(12.dp),
                                     ) {
                                         Text(
                                             text = "⚠️ Install Permission Required",
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            style =
+                                                MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                ),
                                             color = MaterialTheme.colorScheme.error,
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "To install updates, you need to grant install permission for this app.",
+                                            text =
+                                                "To install updates, you need to grant install permission for this app.",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         )
@@ -2790,9 +2816,10 @@ private fun AboutSettings() {
                                                 apkDownloader.requestInstallPermission(context)
                                             },
                                             modifier = Modifier.fillMaxWidth(),
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.error,
-                                            ),
+                                            colors =
+                                                ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.error,
+                                                ),
                                         ) {
                                             Text("Grant Install Permission")
                                         }
@@ -2807,11 +2834,12 @@ private fun AboutSettings() {
                                     // Check permission first
                                     if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                         apkDownloader.requestInstallPermission(context)
-                                        Toast.makeText(
-                                            context,
-                                            "Please grant install permission first",
-                                            Toast.LENGTH_LONG
-                                        ).show()
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "Please grant install permission first",
+                                                Toast.LENGTH_LONG,
+                                            ).show()
                                         return@Button
                                     }
 

@@ -13,9 +13,7 @@ val LocalColorTheme = staticCompositionLocalOf { AppColorThemes.ClassicMosque }
  *
  * Each theme provides a complete color palette for the application,
  * ensuring visual consistency and allowing users to customize their experience.
- */
-
-/**
+ *
  * Represents a complete color theme for the application
  * Optimized for TV viewing from long distances with high contrast
  */

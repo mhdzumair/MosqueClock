@@ -9,9 +9,7 @@ import androidx.compose.ui.graphics.Color
  *
  * Dynamic color system that adapts based on the selected theme.
  * These are composable properties that read from the current theme.
- */
-
-/**
+ *
  * Access colors from the currently active theme
  */
 @Composable

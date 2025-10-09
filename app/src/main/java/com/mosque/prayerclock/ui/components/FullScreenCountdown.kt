@@ -120,7 +120,7 @@ fun FullScreenCountdown(
                 // Show Azan time only when counting down to Azan (not Iqamah)
                 if (!isIqamah) {
                     Spacer(modifier = Modifier.height(duaSpacing))
-                    
+
                     Text(
                         text = TimeUtils.formatTimeBasedOnPreference(azanTime, show24Hour),
                         style =

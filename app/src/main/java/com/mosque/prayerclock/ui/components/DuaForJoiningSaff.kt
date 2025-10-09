@@ -46,16 +46,19 @@ import kotlin.math.min
 @Composable
 fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-                    ),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(
+                    brush =
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                                ),
+                        ),
                 ),
-            ),
     ) {
         // Full-screen background image with slight opacity
         Image(
@@ -90,7 +93,7 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                 with(density) {
                     min((availableHeightPx * 0.05f).toSp().value, 24f).sp
                 }
-            
+
             // Calculate silent phone text size (larger for prominence)
             val silentPhoneTextSize =
                 with(density) {
@@ -124,7 +127,7 @@ fun DuaForJoiningSaff(modifier: Modifier = Modifier) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Title

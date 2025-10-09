@@ -35,7 +35,8 @@ class WeatherRepository
         private val weatherApi: WeatherApi, // Primary weather provider (WeatherAPI.com)
         private val mosqueClockApi: MosqueClockApi, // MosqueClock API (for backend fallback)
         private val openWeatherMapService: OpenWeatherMapService, // Secondary weather provider
-        private val settingsRepository: com.mosque.prayerclock.data.repository.SettingsRepository, // For runtime API key
+        // For runtime API key
+        private val settingsRepository: com.mosque.prayerclock.data.repository.SettingsRepository,
     ) {
         // Weather refresh job management - survives ViewModel recreation since Repository is Singleton
         private val weatherRefreshJobs = mutableMapOf<Triple<String, String, WeatherProvider>, Job>()
