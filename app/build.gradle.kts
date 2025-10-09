@@ -15,8 +15,8 @@ android {
         applicationId = "com.mosque.prayerclock"
         minSdk = 21
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.3.0"
+        versionCode = 9
+        versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
