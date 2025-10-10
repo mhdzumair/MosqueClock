@@ -7,6 +7,8 @@ import android.os.Environment
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -261,6 +263,10 @@ fun SettingsScreen(
                         fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
                         onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
                     )
+                }
+
+                item {
+                    PermissionsStatus()
                 }
 
                 item {
@@ -2267,14 +2273,249 @@ private fun ColorPreviewBox(color: androidx.compose.ui.graphics.Color) {
 }
 
 @Composable
+private fun PermissionsStatus() {
+    val context = LocalContext.current
+    var permissionsList by remember { mutableStateOf<List<com.mosque.prayerclock.utils.PermissionsHelper.PermissionStatus>>(emptyList()) }
+    var isExpanded by remember { mutableStateOf(false) }
+
+    // Permission launcher for runtime permissions
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            // Refresh permissions list after permission result
+            permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+            if (isGranted) {
+                Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    // Overlay permission launcher
+    val overlayPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) {
+            // Refresh permissions list after returning from settings
+            permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+        }
+
+    // Install packages permission launcher
+    val installPackagesLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) {
+            // Refresh permissions list after returning from settings
+            permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+        }
+
+    // Default launcher permission launcher
+    val defaultLauncherLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) {
+            // Refresh permissions list after returning from settings
+            permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+        }
+
+    // Battery optimization launcher
+    val batteryOptimizationLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) {
+            // Refresh permissions list after returning from settings
+            permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+        }
+
+    // Load permissions on first composition
+    LaunchedEffect(Unit) {
+        permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+    }
+
+    // Refresh permissions when expanded
+    LaunchedEffect(isExpanded) {
+        if (isExpanded) {
+            permissionsList = com.mosque.prayerclock.utils.PermissionsHelper.getAllPermissionStatuses(context)
+        }
+    }
+
+    val grantedCount = permissionsList.count { it.isGranted }
+    val totalCount = permissionsList.size
+    val allGranted = grantedCount == totalCount
+
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Header with expand/collapse
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { isExpanded = !isExpanded },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (allGranted) "✅" else "⚠️",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "App Permissions",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "$grantedCount of $totalCount permissions granted",
+                        style = MaterialTheme.typography.bodySmall,
+                        color =
+                            if (allGranted) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            },
+                    )
+                }
+                Text(
+                    text = if (isExpanded) "▼" else "▶",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+
+            // Expandable permission list
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                permissionsList.forEach { permission ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    if (permission.isGranted) {
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                    } else {
+                                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                                    },
+                            ),
+                    ) {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        // Only allow clicking if permission is not granted
+                                        if (!permission.isGranted) {
+                                            when (permission.permissionType) {
+                                                com.mosque.prayerclock.utils.PermissionsHelper.PermissionType.RUNTIME -> {
+                                                    // Request runtime permission directly
+                                                    permission.permissionName?.let {
+                                                        permissionLauncher.launch(it)
+                                                    }
+                                                }
+                                                com.mosque.prayerclock.utils.PermissionsHelper.PermissionType.OVERLAY -> {
+                                                    // Request overlay permission
+                                                    permission.settingsIntent?.let {
+                                                        overlayPermissionLauncher.launch(it)
+                                                    }
+                                                }
+                                                com.mosque.prayerclock.utils.PermissionsHelper.PermissionType.INSTALL_PACKAGES -> {
+                                                    // Request install packages permission
+                                                    permission.settingsIntent?.let {
+                                                        installPackagesLauncher.launch(it)
+                                                    }
+                                                }
+                                                com.mosque.prayerclock.utils.PermissionsHelper.PermissionType.DEFAULT_LAUNCHER -> {
+                                                    // Request default launcher
+                                                    permission.settingsIntent?.let {
+                                                        defaultLauncherLauncher.launch(it)
+                                                    }
+                                                }
+                                                com.mosque.prayerclock.utils.PermissionsHelper.PermissionType.BATTERY_OPTIMIZATION -> {
+                                                    // Request battery optimization
+                                                    permission.settingsIntent?.let {
+                                                        batteryOptimizationLauncher.launch(it)
+                                                    }
+                                                }
+                                                com.mosque.prayerclock.utils.PermissionsHelper.PermissionType.SYSTEM_SETTINGS -> {
+                                                    // Open system settings
+                                                    permission.settingsIntent?.let {
+                                                        com.mosque.prayerclock.utils.PermissionsHelper.openPermissionSettings(
+                                                            context,
+                                                            it,
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = if (permission.isGranted) "✓" else if (permission.isRequired) "✗" else "○",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color =
+                                            if (permission.isGranted) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else if (permission.isRequired) {
+                                                MaterialTheme.colorScheme.error
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                            },
+                                        modifier = Modifier.padding(end = 8.dp),
+                                    )
+                                    Text(
+                                        text = permission.name,
+                                        style =
+                                            MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                            ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    if (permission.isRequired) {
+                                        Text(
+                                            text = " *",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = permission.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                )
+                            }
+                            if (!permission.isGranted) {
+                                Text(
+                                    text = "→",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Legend
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "* Required permissions    ✓ Granted    ✗ Not granted    ○ Optional",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SystemSettingsAccess() {
     val context = LocalContext.current
-    var isDefaultLauncher by remember { mutableStateOf(false) }
-
-    // Check if app is default launcher when composable is first created
-    LaunchedEffect(Unit) {
-        isDefaultLauncher = LauncherHelper.isDefaultLauncher(context)
-    }
 
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -2470,7 +2711,8 @@ private fun SystemSettingsAccess() {
             OutlinedButton(
                 onClick = {
                     if (!LauncherHelper.openFileManager(context)) {
-                        Toast.makeText(context, "No file manager found", Toast.LENGTH_SHORT).show()
+                        // Toast already shown in LauncherHelper
+                        // No need for duplicate message
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -2506,102 +2748,6 @@ private fun SystemSettingsAccess() {
                     }
                 }
             }
-
-// Set as Default Launcher Button (only show if not already default)
-            if (!isDefaultLauncher) {
-                OutlinedButton(
-                    onClick = {
-                        if (LauncherHelper.setAsDefaultLauncher(context)) {
-                            Toast
-                                .makeText(
-                                    context,
-                                    "Select MosqueClock and choose 'Always'",
-                                    Toast.LENGTH_LONG,
-                                ).show()
-                            // Recheck status after a delay
-                            android.os
-                                .Handler(android.os.Looper.getMainLooper())
-                                .postDelayed(
-                                    {
-                                        isDefaultLauncher =
-                                            LauncherHelper.isDefaultLauncher(context)
-                                    },
-                                    2000,
-                                )
-                        } else {
-                            Toast
-                                .makeText(context, "Unable to open launcher settings", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            containerColor =
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        ),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "🏡",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(end = 12.dp),
-                        )
-                        Column {
-                            Text(
-                                text = stringResource(R.string.set_as_default_launcher),
-                                style =
-                                    MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                    ),
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                text = stringResource(R.string.set_as_default_launcher_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            )
-                        }
-                    }
-                }
-            } else {
-                // Show status card when already set as default
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor =
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        ),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "✅",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(end = 12.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.already_default_launcher),
-                            style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                ),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
@@ -2837,7 +2983,7 @@ private fun AboutSettings() {
                                         Toast
                                             .makeText(
                                                 context,
-                                                "Please grant install permission first",
+                                                "Please allow installing from this source to update the app",
                                                 Toast.LENGTH_LONG,
                                             ).show()
                                         return@Button
@@ -2854,6 +3000,12 @@ private fun AboutSettings() {
                                                 fileName,
                                             )
 
+                                        if (!file.exists()) {
+                                            Toast.makeText(context, "APK file not found", Toast.LENGTH_SHORT).show()
+                                            isFileAlreadyDownloaded = false
+                                            return@Button
+                                        }
+
                                         val uri: Uri =
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                                                 FileProvider.getUriForFile(
@@ -2865,17 +3017,29 @@ private fun AboutSettings() {
                                                 Uri.fromFile(file)
                                             }
 
+                                        // Use ACTION_INSTALL_PACKAGE for better compatibility (Android 8.0+)
                                         val installIntent =
-                                            Intent(Intent.ACTION_VIEW).apply {
-                                                setDataAndType(uri, "application/vnd.android.package-archive")
-                                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                                Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                                                    setDataAndType(uri, "application/vnd.android.package-archive")
+                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                                                    putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                                                }
+                                            } else {
+                                                Intent(Intent.ACTION_VIEW).apply {
+                                                    setDataAndType(uri, "application/vnd.android.package-archive")
+                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                                 }
                                             }
 
-                                        context.startActivity(installIntent)
-                                        Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
+                                        if (installIntent.resolveActivity(context.packageManager) != null) {
+                                            context.startActivity(installIntent)
+                                            Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "No installer app found", Toast.LENGTH_LONG).show()
+                                        }
                                     } else {
                                         // Download the file
                                         isDownloading = true

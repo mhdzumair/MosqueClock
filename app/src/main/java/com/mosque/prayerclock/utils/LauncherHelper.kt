@@ -51,21 +51,47 @@ object LauncherHelper {
      */
     fun openAppChooser(context: Context): Boolean =
         try {
-            // Get all launchable apps
-            val mainIntent =
-                Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_LAUNCHER)
+            val packageManager = context.packageManager
+            
+            // Get all installed packages
+            val allPackages =
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    packageManager.getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageManager.getInstalledPackages(0)
                 }
 
-            val packageManager = context.packageManager
-            val apps = packageManager.queryIntentActivities(mainIntent, 0)
+            // Filter packages that have a launch intent
+            val launchableApps = allPackages.mapNotNull { packageInfo ->
+                val launchIntent = packageManager.getLaunchIntentForPackage(packageInfo.packageName)
+                if (launchIntent != null) {
+                    launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    Pair(packageInfo.packageName, launchIntent)
+                } else {
+                    null
+                }
+            }
 
-            if (apps.isNotEmpty()) {
-                // Create a chooser with all apps
-                val chooser = Intent.createChooser(mainIntent, "Select App")
-                chooser.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                context.startActivity(chooser)
-                true
+            if (launchableApps.isNotEmpty()) {
+                // Create intent array
+                val targetIntents = launchableApps.map { it.second }.toMutableList()
+                
+                if (targetIntents.isNotEmpty()) {
+                    // Create chooser with the first intent, then add the rest as alternatives
+                    val firstIntent = targetIntents.removeAt(0)
+                    val chooser =
+                        Intent.createChooser(firstIntent, "Select App").apply {
+                            if (targetIntents.isNotEmpty()) {
+                                putExtra(Intent.EXTRA_INITIAL_INTENTS, targetIntents.toTypedArray())
+                            }
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                    context.startActivity(chooser)
+                    true
+                } else {
+                    false
+                }
             } else {
                 false
             }
@@ -125,19 +151,42 @@ object LauncherHelper {
     fun openFileManager(context: Context): Boolean {
         // Try multiple methods to open file manager
 
-        // Method 1: Try to open a specific file manager if installed
+        // Method 1: Try to open a specific file manager if installed (most reliable)
         val fileManagerPackages =
             listOf(
+                // MiXplorer variants
+                "com.mixplorer", // MiXplorer
+                "com.mixplorer.silver", // MiXplorer Silver
+                "com.mixplorer.beta", // MiXplorer Beta
+                // Popular file managers
+                "com.google.android.apps.nbu.files", // Files by Google (newer package)
+                "com.google.android.documentsui", // Google Files (older)
                 "com.android.documentsui", // Android's built-in file manager
-                "com.google.android.documentsui", // Google Files
-                "com.mi.android.globalFileexplorer", // Xiaomi File Manager
-                "com.android.fileexplorer", // Generic file explorer
+                // TV-specific file managers
                 "tv.twoapps.filebrowser", // TV File Browser
+                "com.lonelycatgames.Xplore", // X-plore File Manager
+                "com.speedsoftware.rootexplorer", // Root Explorer
+                // Manufacturer-specific
+                "com.mi.android.globalFileexplorer", // Xiaomi File Manager
+                "com.sec.android.app.myfiles", // Samsung My Files
+                "com.asus.filemanager", // ASUS File Manager
+                "com.lenovo.FileBrowser2", // Lenovo File Manager
+                // Popular third-party
+                "com.estrongs.android.pop", // ES File Explorer
+                "com.alphainventor.filemanager", // File Manager
+                "com.rhmsoft.fm", // Solid Explorer
+                "nextapp.fx", // FX File Explorer
+                "com.cxinventor.file.explorer", // CX File Explorer
+                "com.ghisler.android.TotalCommander", // Total Commander
+                "com.mobisystems.fileman", // File Commander
+                // Generic/other
+                "com.android.fileexplorer", // Generic file explorer
+                "com.metago.astro", // ASTRO File Manager
             )
 
         for (packageName in fileManagerPackages) {
             if (isPackageInstalled(context, packageName)) {
-                return try {
+                try {
                     val intent =
                         context.packageManager.getLaunchIntentForPackage(packageName)?.apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -146,41 +195,36 @@ object LauncherHelper {
                         context.startActivity(intent)
                         return true
                     }
-                    false
                 } catch (e: Exception) {
                     continue
                 }
             }
         }
 
-        // Method 2: Try generic file browser intent
-        return try {
+        // Method 2: Try opening recent apps/all apps screen (for Android TV)
+        try {
             val intent =
-                Intent(Intent.ACTION_GET_CONTENT).apply {
-                    type = "*/*"
-                    addCategory(Intent.CATEGORY_OPENABLE)
+                Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_APP_FILES)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
-            context.startActivity(intent)
-            true
-        } catch (e: Exception) {
-            // Method 3: Try opening Downloads folder
-            try {
-                val intent =
-                    Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(
-                            Uri.parse("content://com.android.externalstorage.documents/root/primary"),
-                            "vnd.android.document/directory",
-                        )
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
+            
+            if (intent.resolveActivity(context.packageManager) != null) {
                 context.startActivity(intent)
-                true
-            } catch (e2: Exception) {
-                android.util.Log.e("LauncherHelper", "Failed to open file manager", e2)
-                false
+                return true
             }
+        } catch (e: Exception) {
+            // Continue to show message
         }
+
+        // No file manager found - show helpful message
+        Toast.makeText(
+            context,
+            "No file manager found. Downloaded APKs are in: /storage/emulated/0/Download/",
+            Toast.LENGTH_LONG
+        ).show()
+        
+        return false
     }
 
     /**

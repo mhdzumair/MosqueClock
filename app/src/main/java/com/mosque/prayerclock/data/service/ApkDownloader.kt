@@ -335,16 +335,18 @@ class ApkDownloader
 
                     // Check if app has install permission (Android 8.0+)
                     if (!canInstallPackages(context)) {
-                        Log.w("ApkDownloader", "Install packages permission not granted")
+                        Log.w("ApkDownloader", "Install packages permission not granted - redirecting to settings")
                         launch(Dispatchers.Main) {
                             Toast
                                 .makeText(
                                     context,
-                                    "Please grant install permission in Settings to install updates",
+                                    "Please allow installing from this source to update the app",
                                     Toast.LENGTH_LONG,
                                 ).show()
                         }
-                        // Don't return - continue to attempt installation, which will trigger the system permission dialog
+                        // Open the permission settings page instead of attempting to install
+                        requestInstallPermission(context)
+                        return@launch
                     }
 
                     val file =
@@ -410,12 +412,20 @@ class ApkDownloader
 
                     Log.d("ApkDownloader", "Generated URI: $uri")
 
+                    // Use ACTION_INSTALL_PACKAGE for better compatibility (Android 8.0+)
                     val installIntent =
-                        Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "application/vnd.android.package-archive")
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                                setDataAndType(uri, "application/vnd.android.package-archive")
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                                putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                            }
+                        } else {
+                            Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, "application/vnd.android.package-archive")
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             }
                         }
 
@@ -423,7 +433,7 @@ class ApkDownloader
                     if (installIntent.resolveActivity(context.packageManager) == null) {
                         Log.e("ApkDownloader", "No activity found to handle install intent")
                         launch(Dispatchers.Main) {
-                            Toast.makeText(context, "No installer app found", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "No installer app found on this device", Toast.LENGTH_LONG).show()
                         }
                         return@launch
                     }
