@@ -44,6 +44,7 @@ import kotlin.math.min
  */
 @Composable
 fun JummahInProgress(
+    hoursRemaining: Long,
     minutesRemaining: Long,
     secondsRemaining: Long,
     modifier: Modifier = Modifier,
@@ -156,8 +157,9 @@ fun JummahInProgress(
 
                 Spacer(modifier = Modifier.height(dynamicSpacing * 0.7f))
 
-                // Countdown Clock
+                // Countdown Clock (show hours only if > 0)
                 JummahCountdownClock(
+                    hours = hoursRemaining,
                     minutes = minutesRemaining,
                     seconds = secondsRemaining,
                     digitBoxSize = countdownDigitSize,
@@ -201,6 +203,7 @@ fun JummahInProgress(
 
 @Composable
 private fun JummahCountdownClock(
+    hours: Long,
     minutes: Long,
     seconds: Long,
     digitBoxSize: TextUnit = 64.sp,
@@ -215,6 +218,26 @@ private fun JummahCountdownClock(
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Only show hours if > 0
+        if (hours > 0) {
+            // Hours (HH) - using shared component
+            FlipClockDigitPair(
+                value = hours,
+                digitBoxSize = digitBoxSize,
+            )
+
+            // Colon separator
+            Text(
+                text = ":",
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = colonSize,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color = ColorPrimaryAccent,
+            )
+        }
+
         // Minutes (MM) - using shared component
         FlipClockDigitPair(
             value = minutes,

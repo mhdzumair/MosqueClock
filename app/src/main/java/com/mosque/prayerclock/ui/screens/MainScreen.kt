@@ -142,6 +142,7 @@ data class FullScreenCountdownData(
 
 // Data class for Jummah in progress information
 data class JummahData(
+    val hoursRemaining: Long,
     val minutesRemaining: Long,
     val secondsRemaining: Long,
 )
@@ -428,6 +429,7 @@ fun MainLayout(
                                         // Calculate countdown to Jummah end
                                         val jummahCountdown = getCountdownData(jummahEndTime, currentTime)
                                         JummahData(
+                                            hoursRemaining = jummahCountdown.hours,
                                             minutesRemaining = jummahCountdown.minutes,
                                             secondsRemaining = jummahCountdown.seconds,
                                         )
@@ -631,6 +633,7 @@ fun MainLayout(
         // Jummah in progress screen (shown during Jummah prayer time if enabled)
         if (jummahData != null) {
             JummahInProgress(
+                hoursRemaining = jummahData.hoursRemaining,
                 minutesRemaining = jummahData.minutesRemaining,
                 secondsRemaining = jummahData.secondsRemaining,
                 modifier = Modifier.fillMaxSize(),
