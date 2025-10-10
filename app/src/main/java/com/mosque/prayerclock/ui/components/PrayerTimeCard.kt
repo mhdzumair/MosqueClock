@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerType
+import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.ColorAzanTime
 import com.mosque.prayerclock.ui.theme.ColorIqamahTime
@@ -124,6 +125,10 @@ fun PrayerTimeCard(
             ) {
                 val density = LocalDensity.current
 
+                // Get effective language and font scaling
+                val effectiveLanguage = LocalEffectiveLanguage.current
+                val fontScale = getLanguageFontScale(effectiveLanguage)
+
                 // Calculate available space for this prayer card
                 val availableWidthPx = with(density) { maxWidth.toPx() }
                 val availableHeightPx = with(density) { maxHeight.toPx() }
@@ -143,19 +148,19 @@ fun PrayerTimeCard(
                         min(heightBasedSize.value, widthBasedSize.value).sp
                     }
 
-                // Prayer name should scale independently based on available space
+                // Prayer name text scales with language
                 // It should be smaller than time but maximize available space
                 // Sunrise can use 2 lines since it doesn't have Azan/Iqamah label
                 val calculatedNameFontSize =
                     with(density) {
                         // Name takes about 25% of card height
-                        val heightBasedSize = (availableHeightPx * 0.25f).toSp()
+                        val heightBasedSize = (availableHeightPx * 0.25f * fontScale).toSp()
 
                         // All prayers use same character estimation
                         // Sunrise can wrap to 2 lines, so it doesn't need special handling
                         val estimatedNameChars = 10f
                         val widthMultiplier = 2.0f
-                        val widthBasedSize = (availableWidthPx / estimatedNameChars * widthMultiplier).toSp()
+                        val widthBasedSize = (availableWidthPx / estimatedNameChars * widthMultiplier * fontScale).toSp()
 
                         // Use the smaller to ensure it fits, but cap at a percentage of time size
                         // All prayers get same cap since Sunrise can wrap to 2 lines

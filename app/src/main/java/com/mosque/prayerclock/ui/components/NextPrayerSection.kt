@@ -33,6 +33,7 @@ import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
 import com.mosque.prayerclock.data.model.PrayerType
+import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.ColorAzanTime
 import com.mosque.prayerclock.ui.theme.ColorIqamahTime
@@ -154,6 +155,10 @@ fun NextPrayerSection(
                         val availableHeightPx = with(density) { maxHeight.toPx() }
                         val availableWidthPx = with(density) { maxWidth.toPx() }
 
+                        // Get effective language and font scaling
+                        val effectiveLanguage = LocalEffectiveLanguage.current
+                        val fontScale = getLanguageFontScale(effectiveLanguage)
+
                         // Calculate dynamic font sizes based on available space
                         // Adjust based on whether countdown is visible
                         val calculatedTimeFontSize =
@@ -170,8 +175,8 @@ fun NextPrayerSection(
                                 min(heightBasedSize.value, widthBasedSize.value).sp
                             }
 
-                        // Title is 45% of time size
-                        val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f
+                        // Title text scales with language (45% of time size, then scaled)
+                        val calculatedTitleFontSize = calculatedTimeFontSize * 0.45f * fontScale
 
                         // Minimal padding to maximize space for content
                         val paddingSize = if (showCountdown) 6.dp else 2.dp
@@ -221,11 +226,11 @@ fun NextPrayerSection(
                                         else -> "${nextPrayerInfo.name} ${localizedStringResource(R.string.azan)}"
                                     }
 
-                                // Calculate dynamic font size based on actual text length
+                                // Calculate dynamic font size based on actual text length (with language scaling)
                                 val dynamicPrayerNameFontSize =
                                     with(density) {
                                         val textLength = displayText.length.toFloat() + 3f
-                                        val widthBasedSize = (availableWidthPx / textLength * 1.5f).toSp()
+                                        val widthBasedSize = (availableWidthPx / textLength * 1.5f * fontScale).toSp()
 
                                         // Also constrain by time font size (should be smaller)
                                         val maxSize = (calculatedTimeFontSize.value * 0.65f).sp
