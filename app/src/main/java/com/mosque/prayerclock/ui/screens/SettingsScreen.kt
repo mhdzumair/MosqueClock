@@ -1,10 +1,13 @@
 package com.mosque.prayerclock.ui.screens
 
+import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -92,7 +95,9 @@ import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerZones
+import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
+import com.mosque.prayerclock.utils.PermissionsHelper
 import com.mosque.prayerclock.data.service.ApkDownloader
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
@@ -251,10 +256,27 @@ fun SettingsScreen(
                     )
                 }
 
+                // Enhanced Azan Sound Settings
                 item {
-                    SoundSettings(
-                        soundEnabled = settings.soundEnabled,
-                        onSoundEnabledChange = viewModel::updateSoundEnabled,
+                    AzanSoundSettings(
+                        azanSoundEnabled = settings.azanSoundEnabled,
+                        azanSoundType = settings.azanSoundType,
+                        azanSoundUri = settings.azanSoundUri,
+                        onAzanSoundEnabledChange = viewModel::updateAzanSoundEnabled,
+                        onAzanSoundTypeChange = viewModel::updateAzanSoundType,
+                        onAzanSoundUriChange = viewModel::updateAzanSoundUri,
+                    )
+                }
+
+                // Enhanced Iqamah Sound Settings
+                item {
+                    IqamahSoundSettings(
+                        iqamahSoundEnabled = settings.iqamahSoundEnabled,
+                        iqamahSoundType = settings.iqamahSoundType,
+                        iqamahSoundUri = settings.iqamahSoundUri,
+                        onIqamahSoundEnabledChange = viewModel::updateIqamahSoundEnabled,
+                        onIqamahSoundTypeChange = viewModel::updateIqamahSoundType,
+                        onIqamahSoundUriChange = viewModel::updateIqamahSoundUri,
                     )
                 }
 
@@ -2028,44 +2050,6 @@ private fun SelectableSettingsRow(
 }
 
 @Composable
-private fun SoundSettings(
-    soundEnabled: Boolean,
-    onSoundEnabledChange: (Boolean) -> Unit,
-) {
-    SettingsCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = "🔔",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-                Column {
-                    Text(
-                        text = stringResource(R.string.sound_notifications),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.sound_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    )
-                }
-            }
-            Switch(checked = soundEnabled, onCheckedChange = onSoundEnabledChange)
-        }
-    }
-}
-
-@Composable
 private fun FullScreenCountdownSettings(
     fullScreenCountdownEnabled: Boolean,
     onFullScreenCountdownEnabledChange: (Boolean) -> Unit,
@@ -3162,6 +3146,438 @@ private fun AboutSettings() {
                         modifier = Modifier.padding(end = 12.dp),
                     )
                     Text(stringResource(R.string.github_repository))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AzanSoundSettings(
+    azanSoundEnabled: Boolean,
+    azanSoundType: SoundType,
+    azanSoundUri: String,
+    onAzanSoundEnabledChange: (Boolean) -> Unit,
+    onAzanSoundTypeChange: (SoundType) -> Unit,
+    onAzanSoundUriChange: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    
+    // Permission launcher for audio access
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(context, "Permission granted. Please select audio again.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Permission denied. Cannot access audio files.", Toast.LENGTH_LONG).show()
+            }
+        }
+    
+    // Audio file picker launcher using OpenDocument for persistent access
+    val audioPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            uri?.let {
+                // Take persistable URI permission for background service access
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                    onAzanSoundUriChange(it.toString())
+                    Log.d("AzanSoundSettings", "Persistable permission granted for URI: $it")
+                    Toast.makeText(context, "Azan audio file selected", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Log.e("AzanSoundSettings", "Failed to take persistable permission", e)
+                    Toast.makeText(context, "Error: Unable to access this file. Please try a different file.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    
+    // Function to check and request audio permission
+    val checkAndRequestAudioPermission: () -> Unit = {
+        if (PermissionsHelper.hasAudioPermission(context)) {
+            // Permission already granted, open picker
+            audioPickerLauncher.launch(arrayOf("audio/*"))
+        } else {
+            // Request permission
+            val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Manifest.permission.READ_MEDIA_AUDIO
+            } else {
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            }
+            permissionLauncher.launch(permission)
+        }
+    }
+
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Header with toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = "🕌",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.azan_sound_settings),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.azan_sound_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+                Switch(checked = azanSoundEnabled, onCheckedChange = onAzanSoundEnabledChange)
+            }
+
+            // Sound type selection (only shown when enabled)
+            if (azanSoundEnabled) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.sound_type),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+
+                    // Sound type options
+                    SoundType.values().forEach { type ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onAzanSoundTypeChange(type) }
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = azanSoundType == type,
+                                onClick = { onAzanSoundTypeChange(type) },
+                                colors =
+                                    RadioButtonDefaults.colors(
+                                        selectedColor = MaterialTheme.colorScheme.primary,
+                                    ),
+                            )
+                            Text(
+                                text = type.displayName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+
+                    // Custom audio file selection
+                    if (azanSoundType == SoundType.CUSTOM) {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 48.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = checkAndRequestAudioPermission,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.select_custom_audio))
+                            }
+
+                            if (azanSoundUri.isNotEmpty()) {
+                                val fileName =
+                                    try {
+                                        getFileNameFromUri(context, Uri.parse(azanSoundUri))
+                                    } catch (e: Exception) {
+                                        "Unknown"
+                                    }
+                                
+                                // Check if URI is still accessible
+                                val isAccessible = try {
+                                    context.contentResolver.openFileDescriptor(Uri.parse(azanSoundUri), "r")?.close()
+                                    true
+                                } catch (e: Exception) {
+                                    false
+                                }
+                                
+                                if (isAccessible) {
+                                    Text(
+                                        text = stringResource(R.string.audio_file_selected, fileName),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                } else {
+                                    Column(modifier = Modifier.padding(top = 4.dp)) {
+                                        Text(
+                                            text = "⚠️ File not accessible: $fileName",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                        Text(
+                                            text = "Please re-select the audio file",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.no_audio_selected),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Helper function to get the actual filename from a content URI
+ */
+private fun getFileNameFromUri(
+    context: Context,
+    uri: Uri,
+): String {
+    var result = "Unknown"
+    
+    // Try to query the content resolver for the display name
+    if (uri.scheme == "content") {
+        try {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val displayNameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (displayNameIndex != -1) {
+                        result = it.getString(displayNameIndex) ?: "Unknown"
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SettingsScreen", "Error getting filename from URI", e)
+        }
+    }
+    
+    // Fallback to last path segment
+    if (result == "Unknown") {
+        result = uri.lastPathSegment ?: "Unknown"
+    }
+    
+    return result
+}
+
+@Composable
+private fun IqamahSoundSettings(
+    iqamahSoundEnabled: Boolean,
+    iqamahSoundType: SoundType,
+    iqamahSoundUri: String,
+    onIqamahSoundEnabledChange: (Boolean) -> Unit,
+    onIqamahSoundTypeChange: (SoundType) -> Unit,
+    onIqamahSoundUriChange: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    
+    // Permission launcher for audio access
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(context, "Permission granted. Please select audio again.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Permission denied. Cannot access audio files.", Toast.LENGTH_LONG).show()
+            }
+        }
+    
+    // Audio file picker launcher using OpenDocument for persistent access
+    val audioPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            uri?.let {
+                // Take persistable URI permission for background service access
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                    onIqamahSoundUriChange(it.toString())
+                    Log.d("IqamahSoundSettings", "Persistable permission granted for URI: $it")
+                    Toast.makeText(context, "Iqamah audio file selected", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Log.e("IqamahSoundSettings", "Failed to take persistable permission", e)
+                    Toast.makeText(context, "Error: Unable to access this file. Please try a different file.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    
+    // Function to check and request audio permission
+    val checkAndRequestAudioPermission: () -> Unit = {
+        if (PermissionsHelper.hasAudioPermission(context)) {
+            // Permission already granted, open picker
+            audioPickerLauncher.launch(arrayOf("audio/*"))
+        } else {
+            // Request permission
+            val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Manifest.permission.READ_MEDIA_AUDIO
+            } else {
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            }
+            permissionLauncher.launch(permission)
+        }
+    }
+
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Header with toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = "🙏",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.iqamah_sound_settings),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.iqamah_sound_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+                Switch(checked = iqamahSoundEnabled, onCheckedChange = onIqamahSoundEnabledChange)
+            }
+
+            // Sound type selection (only shown when enabled)
+            if (iqamahSoundEnabled) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.sound_type),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+
+                    // Sound type options
+                    SoundType.values().forEach { type ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onIqamahSoundTypeChange(type) }
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = iqamahSoundType == type,
+                                onClick = { onIqamahSoundTypeChange(type) },
+                                colors =
+                                    RadioButtonDefaults.colors(
+                                        selectedColor = MaterialTheme.colorScheme.primary,
+                                    ),
+                            )
+                            Text(
+                                text = type.displayName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+
+                    // Custom audio file selection
+                    if (iqamahSoundType == SoundType.CUSTOM) {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 48.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = checkAndRequestAudioPermission,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.select_custom_audio))
+                            }
+
+                            if (iqamahSoundUri.isNotEmpty()) {
+                                val fileName =
+                                    try {
+                                        getFileNameFromUri(context, Uri.parse(iqamahSoundUri))
+                                    } catch (e: Exception) {
+                                        "Unknown"
+                                    }
+                                
+                                // Check if URI is still accessible
+                                val isAccessible = try {
+                                    context.contentResolver.openFileDescriptor(Uri.parse(iqamahSoundUri), "r")?.close()
+                                    true
+                                } catch (e: Exception) {
+                                    false
+                                }
+                                
+                                if (isAccessible) {
+                                    Text(
+                                        text = stringResource(R.string.audio_file_selected, fileName),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                } else {
+                                    Column(modifier = Modifier.padding(top = 4.dp)) {
+                                        Text(
+                                            text = "⚠️ File not accessible: $fileName",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                        Text(
+                                            text = "Please re-select the audio file",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.no_audio_selected),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

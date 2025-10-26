@@ -42,6 +42,35 @@
     <string name="sound_enabled" translatable="false">Enable Sound</string>
     <string name="sound_description" translatable="false">Play 5-second countdown ticking before azan, iqamah, and sunrise</string>
     
+    <!-- Enhanced Sound Settings -->
+    <string name="azan_sound_settings">Azan Sound Settings</string>
+    <string name="iqamah_sound_settings">Iqamah Sound Settings</string>
+    <string name="enable_azan_sound">Enable Azan Sound</string>
+    <string name="enable_iqamah_sound">Enable Iqamah Sound</string>
+    <string name="azan_sound_description">Play sound notification for azan times</string>
+    <string name="iqamah_sound_description">Play sound notification for iqamah times</string>
+    <string name="sound_type">Sound Type</string>
+    <string name="sound_type_countdown">5-Second Countdown Ticking</string>
+    <string name="sound_type_beep">Traditional Beep</string>
+    <string name="sound_type_custom">Custom Audio</string>
+    <string name="select_custom_audio">Select Audio File</string>
+    <string name="no_audio_selected">No audio file selected</string>
+    <string name="audio_file_selected">Audio file: %s</string>
+    <string name="preview_sound">Preview Sound</string>
+    <string name="battery_optimization_title">Background Service</string>
+    <string name="battery_optimization_description">Ensure reliable prayer notifications</string>
+    <string name="battery_optimized">Battery optimization enabled</string>
+    <string name="battery_not_optimized">Battery optimization disabled</string>
+    <string name="request_battery_exemption">Request Exemption</string>
+    <string name="battery_exemption_info">To ensure reliable prayer time notifications, please disable battery optimization for this app</string>
+    
+    <!-- Prayer Notifications -->
+    <string name="prayer_notification_title">%1$s %2$s</string>
+    <string name="prayer_notification_content">It\'s time for %1$s %2$s</string>
+    <string name="stop_sound">Stop Sound</string>
+    <string name="prayer_notification_channel_name">Prayer Notifications</string>
+    <string name="prayer_notification_channel_desc">Notifications for Azan and Iqamah times</string>
+    
     <!-- Full Screen Countdown Settings -->
     <string name="fullscreen_countdown_title">Full-Screen Countdown</string>
     <string name="fullscreen_countdown_description">Show full-screen countdown 10 minutes before azan and during iqamah gap</string>

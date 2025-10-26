@@ -37,7 +37,7 @@ data class AppSettings(
     val prayerServiceType: PrayerServiceType = PrayerServiceType.ACJU_DIRECT,
     val selectedZone: Int = 1, // For MosqueClock backend zones
     val selectedRegion: String = "Colombo", // For third-party prayer time services
-    val soundEnabled: Boolean = true, // Enable/disable beep countdown sound
+    val soundEnabled: Boolean = true, // Enable/disable beep countdown sound (master toggle)
     // Enable/disable full-screen countdown at 10 minutes before Azan/Iqamah
     val fullScreenCountdownEnabled: Boolean = true,
     val weatherApiKey: String = "", // WeatherAPI.com API key
@@ -49,6 +49,13 @@ data class AppSettings(
     // Duration to display Dua for Joining Saff after Iqamah in minutes (default: 5 minutes)
     val duaDisplayDurationMinutes: Int = 5,
     val showJummahScreen: Boolean = true, // Show full-screen Jummah in progress display during Jummah prayer time
+    // Enhanced notification settings
+    val azanSoundEnabled: Boolean = true, // Enable/disable Azan sound
+    val iqamahSoundEnabled: Boolean = true, // Enable/disable Iqamah sound
+    val azanSoundType: SoundType = SoundType.COUNTDOWN_TICKING, // Sound type for Azan
+    val iqamahSoundType: SoundType = SoundType.COUNTDOWN_TICKING, // Sound type for Iqamah
+    val azanSoundUri: String = "", // URI to custom audio file for Azan (empty = use built-in)
+    val iqamahSoundUri: String = "", // URI to custom audio file for Iqamah (empty = use built-in)
 )
 
 enum class Language(
@@ -105,6 +112,14 @@ enum class PrayerServiceType(
     MOSQUE_CLOCK_API("MosqueClock API"),
     AL_ADHAN_API("Al-Adhan API"),
     MANUAL("Manual Prayer Times"),
+}
+
+enum class SoundType(
+    val displayName: String,
+) {
+    COUNTDOWN_TICKING("5-Second Countdown Ticking"),
+    TRADITIONAL_BEEP("Traditional Beep"),
+    CUSTOM("Custom Audio"),
 }
 
 data class LocationInfo(

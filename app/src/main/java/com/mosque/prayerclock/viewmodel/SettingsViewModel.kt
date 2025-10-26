@@ -8,6 +8,7 @@ import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.HijriProvider
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -231,6 +232,42 @@ class SettingsViewModel
         fun updateShowJummahScreen(show: Boolean) {
             viewModelScope.launch {
                 settingsRepository.updateShowJummahScreen(show)
+            }
+        }
+
+        fun updateAzanSoundEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateAzanSoundEnabled(enabled)
+            }
+        }
+
+        fun updateIqamahSoundEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateIqamahSoundEnabled(enabled)
+            }
+        }
+
+        fun updateAzanSoundType(soundType: SoundType) {
+            viewModelScope.launch {
+                settingsRepository.updateAzanSoundType(soundType)
+            }
+        }
+
+        fun updateIqamahSoundType(soundType: SoundType) {
+            viewModelScope.launch {
+                settingsRepository.updateIqamahSoundType(soundType)
+            }
+        }
+
+        fun updateAzanSoundUri(uri: String) {
+            viewModelScope.launch {
+                settingsRepository.updateAzanSoundUri(uri)
+            }
+        }
+
+        fun updateIqamahSoundUri(uri: String) {
+            viewModelScope.launch {
+                settingsRepository.updateIqamahSoundUri(uri)
             }
         }
     }

@@ -16,6 +16,7 @@ import com.mosque.prayerclock.data.model.FontSize
 import com.mosque.prayerclock.data.model.HijriProvider
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -77,6 +78,13 @@ class SettingsRepository
             val JUMMAH_DURATION_MINUTES = intPreferencesKey("jummah_duration_minutes")
             val DUA_DISPLAY_DURATION_MINUTES = intPreferencesKey("dua_display_duration_minutes")
             val SHOW_JUMMAH_SCREEN = booleanPreferencesKey("show_jummah_screen")
+            // Enhanced notification settings
+            val AZAN_SOUND_ENABLED = booleanPreferencesKey("azan_sound_enabled")
+            val IQAMAH_SOUND_ENABLED = booleanPreferencesKey("iqamah_sound_enabled")
+            val AZAN_SOUND_TYPE = stringPreferencesKey("azan_sound_type")
+            val IQAMAH_SOUND_TYPE = stringPreferencesKey("iqamah_sound_type")
+            val AZAN_SOUND_URI = stringPreferencesKey("azan_sound_uri")
+            val IQAMAH_SOUND_URI = stringPreferencesKey("iqamah_sound_uri")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -167,6 +175,20 @@ class SettingsRepository
                     jummahDurationMinutes = preferences[PreferencesKeys.JUMMAH_DURATION_MINUTES] ?: 60,
                     duaDisplayDurationMinutes = preferences[PreferencesKeys.DUA_DISPLAY_DURATION_MINUTES] ?: 5,
                     showJummahScreen = preferences[PreferencesKeys.SHOW_JUMMAH_SCREEN] ?: true,
+                    azanSoundEnabled = preferences[PreferencesKeys.AZAN_SOUND_ENABLED] ?: true,
+                    iqamahSoundEnabled = preferences[PreferencesKeys.IQAMAH_SOUND_ENABLED] ?: true,
+                    azanSoundType =
+                        SoundType.values().find {
+                            it.name == preferences[PreferencesKeys.AZAN_SOUND_TYPE]
+                        }
+                            ?: SoundType.COUNTDOWN_TICKING,
+                    iqamahSoundType =
+                        SoundType.values().find {
+                            it.name == preferences[PreferencesKeys.IQAMAH_SOUND_TYPE]
+                        }
+                            ?: SoundType.COUNTDOWN_TICKING,
+                    azanSoundUri = preferences[PreferencesKeys.AZAN_SOUND_URI] ?: "",
+                    iqamahSoundUri = preferences[PreferencesKeys.IQAMAH_SOUND_URI] ?: "",
                 )
             }
 
@@ -351,5 +373,29 @@ class SettingsRepository
 
         suspend fun updateShowJummahScreen(show: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SHOW_JUMMAH_SCREEN] = show }
+        }
+
+        suspend fun updateAzanSoundEnabled(enabled: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.AZAN_SOUND_ENABLED] = enabled }
+        }
+
+        suspend fun updateIqamahSoundEnabled(enabled: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.IQAMAH_SOUND_ENABLED] = enabled }
+        }
+
+        suspend fun updateAzanSoundType(soundType: SoundType) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.AZAN_SOUND_TYPE] = soundType.name }
+        }
+
+        suspend fun updateIqamahSoundType(soundType: SoundType) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.IQAMAH_SOUND_TYPE] = soundType.name }
+        }
+
+        suspend fun updateAzanSoundUri(uri: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.AZAN_SOUND_URI] = uri }
+        }
+
+        suspend fun updateIqamahSoundUri(uri: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.IQAMAH_SOUND_URI] = uri }
         }
     }

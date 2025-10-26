@@ -94,6 +94,26 @@ object PermissionsHelper {
         }
 
     /**
+     * Check if app has audio access permission (Android 13+)
+     */
+    fun hasAudioPermission(context: Context): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_MEDIA_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Android 6-12: Need READ_EXTERNAL_STORAGE
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            // Below Android 6: Permission granted by default
+            true
+        }
+
+    /**
      * Check if app has boot completed permission
      */
     fun hasBootPermission(context: Context): Boolean =
@@ -212,11 +232,46 @@ object PermissionsHelper {
             permissions.add(
                 PermissionStatus(
                     name = "Storage Access",
-                    description = "Download APK updates (Android 9 and below)",
+                    description = "Download APK updates and access audio files",
                     isGranted = hasStoragePermission(context),
                     isRequired = false,
                     permissionType = PermissionType.RUNTIME,
                     permissionName = Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    settingsIntent =
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        },
+                ),
+            )
+        }
+
+        // Audio Access Permission (Android 13+) or READ_EXTERNAL_STORAGE (Android 10-12)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(
+                PermissionStatus(
+                    name = "Audio File Access",
+                    description = "Access audio files for custom prayer sounds",
+                    isGranted = hasAudioPermission(context),
+                    isRequired = false,
+                    permissionType = PermissionType.RUNTIME,
+                    permissionName = Manifest.permission.READ_MEDIA_AUDIO,
+                    settingsIntent =
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        },
+                ),
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            permissions.add(
+                PermissionStatus(
+                    name = "Audio File Access",
+                    description = "Access audio files for custom prayer sounds",
+                    isGranted = hasAudioPermission(context),
+                    isRequired = false,
+                    permissionType = PermissionType.RUNTIME,
+                    permissionName = Manifest.permission.READ_EXTERNAL_STORAGE,
                     settingsIntent =
                         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                             data = Uri.fromParts("package", context.packageName, null)
@@ -323,5 +378,48 @@ object PermissionsHelper {
         getAllPermissionStatuses(context)
             .filter { it.isRequired }
             .all { it.isGranted }
+
+    /**
+     * Check if battery optimization is ignored for the app
+     */
+    fun isBatteryOptimizationIgnored(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+            return powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: true
+        }
+        return true // Battery optimization not applicable on older versions
+    }
+
+    /**
+     * Request battery optimization exemption
+     * Returns an intent to open battery optimization settings
+     */
+    fun getBatteryOptimizationIntent(context: Context): Intent? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        }
+        return null
+    }
+
+    /**
+     * Open battery optimization settings
+     */
+    fun requestBatteryOptimizationExemption(context: Context): Boolean {
+        val intent = getBatteryOptimizationIntent(context)
+        return if (intent != null) {
+            try {
+                context.startActivity(intent)
+                true
+            } catch (e: Exception) {
+                android.util.Log.e("PermissionsHelper", "Failed to open battery optimization settings", e)
+                false
+            }
+        } else {
+            false
+        }
+    }
 }
 

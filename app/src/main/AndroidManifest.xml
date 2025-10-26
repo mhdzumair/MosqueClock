@@ -18,6 +18,11 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    
+    <!-- Permissions for audio file access -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
     <!-- Query permission for sharing functionality and app access -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
@@ -45,6 +50,11 @@
         <intent>
             <action android:name="android.intent.action.GET_CONTENT" />
             <data android:mimeType="*/*" />
+        </intent>
+        <!-- Query for audio file picker -->
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+            <data android:mimeType="audio/*" />
         </intent>
         <!-- Query for package installer -->
         <intent>

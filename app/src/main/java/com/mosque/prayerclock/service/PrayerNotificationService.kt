@@ -1,12 +1,24 @@
 package com.mosque.prayerclock.service
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.PrayerTimes
 import com.mosque.prayerclock.data.model.PrayerType
+import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import com.mosque.prayerclock.utils.TimeUtils
@@ -33,6 +45,11 @@ class PrayerNotificationService : Service() {
         private const val CHECK_INTERVAL_MS = 10_000L // Check every 10 seconds (much more efficient)
         private const val COUNTDOWN_CHECK_INTERVAL_MS = 1_000L // Only use 1-second interval during countdown
         private const val COUNTDOWN_START_MINUTES = 1 // Start countdown 1 minute before prayer
+        
+        // Notification constants
+        private const val NOTIFICATION_CHANNEL_ID = "prayer_notification_channel"
+        private const val NOTIFICATION_ID = 1001
+        const val ACTION_STOP_SOUND = "com.mosque.prayerclock.STOP_SOUND"
     }
 
     @Inject
@@ -42,6 +59,8 @@ class PrayerNotificationService : Service() {
     lateinit var prayerTimesRepository: PrayerTimesRepository
 
     private lateinit var soundManager: SoundManager
+    private var wakeLock: PowerManager.WakeLock? = null
+    private lateinit var notificationManager: NotificationManager
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var monitoringJob: Job? = null
@@ -57,6 +76,32 @@ class PrayerNotificationService : Service() {
     // Smart polling state
     private var isInCountdownMode = false
     private var countdownStartTime = 0L
+    
+    // Broadcast receiver for power button and stop action
+    private val stopSoundReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                when (intent?.action) {
+                    Intent.ACTION_SCREEN_OFF -> {
+                        // Power button pressed
+                        if (soundManager.isPlaying()) {
+                            Log.i(TAG, "Screen off - stopping sound")
+                            soundManager.stopAllSounds()
+                            cancelNotification()
+                        }
+                    }
+                    ACTION_STOP_SOUND -> {
+                        // Stop button clicked in notification
+                        Log.i(TAG, "Stop sound action received")
+                        soundManager.stopAllSounds()
+                        cancelNotification()
+                    }
+                }
+            }
+        }
 
     override fun onStartCommand(
         intent: Intent?,
@@ -70,6 +115,30 @@ class PrayerNotificationService : Service() {
         // Initialize SoundManager manually
         soundManager = SoundManager(applicationContext)
 
+        // Initialize NotificationManager
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createNotificationChannel()
+
+        // Initialize WakeLock
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock =
+            powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "MosqueClock:PrayerNotificationWakeLock",
+            )
+
+        // Register broadcast receiver for power button and stop action
+        val intentFilter =
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(ACTION_STOP_SOUND)
+            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stopSoundReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(stopSoundReceiver, intentFilter)
+        }
+
         startPrayerMonitoring()
 
         return START_STICKY
@@ -79,6 +148,15 @@ class PrayerNotificationService : Service() {
         super.onDestroy()
         Log.i(TAG, "Prayer notification service stopped")
         stopPrayerMonitoring()
+        releaseWakeLock()
+        
+        // Unregister broadcast receiver
+        try {
+            unregisterReceiver(stopSoundReceiver)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unregistering receiver", e)
+        }
+        
         serviceScope.cancel()
     }
 
@@ -242,6 +320,34 @@ class PrayerNotificationService : Service() {
     }
 
     /**
+     * Acquire WakeLock to ensure service stays awake during critical periods
+     */
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock?.isHeld == false) {
+                wakeLock?.acquire(2 * 60 * 1000L) // 2 minutes timeout
+                Log.d(TAG, "WakeLock acquired")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error acquiring WakeLock", e)
+        }
+    }
+
+    /**
+     * Release WakeLock
+     */
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d(TAG, "WakeLock released")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error releasing WakeLock", e)
+        }
+    }
+
+    /**
      * Check if current time matches any prayer time and trigger sound
      */
     private suspend fun checkPrayerTime(
@@ -348,7 +454,7 @@ class PrayerNotificationService : Service() {
     }
 
     /**
-     * Check if we should play 5-second countdown ticking (exactly 5 seconds before prayer event)
+     * Check if we should play sound for prayer event (countdown ticking or immediate sound)
      */
     private fun checkAndPlayCountdownTicking(
         prayerType: PrayerType,
@@ -358,6 +464,13 @@ class PrayerNotificationService : Service() {
         eventType: String,
     ) {
         if (!settings.soundEnabled || prayerTime.isBlank()) return
+
+        // Check if sound is enabled for this event type
+        val isAzan = eventType == "Azan" || eventType == "Sunrise"
+        val isIqamah = eventType == "Iqamah"
+
+        if (isAzan && !settings.azanSoundEnabled) return
+        if (isIqamah && !settings.iqamahSoundEnabled) return
 
         try {
             val timeParts = prayerTime.split(":")
@@ -378,13 +491,128 @@ class PrayerNotificationService : Service() {
                     secondsUntilPrayer
                 }
 
-            // Trigger countdown at exactly 5 seconds before prayer
-            if (actualSecondsUntilPrayer == 5) {
-                Log.i(TAG, "Countdown: $prayerType $eventType at $prayerTime")
-                soundManager.playCountdownTicking(5, prayerType, settings)
+            // Get sound type for this event
+            val soundType =
+                if (isAzan) settings.azanSoundType else settings.iqamahSoundType
+
+            // Acquire WakeLock when approaching prayer time (60 seconds before)
+            if (actualSecondsUntilPrayer <= 60 && actualSecondsUntilPrayer > 0) {
+                acquireWakeLock()
+            }
+
+            when (soundType) {
+                SoundType.COUNTDOWN_TICKING -> {
+                    // Play 5-second countdown ticking at exactly 5 seconds before
+                    if (actualSecondsUntilPrayer == 5) {
+                        Log.i(TAG, "Countdown ticking: $prayerType $eventType at $prayerTime")
+                        soundManager.playCountdownTicking(5, prayerType, settings)
+                        // Show notification with stop action
+                        showPrayerNotification(prayerType, eventType)
+                    }
+                }
+                SoundType.TRADITIONAL_BEEP, SoundType.CUSTOM -> {
+                    // Play sound at exact prayer time (0 seconds)
+                    if (actualSecondsUntilPrayer == 0) {
+                        Log.i(TAG, "Playing sound: $prayerType $eventType at $prayerTime")
+                        val soundPlayed =
+                            if (isAzan) {
+                                soundManager.playAzanSound(settings, prayerType)
+                            } else {
+                                soundManager.playIqamahSound(settings, prayerType)
+                            }
+                        
+                        // Show notification
+                        if (soundPlayed) {
+                            showPrayerNotification(prayerType, eventType)
+                        }
+                        
+                        // Release WakeLock after playing sound
+                        releaseWakeLock()
+                    }
+                }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in countdown check", e)
+            Log.e(TAG, "Error in prayer time check", e)
         }
+    }
+
+    /**
+     * Create notification channel for prayer notifications
+     */
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel =
+                NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    "Prayer Notifications",
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply {
+                    description = "Notifications for Azan and Iqamah times"
+                    enableVibration(true)
+                    setShowBadge(true)
+                }
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    /**
+     * Show notification for prayer time with stop button
+     */
+    private fun showPrayerNotification(
+        prayerType: PrayerType,
+        eventType: String,
+    ) {
+        val prayerName =
+            when (prayerType) {
+                PrayerType.FAJR -> "Fajr"
+                PrayerType.DHUHR -> "Dhuhr"
+                PrayerType.ASR -> "Asr"
+                PrayerType.MAGHRIB -> "Maghrib"
+                PrayerType.ISHA -> "Isha"
+                PrayerType.SUNRISE -> "Sunrise"
+            }
+
+        val title = "$prayerName $eventType"
+        val content = "It's time for $prayerName $eventType"
+
+        // Create stop sound action
+        val stopIntent =
+            Intent(ACTION_STOP_SOUND).apply {
+                setPackage(packageName)
+            }
+        val stopPendingIntent =
+            PendingIntent.getBroadcast(
+                this,
+                0,
+                stopIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+
+        val notification =
+            NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info) // Use system icon
+                .setContentTitle(title)
+                .setContentText(content)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setOngoing(soundManager.isPlaying()) // Keep notification while sound is playing
+                .addAction(
+                    android.R.drawable.ic_delete, // Use system stop/delete icon
+                    "Stop Sound",
+                    stopPendingIntent,
+                )
+                .build()
+
+        notificationManager.notify(NOTIFICATION_ID, notification)
+        Log.d(TAG, "Prayer notification shown: $title")
+    }
+
+    /**
+     * Cancel prayer notification
+     */
+    private fun cancelNotification() {
+        notificationManager.cancel(NOTIFICATION_ID)
+        Log.d(TAG, "Prayer notification cancelled")
     }
 }
