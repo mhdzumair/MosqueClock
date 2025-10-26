@@ -38,8 +38,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -104,6 +109,7 @@ import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.ui.components.MarkdownText
 import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.utils.LauncherHelper
+import com.mosque.prayerclock.viewmodel.PrefetchState
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -178,6 +184,16 @@ fun SettingsScreen(
                     )
                 }
 
+                // Show offline data download for ACJU Direct scraping
+                if (settings.prayerServiceType == PrayerServiceType.ACJU_DIRECT) {
+                    item {
+                        OfflineDataSettings(
+                            zone = settings.selectedZone,
+                            viewModel = viewModel,
+                        )
+                    }
+                }
+
                 if (settings.prayerServiceType == PrayerServiceType.MANUAL) {
                     item {
                         ManualPrayerTimesSettings(
@@ -192,6 +208,15 @@ fun SettingsScreen(
                     IqamahGapSettings(
                         settings = settings,
                         onUpdateIqamahGap = viewModel::updateIqamahGap,
+                    )
+                }
+
+                item {
+                    JummaNightBayanSettings(
+                        jummaNightBayanEnabled = settings.jummaNightBayanEnabled,
+                        jummaNightBayanMinutes = settings.jummaNightBayanMinutes,
+                        onJummaNightBayanEnabledChange = viewModel::updateJummaNightBayanEnabled,
+                        onJummaNightBayanMinutesChange = viewModel::updateJummaNightBayanMinutes,
                     )
                 }
 
@@ -1058,6 +1083,91 @@ private fun IqamahGapSettings(
                 gap = settings.ishaIqamahGap,
                 onGapChange = { onUpdateIqamahGap("isha", it) },
             )
+        }
+    }
+}
+
+@Composable
+private fun JummaNightBayanSettings(
+    jummaNightBayanEnabled: Boolean,
+    jummaNightBayanMinutes: Int,
+    onJummaNightBayanEnabledChange: (Boolean) -> Unit,
+    onJummaNightBayanMinutesChange: (Int) -> Unit,
+) {
+    SettingsCard {
+        Column {
+            // Header with toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = "🌙",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Column {
+                        Text(
+                            text = "Jumma Night Bayan",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Special timing for Thursday night",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+                Switch(
+                    checked = jummaNightBayanEnabled,
+                    onCheckedChange = onJummaNightBayanEnabledChange,
+                )
+            }
+
+            // Description
+            if (jummaNightBayanEnabled) {
+                Text(
+                    text = "When enabled, Thursday night Isha Iqamah will be delayed by the specified duration to accommodate the Jumma Night Bayan.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+
+                // Duration input
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Bayan Duration",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    NumberPickerField(
+                        value = jummaNightBayanMinutes,
+                        onValueChange = onJummaNightBayanMinutesChange,
+                        modifier = Modifier.width(160.dp),
+                        range = 15..90,
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "min",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
         }
     }
 }
@@ -3579,6 +3689,219 @@ private fun IqamahSoundSettings(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfflineDataSettings(
+    zone: Int,
+    viewModel: SettingsViewModel,
+) {
+    val prefetchState by viewModel.prefetchState.collectAsState()
+    val cacheStatus by viewModel.cacheStatus.collectAsState()
+
+    // Check cache status when this composable is first displayed
+    LaunchedEffect(zone) {
+        viewModel.checkCacheStatus(zone)
+    }
+
+    SettingsCard {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp),
+            ) {
+                Text(
+                    text = "💾",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text(
+                    text = "Offline Data",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Text(
+                text = "Download prayer times for the remaining months to use offline",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+
+            // Cache status
+            cacheStatus?.let { status ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                ) {
+                    Icon(
+                        imageVector = if (status.isFullyCached) Icons.Default.CheckCircle else Icons.Default.Info,
+                        contentDescription = null,
+                        tint = if (status.isFullyCached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .padding(end = 8.dp),
+                    )
+                    Text(
+                        text = "${status.cachedMonths} of ${status.totalMonths} months cached (${status.cachedDays}/${status.totalDays} days)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                if (status.isFullyCached) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp).padding(end = 8.dp),
+                            )
+                            Text(
+                                text = "✓ All available months cached! App will work fully offline",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                } else if (status.cachedMonths > 0) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(24.dp).padding(end = 8.dp),
+                            )
+                            Text(
+                                text = "Some months incomplete. Click download to update.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Download button
+            Button(
+                onClick = {
+                    viewModel.prefetchOfflineData(zone)
+                },
+                enabled = prefetchState !is PrefetchState.Loading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
+            ) {
+                when (prefetchState) {
+                    is PrefetchState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Downloading...")
+                    }
+                    is PrefetchState.Success -> {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Downloaded Successfully")
+                    }
+                    is PrefetchState.Error -> {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Retry Download")
+                    }
+                    PrefetchState.Idle -> {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Download for Offline Use")
+                    }
+                }
+            }
+
+            // Show result details
+            when (val state = prefetchState) {
+                is PrefetchState.Success -> {
+                    if (state.result.successfulMonths > 0) {
+                        Text(
+                            text = "✓ Downloaded ${state.result.cachedDays} days from ${state.result.successfulMonths} new months",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                    if (state.result.skippedMonths > 0) {
+                        Text(
+                            text = "⏭️ ${state.result.skippedMonths} months already cached (skipped)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    if (state.result.failedMonths > 0) {
+                        Text(
+                            text = "${state.result.failedMonths} months failed to download",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    if (state.result.unavailableMonths > 0) {
+                        Text(
+                            text = "${state.result.unavailableMonths} future months not available yet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+                is PrefetchState.Error -> {
+                    Text(
+                        text = "Error: ${state.message}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+                else -> { }
             }
         }
     }

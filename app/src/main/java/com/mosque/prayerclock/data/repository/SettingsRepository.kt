@@ -85,6 +85,9 @@ class SettingsRepository
             val IQAMAH_SOUND_TYPE = stringPreferencesKey("iqamah_sound_type")
             val AZAN_SOUND_URI = stringPreferencesKey("azan_sound_uri")
             val IQAMAH_SOUND_URI = stringPreferencesKey("iqamah_sound_uri")
+            // Jumma Night Bayan settings
+            val JUMMA_NIGHT_BAYAN_ENABLED = booleanPreferencesKey("jumma_night_bayan_enabled")
+            val JUMMA_NIGHT_BAYAN_MINUTES = intPreferencesKey("jumma_night_bayan_minutes")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -189,6 +192,8 @@ class SettingsRepository
                             ?: SoundType.COUNTDOWN_TICKING,
                     azanSoundUri = preferences[PreferencesKeys.AZAN_SOUND_URI] ?: "",
                     iqamahSoundUri = preferences[PreferencesKeys.IQAMAH_SOUND_URI] ?: "",
+                    jummaNightBayanEnabled = preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_ENABLED] ?: false,
+                    jummaNightBayanMinutes = preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_MINUTES] ?: 30,
                 )
             }
 
@@ -397,5 +402,17 @@ class SettingsRepository
 
         suspend fun updateIqamahSoundUri(uri: String) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.IQAMAH_SOUND_URI] = uri }
+        }
+
+        suspend fun updateJummaNightBayanEnabled(enabled: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_ENABLED] = enabled }
+            // Invalidate prayer times cache when Jumma Night Bayan setting changes
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
+        }
+
+        suspend fun updateJummaNightBayanMinutes(minutes: Int) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_MINUTES] = minutes }
+            // Invalidate prayer times cache when Jumma Night Bayan duration changes
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
     }

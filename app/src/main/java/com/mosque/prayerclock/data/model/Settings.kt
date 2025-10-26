@@ -56,6 +56,9 @@ data class AppSettings(
     val iqamahSoundType: SoundType = SoundType.COUNTDOWN_TICKING, // Sound type for Iqamah
     val azanSoundUri: String = "", // URI to custom audio file for Azan (empty = use built-in)
     val iqamahSoundUri: String = "", // URI to custom audio file for Iqamah (empty = use built-in)
+    // Jumma Night Bayan settings - applies to Thursday night Isha prayer
+    val jummaNightBayanEnabled: Boolean = false, // Enable/disable Jumma Night Bayan feature
+    val jummaNightBayanMinutes: Int = 30, // Duration in minutes for Jumma Night Bayan (default: 30 minutes)
 )
 
 enum class Language(

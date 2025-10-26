@@ -5,6 +5,7 @@ import com.mosque.prayerclock.data.database.PrayerTimesDao
 import com.mosque.prayerclock.data.model.PrayerTimes
 import com.mosque.prayerclock.utils.TimeUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -357,7 +358,7 @@ class DirectScrapingService
                 // Get PDF URL for the month
                 val pdfUrl = acjuScraper.getPrayerTimesPdfUrl(zone, year, month)
                 if (pdfUrl == null) {
-                    Log.e(TAG, "❌ No prayer times PDF found for zone $zone, $year-$month")
+                    Log.d(TAG, "ℹ️ No PDF available yet for zone $zone, $year-$month (likely future month)")
                     return null
                 }
 
@@ -426,4 +427,183 @@ class DirectScrapingService
          * Get all supported zones
          */
         fun getSupportedZones(): List<Int> = acjuScraper.getAvailableZones()
+
+        /**
+         * Prefetch and cache prayer times for all remaining months of the year
+         * This enables full offline functionality
+         */
+        suspend fun prefetchRemainingYearPrayerTimes(zone: Int): PrefetchResult {
+            return withContext(Dispatchers.IO) {
+                Log.d(TAG, "🔄 Starting prefetch of remaining year's prayer times for Zone $zone")
+                
+                val today = Clock.System
+                    .now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+                
+                val currentYear = today.year
+                val currentMonth = today.monthNumber
+                val monthsToFetch = mutableListOf<Pair<Int, Int>>() // List of (year, month) pairs
+                
+                // Add remaining months of current year
+                for (month in currentMonth..12) {
+                    monthsToFetch.add(Pair(currentYear, month))
+                }
+                
+                // Add first few months of next year (January to March)
+                val nextYear = currentYear + 1
+                for (month in 1..3) {
+                    monthsToFetch.add(Pair(nextYear, month))
+                }
+                
+                Log.d(TAG, "📋 Planning to fetch ${monthsToFetch.size} months")
+                
+                val results = PrefetchResult(
+                    totalMonths = monthsToFetch.size,
+                    successfulMonths = 0,
+                    failedMonths = 0,
+                    skippedMonths = 0,
+                    unavailableMonths = 0,
+                    cachedDays = 0
+                )
+                
+                for ((year, month) in monthsToFetch) {
+                    try {
+                        // Check if month is already cached
+                        val isComplete = hasCompleteMonthlyCache(zone, year, month)
+                        if (isComplete) {
+                            Log.d(TAG, "⏭️ Skipping $year-$month (already fully cached)")
+                            results.skippedMonths++
+                            continue
+                        } else {
+                            Log.d(TAG, "📥 Fetching prayer times for $year-$month (incomplete or not cached)...")
+                        }
+                        
+                        val monthData = scrapeAndCacheMonthlyPrayerTimes(zone, year, month)
+                        
+                        if (monthData != null && monthData.isNotEmpty()) {
+                            results.successfulMonths++
+                            results.cachedDays += monthData.size
+                            Log.d(TAG, "✅ Successfully cached ${monthData.size} days for $year-$month")
+                        } else {
+                            // Check if this is a future month (PDF not published yet) vs actual failure
+                            val today = Clock.System
+                                .now()
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                                .date
+                            val monthDate = LocalDate(year, month, 1)
+                            
+                            // If the month is in the future (next year), treat as unavailable, not failed
+                            if (year > today.year) {
+                                results.unavailableMonths++
+                                Log.d(TAG, "ℹ️ $year-$month not available yet (future month)")
+                            } else {
+                                results.failedMonths++
+                                Log.w(TAG, "⚠️ Failed to fetch $year-$month")
+                            }
+                        }
+                        
+                        // Add a small delay between requests to be respectful to the server
+                        kotlinx.coroutines.delay(1000)
+                        
+                    } catch (e: Exception) {
+                        results.failedMonths++
+                        Log.e(TAG, "❌ Error fetching $year-$month: ${e.message}", e)
+                    }
+                }
+                
+                Log.d(TAG, "🎉 Prefetch complete: ${results.successfulMonths}/${results.totalMonths} months cached (${results.cachedDays} days total)")
+                results
+            }
+        }
+        
+        /**
+         * Check cache status for remaining months of the year
+         */
+        suspend fun checkCacheStatus(zone: Int): CacheStatus {
+            return withContext(Dispatchers.IO) {
+                val today = Clock.System
+                    .now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+                
+                val currentYear = today.year
+                val currentMonth = today.monthNumber
+                
+                var totalMonths = 0
+                var cachedMonths = 0
+                var totalDays = 0
+                var cachedDays = 0
+                
+                // Check remaining months of current year
+                for (month in currentMonth..12) {
+                    totalMonths++
+                    val providerKey = "ACJU_DIRECT:$zone"
+                    val startDate = LocalDate(currentYear, month, 1).toString()
+                    val firstDayOfNextMonth = LocalDate(currentYear, month, 1).plus(1, DateTimeUnit.MONTH)
+                    val lastDayOfMonth = firstDayOfNextMonth.plus(-1, DateTimeUnit.DAY)
+                    val endDate = lastDayOfMonth.toString()
+                    val expectedDays = lastDayOfMonth.dayOfMonth
+                    val cached = prayerTimesDao.getMonthlyPrayerTimesCount(providerKey, startDate, endDate)
+                    
+                    totalDays += expectedDays
+                    cachedDays += cached
+                    
+                    if (cached >= expectedDays) {
+                        cachedMonths++
+                    }
+                }
+                
+                // Check first few months of next year
+                val nextYear = currentYear + 1
+                for (month in 1..3) {
+                    totalMonths++
+                    val providerKey = "ACJU_DIRECT:$zone"
+                    val startDate = LocalDate(nextYear, month, 1).toString()
+                    val firstDayOfNextMonth = LocalDate(nextYear, month, 1).plus(1, DateTimeUnit.MONTH)
+                    val lastDayOfMonth = firstDayOfNextMonth.plus(-1, DateTimeUnit.DAY)
+                    val endDate = lastDayOfMonth.toString()
+                    val expectedDays = lastDayOfMonth.dayOfMonth
+                    val cached = prayerTimesDao.getMonthlyPrayerTimesCount(providerKey, startDate, endDate)
+                    
+                    totalDays += expectedDays
+                    cachedDays += cached
+                    
+                    if (cached >= expectedDays) {
+                        cachedMonths++
+                    }
+                }
+                
+                CacheStatus(
+                    totalMonths = totalMonths,
+                    cachedMonths = cachedMonths,
+                    totalDays = totalDays,
+                    cachedDays = cachedDays,
+                    isFullyCached = cachedMonths == totalMonths
+                )
+            }
+        }
+
+        /**
+         * Result of prefetch operation
+         */
+        data class PrefetchResult(
+            val totalMonths: Int,
+            var successfulMonths: Int,
+            var failedMonths: Int,
+            var skippedMonths: Int,
+            var unavailableMonths: Int = 0,
+            var cachedDays: Int
+        )
+
+        /**
+         * Cache status information
+         */
+        data class CacheStatus(
+            val totalMonths: Int,
+            val cachedMonths: Int,
+            val totalDays: Int = 0,
+            val cachedDays: Int = 0,
+            val isFullyCached: Boolean
+        )
     }

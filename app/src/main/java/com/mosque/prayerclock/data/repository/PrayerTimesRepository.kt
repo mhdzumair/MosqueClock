@@ -854,4 +854,20 @@ class PrayerTimesRepository
                 location = "Manual",
             )
         }
+
+        /**
+         * Prefetch all remaining months of the year for offline use
+         * This is only applicable when using ACJU Direct scraping
+         */
+        suspend fun prefetchRemainingYearPrayerTimes(zone: Int): DirectScrapingService.PrefetchResult {
+            Log.d("PrayerTimesRepository", "🔄 Starting prefetch for zone $zone")
+            return directScrapingService.prefetchRemainingYearPrayerTimes(zone)
+        }
+
+        /**
+         * Check offline cache status
+         */
+        suspend fun checkOfflineCacheStatus(zone: Int): DirectScrapingService.CacheStatus {
+            return directScrapingService.checkCacheStatus(zone)
+        }
     }

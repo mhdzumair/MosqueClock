@@ -4,6 +4,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 import com.mosque.prayerclock.utils.TimeUtils
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Entity(tableName = "prayer_times")
 data class PrayerTimes(
@@ -28,16 +30,43 @@ data class PrayerTimes(
     /**
      * Calculate iqamah times dynamically based on settings
      * This ensures iqamah times always reflect current user preferences
+     * Also handles special case for Jumma Night Bayan on Thursday nights
      */
-    fun withIqamahTimes(settings: AppSettings): PrayerTimesWithIqamah =
-        PrayerTimesWithIqamah(
+    fun withIqamahTimes(settings: AppSettings): PrayerTimesWithIqamah {
+        // Calculate standard iqamah time for Isha
+        val standardIshaIqamah = TimeUtils.addMinutesToTime(ishaAzan, settings.ishaIqamahGap)
+        
+        // Check if Jumma Night Bayan should be applied (Thursday night)
+        val ishaIqamah = if (settings.jummaNightBayanEnabled && isThursday()) {
+            // Apply Jumma Night Bayan duration instead of standard iqamah gap
+            TimeUtils.addMinutesToTime(ishaAzan, settings.jummaNightBayanMinutes)
+        } else {
+            standardIshaIqamah
+        }
+        
+        return PrayerTimesWithIqamah(
             prayerTimes = this,
             fajrIqamah = TimeUtils.addMinutesToTime(fajrAzan, settings.fajrIqamahGap),
             dhuhrIqamah = TimeUtils.addMinutesToTime(dhuhrAzan, settings.dhuhrIqamahGap),
             asrIqamah = TimeUtils.addMinutesToTime(asrAzan, settings.asrIqamahGap),
             maghribIqamah = TimeUtils.addMinutesToTime(maghribAzan, settings.maghribIqamahGap),
-            ishaIqamah = TimeUtils.addMinutesToTime(ishaAzan, settings.ishaIqamahGap),
+            ishaIqamah = ishaIqamah,
         )
+    }
+    
+    /**
+     * Check if the prayer time date is a Thursday
+     * Returns true if the date is Thursday
+     */
+    private fun isThursday(): Boolean {
+        return try {
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val localDate = LocalDate.parse(date, formatter)
+            localDate.dayOfWeek.value == 4 // Thursday is day 4 (Monday=1, Tuesday=2, Wednesday=3, Thursday=4, etc.)
+        } catch (e: Exception) {
+            false // If date parsing fails, don't apply Jumma Night Bayan
+        }
+    }
 }
 
 /**
