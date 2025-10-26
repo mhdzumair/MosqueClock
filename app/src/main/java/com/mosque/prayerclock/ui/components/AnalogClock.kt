@@ -143,8 +143,8 @@ fun AnalogClock(
         // Month names (top/bottom): Scale with clock radius
         val calculatedMonthFontSize =
             with(density) {
-                // Month names should be about 10% of clock radius
-                (clockRadius * 0.10f).toSp()
+                // Month names should be about 8% of clock radius (reduced for longer Tamil names)
+                (clockRadius * 0.08f).toSp()
             }
 
         // Day numbers (center sides): These can be largest since they're on the sides

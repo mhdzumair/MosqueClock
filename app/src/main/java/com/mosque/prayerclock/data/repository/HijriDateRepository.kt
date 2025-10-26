@@ -744,9 +744,9 @@ class HijriDateRepository
                 // Rabi' al-Thani (4th month) - ACJU format: "Rabee`unith Thaani"
                 "rabialthani", "rabiulthani", "rabiathani", "rabeeuniththaani" -> 4
                 // Jumada al-Awwal (5th month) - ACJU format: "Jumaadal Oola"
-                "jumadaalawwal", "jumadaulawwal", "jumadalawal", "jumaaadaloola" -> 5
+                "jumadaalawwal", "jumadaulawwal", "jumadalawal", "jumaadaloola" -> 5
                 // Jumada al-Thani (6th month) - ACJU format: "Jumaadal Aakhirah"
-                "jumadaalthani", "jumadaulthani", "jumadathani", "jumaaadalaakhirah" -> 6
+                "jumadaalthani", "jumadaulthani", "jumadathani", "jumaadalaakhirah" -> 6
                 "rajab" -> 7
                 // Sha'ban - ACJU format: "Sha\\\'baan"
                 "shaban", "shaaban", "shabaan" -> 8

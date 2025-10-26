@@ -255,12 +255,13 @@ fun DigitalClock(
                                     text = animatedMonth,
                                     style =
                                         MaterialTheme.typography.headlineLarge.copy(
-                                            fontSize = calculatedFontSize * 0.3f,
+                                            fontSize = calculatedFontSize * 0.25f,
                                             fontWeight = FontWeight.Bold,
                                         ),
                                     color = MaterialTheme.colorScheme.primary,
                                     textAlign = TextAlign.Center,
                                     maxLines = 1,
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
 
                                 Text(
