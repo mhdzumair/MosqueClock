@@ -74,4 +74,10 @@ interface HijriDateDao {
 
     @Query("SELECT * FROM hijri_dates WHERE provider = :provider ORDER BY gregorianDate DESC")
     suspend fun getHijriDatesByProvider(provider: String): List<HijriDateEntity>
+
+    @Query("DELETE FROM hijri_dates")
+    suspend fun deleteAllHijriDates()
+
+    @Query("SELECT COUNT(*) FROM hijri_dates")
+    suspend fun getAllHijriDatesCount(): Int
 }

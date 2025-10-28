@@ -870,4 +870,22 @@ class PrayerTimesRepository
         suspend fun checkOfflineCacheStatus(zone: Int): DirectScrapingService.CacheStatus {
             return directScrapingService.checkCacheStatus(zone)
         }
+
+        /**
+         * Clear all cached prayer times
+         */
+        suspend fun clearAllPrayerTimesCache() {
+            val count = dao.getAllPrayerTimesCount()
+            dao.deleteAllPrayerTimes()
+            // Clear in-memory cache as well
+            cachedPrayerTimes = null
+            cacheDate = null
+            cacheProviderKey = null
+            Log.d("PrayerTimesRepository", "🧹 Cleared all prayer times cache ($count entries)")
+        }
+
+        /**
+         * Get total count of cached prayer times
+         */
+        suspend fun getPrayerTimesCacheCount(): Int = dao.getAllPrayerTimesCount()
     }

@@ -109,6 +109,7 @@ import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.ui.components.MarkdownText
 import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.utils.LauncherHelper
+import com.mosque.prayerclock.viewmodel.CacheStats
 import com.mosque.prayerclock.viewmodel.PrefetchState
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Job
@@ -309,6 +310,12 @@ fun SettingsScreen(
                     FullScreenCountdownSettings(
                         fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
                         onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
+                    )
+                }
+
+                item {
+                    DataManagementSettings(
+                        viewModel = viewModel,
                     )
                 }
 
@@ -2839,6 +2846,227 @@ private fun SystemSettingsAccess() {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DataManagementSettings(
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var cacheStats by remember { mutableStateOf<CacheStats?>(null) }
+    var isClearing by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    // Load cache stats when component is first composed
+    LaunchedEffect(Unit) {
+        cacheStats = viewModel.getCacheStats()
+    }
+
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "🗄️",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Column {
+                    Text(
+                        text = "Data Management",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Manage cached prayer times and hijri dates",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Cache Statistics
+            if (cacheStats != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "Prayer Times Cached:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "${cacheStats!!.prayerTimesCount} entries",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "Hijri Dates Cached:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "${cacheStats!!.hijriDatesCount} entries",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Clear Cache Button
+            OutlinedButton(
+                onClick = {
+                    showConfirmDialog = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isClearing && (cacheStats?.let { it.prayerTimesCount + it.hijriDatesCount } ?: 0) > 0,
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isClearing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp).padding(end = 8.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Text("Clearing cache...")
+                    } else {
+                        Text("🗑️ Clear All Cached Data")
+                    }
+                }
+            }
+
+            Text(
+                text = "⚠️ This will clear all cached prayer times and hijri dates. Data will be re-fetched from your selected sources when needed.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+    }
+
+    // Confirmation Dialog
+    if (showConfirmDialog) {
+        Dialog(onDismissRequest = { showConfirmDialog = false }) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "⚠️",
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
+                        Text(
+                            text = "Clear All Cached Data?",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+
+                    Text(
+                        text = "This will delete all cached prayer times and hijri dates. The app will need to fetch fresh data from your configured sources.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    )
+
+                    if (cacheStats != null) {
+                        Text(
+                            text = "• ${cacheStats!!.prayerTimesCount} prayer time entries\n• ${cacheStats!!.hijriDatesCount} hijri date entries",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = { showConfirmDialog = false },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Cancel")
+                        }
+
+                        Button(
+                            onClick = {
+                                showConfirmDialog = false
+                                isClearing = true
+                                scope.launch {
+                                    try {
+                                        viewModel.clearAllCachedData()
+                                        // Refresh stats
+                                        cacheStats = viewModel.getCacheStats()
+                                        Toast.makeText(
+                                            context,
+                                            "✅ Cache cleared successfully",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            "❌ Failed to clear cache: ${e.message}",
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                    } finally {
+                                        isClearing = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                ),
+                        ) {
+                            Text("Clear")
+                        }
                     }
                 }
             }

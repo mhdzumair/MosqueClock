@@ -62,15 +62,6 @@ interface PrayerTimesDao {
     ): List<PrayerTimes>
 
     @Query(
-        "SELECT * FROM prayer_times WHERE providerKey = :providerKey AND date >= :startDate AND date <= :endDate ORDER BY date ASC",
-    )
-    fun getMonthlyPrayerTimesFlow(
-        providerKey: String,
-        startDate: String,
-        endDate: String,
-    ): Flow<List<PrayerTimes>>
-
-    @Query(
         "SELECT COUNT(*) FROM prayer_times WHERE providerKey = :providerKey AND date >= :startDate AND date <= :endDate",
     )
     suspend fun getMonthlyPrayerTimesCount(
@@ -85,4 +76,10 @@ interface PrayerTimesDao {
         startDate: String,
         endDate: String,
     )
+
+    @Query("DELETE FROM prayer_times")
+    suspend fun deleteAllPrayerTimes()
+
+    @Query("SELECT COUNT(*) FROM prayer_times")
+    suspend fun getAllPrayerTimesCount(): Int
 }

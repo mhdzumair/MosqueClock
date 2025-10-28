@@ -11,6 +11,7 @@ import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
+import com.mosque.prayerclock.data.repository.HijriDateRepository
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import com.mosque.prayerclock.data.scraping.DirectScrapingService
@@ -32,6 +33,7 @@ class SettingsViewModel
     constructor(
         private val settingsRepository: SettingsRepository,
         private val prayerTimesRepository: PrayerTimesRepository,
+        private val hijriDateRepository: HijriDateRepository,
     ) : ViewModel() {
         val settings =
             settingsRepository
@@ -340,7 +342,50 @@ class SettingsViewModel
         fun resetPrefetchState() {
             _prefetchState.value = PrefetchState.Idle
         }
+
+        /**
+         * Clear all cached data (both prayer times and hijri dates)
+         */
+        suspend fun clearAllCachedData() {
+            try {
+                Log.d("SettingsViewModel", "🧹 Starting cache cleanup...")
+                
+                // Clear prayer times cache
+                prayerTimesRepository.clearAllPrayerTimesCache()
+                
+                // Clear hijri dates cache
+                hijriDateRepository.clearAllHijriCache()
+                
+                Log.d("SettingsViewModel", "✅ All cached data cleared successfully")
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "❌ Failed to clear cached data", e)
+                throw e // Re-throw so the UI can handle the error
+            }
+        }
+
+        /**
+         * Get cache statistics
+         */
+        suspend fun getCacheStats(): CacheStats {
+            return try {
+                CacheStats(
+                    prayerTimesCount = prayerTimesRepository.getPrayerTimesCacheCount(),
+                    hijriDatesCount = hijriDateRepository.getHijriCacheCount()
+                )
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "❌ Failed to get cache stats", e)
+                CacheStats(0, 0)
+            }
+        }
     }
+
+/**
+ * Cache statistics
+ */
+data class CacheStats(
+    val prayerTimesCount: Int,
+    val hijriDatesCount: Int,
+)
 
 /**
  * State for offline data prefetch operation

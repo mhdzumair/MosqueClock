@@ -67,6 +67,8 @@ class ACJUScraper
                 try {
                     Log.d(TAG, "Scraping ACJU website for zone $zone, month $month, year $year")
 
+                    // ACJU website only has PDFs for the current/published year
+                    // Check if the requested year is available by examining the website
                     val request =
                         Request
                             .Builder()
@@ -134,7 +136,24 @@ class ACJUScraper
                     // Get the PDF for the specified month (month-1 because list is 0-indexed)
                     val pdfLink = pdfLinks[month - 1]
                     val pdfUrl = pdfLink.attr("abs:href")
-                    Log.d(TAG, "Found PDF URL for month $month: $pdfUrl")
+                    
+                    // Extract year from PDF URL to verify it matches requested year
+                    // ACJU URLs typically contain the year, e.g., "...2025.pdf" or "...March_2025.pdf"
+                    // Look for 4 consecutive digits that represent a valid year (2020-2099)
+                    val yearPattern = Regex("(20\\d{2})")
+                    val yearMatch = yearPattern.find(pdfUrl)
+                    val urlYear = yearMatch?.value?.toIntOrNull()
+                    
+                    if (urlYear != null && urlYear != year) {
+                        Log.d(TAG, "ℹ️ PDF is for year $urlYear, but requested year $year. PDF not available for $year yet.")
+                        return@withContext null
+                    }
+                    
+                    if (urlYear != null) {
+                        Log.d(TAG, "✅ Found PDF URL for month $month, year $year: $pdfUrl")
+                    } else {
+                        Log.d(TAG, "⚠️ Could not extract year from PDF URL, proceeding with: $pdfUrl")
+                    }
                     return@withContext pdfUrl
                 } catch (e: Exception) {
                     Log.e(TAG, "Error scraping ACJU website", e)
