@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- External files directory (app-specific, cleared on uninstall) -->
+    <external-files-path
+        name="external_files"
+        path="." />
+    
     <!-- External storage Downloads directory (without trailing slash for better compatibility) -->
     <external-path
         name="external_downloads"
@@ -15,4 +20,3 @@
         name="cache"
         path="." />
 </paths>
-

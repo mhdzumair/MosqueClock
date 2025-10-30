@@ -63,7 +63,7 @@ class ApkDownloader
             version: String,
         ): Boolean {
             val fileName = "MosqueClock-v$version.apk"
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+            val file = File(context.getExternalFilesDir(null), fileName)
             return file.exists()
         }
 
@@ -121,6 +121,33 @@ class ApkDownloader
         }
 
         /**
+         * Clean up old APK files to save space
+         * Keeps only the current version and latest downloaded version
+         */
+        fun cleanupOldApkFiles(context: Context, currentVersion: String) {
+            try {
+                val apkDir = context.getExternalFilesDir(null) ?: return
+                val apkFiles = apkDir.listFiles { file ->
+                    file.name.startsWith("MosqueClock-v") && file.name.endsWith(".apk")
+                } ?: return
+
+                val currentFileName = "MosqueClock-v$currentVersion.apk"
+                
+                apkFiles.forEach { file ->
+                    // Don't delete the current version APK
+                    if (file.name != currentFileName) {
+                        val deleted = file.delete()
+                        if (deleted) {
+                            Log.d("ApkDownloader", "Cleaned up old APK: ${file.name}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ApkDownloader", "Error cleaning up old APK files", e)
+            }
+        }
+
+        /**
          * Download APK from the given URL
          */
         fun downloadApk(
@@ -140,13 +167,18 @@ class ApkDownloader
 
                 // Prepare download request
                 val fileName = "MosqueClock-v$version.apk"
+                
+                // Use external cache directory for better compatibility with PackageInstaller
+                // This avoids permission issues that occur with public Downloads directory on some devices
+                val destination = File(context.getExternalFilesDir(null), fileName)
+                
                 val request =
                     DownloadManager
                         .Request(Uri.parse(downloadUrl))
                         .setTitle("MosqueClock Update")
                         .setDescription("Downloading v$version")
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                        .setDestinationUri(Uri.fromFile(destination))
                         .setAllowedOverMetered(true)
                         .setAllowedOverRoaming(true)
 
@@ -349,8 +381,7 @@ class ApkDownloader
                         return@launch
                     }
 
-                    val file =
-                        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                    val file = File(context.getExternalFilesDir(null), fileName)
 
                     if (!file.exists()) {
                         Log.e("ApkDownloader", "APK file not found: ${file.absolutePath}")
