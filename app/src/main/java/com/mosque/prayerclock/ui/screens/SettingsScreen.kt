@@ -98,6 +98,7 @@ import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.ui.components.AppPickerDialog
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerZones
 import com.mosque.prayerclock.data.model.SoundType
@@ -2617,6 +2618,17 @@ private fun PermissionsStatus() {
 @Composable
 private fun SystemSettingsAccess() {
     val context = LocalContext.current
+    var showAppPicker by remember { mutableStateOf(false) }
+
+    // Show app picker dialog
+    if (showAppPicker) {
+        AppPickerDialog(
+            onDismiss = { showAppPicker = false },
+            onAppSelected = { app ->
+                LauncherHelper.launchApp(context, app.resolveInfo)
+            },
+        )
+    }
 
     SettingsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -2729,9 +2741,7 @@ private fun SystemSettingsAccess() {
             // App Drawer Button
             OutlinedButton(
                 onClick = {
-                    if (!LauncherHelper.openAppChooser(context)) {
-                        Toast.makeText(context, "Unable to open app drawer", Toast.LENGTH_SHORT).show()
-                    }
+                    showAppPicker = true
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors =
@@ -3314,13 +3324,7 @@ private fun AboutSettings() {
                                     if (isFileAlreadyDownloaded) {
                                         // If file is already downloaded, just install it
                                         val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)
-                                        val file =
-                                            File(
-                                                Environment.getExternalStoragePublicDirectory(
-                                                    Environment.DIRECTORY_DOWNLOADS,
-                                                ),
-                                                fileName,
-                                            )
+                                        val file = File(context.getExternalFilesDir(null), fileName)
 
                                         if (!file.exists()) {
                                             Toast.makeText(context, "APK file not found", Toast.LENGTH_SHORT).show()

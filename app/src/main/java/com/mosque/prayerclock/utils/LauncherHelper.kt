@@ -1,11 +1,14 @@
 package com.mosque.prayerclock.utils
 
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 
 /**
@@ -25,7 +28,7 @@ object LauncherHelper {
             context.startActivity(intent)
             true
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to open Android settings", e)
+            Log.e("LauncherHelper", "Failed to open Android settings", e)
             false
         }
 
@@ -49,56 +52,110 @@ object LauncherHelper {
      * Opens an app chooser to access other applications
      * This shows a list of all installed apps
      */
-    fun openAppChooser(context: Context): Boolean =
-        try {
+    fun openAppChooser(context: Context): Boolean {
+        return try {
             val packageManager = context.packageManager
             
-            // Get all installed packages
-            val allPackages =
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    packageManager.getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
-                } else {
-                    @Suppress("DEPRECATION")
-                    packageManager.getInstalledPackages(0)
-                }
-
-            // Filter packages that have a launch intent
-            val launchableApps = allPackages.mapNotNull { packageInfo ->
-                val launchIntent = packageManager.getLaunchIntentForPackage(packageInfo.packageName)
-                if (launchIntent != null) {
-                    launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    Pair(packageInfo.packageName, launchIntent)
-                } else {
-                    null
-                }
+            // Query for apps with LAUNCHER category (standard Android apps)
+            val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
             }
-
-            if (launchableApps.isNotEmpty()) {
-                // Create intent array
-                val targetIntents = launchableApps.map { it.second }.toMutableList()
-                
-                if (targetIntents.isNotEmpty()) {
-                    // Create chooser with the first intent, then add the rest as alternatives
-                    val firstIntent = targetIntents.removeAt(0)
-                    val chooser =
-                        Intent.createChooser(firstIntent, "Select App").apply {
-                            if (targetIntents.isNotEmpty()) {
-                                putExtra(Intent.EXTRA_INITIAL_INTENTS, targetIntents.toTypedArray())
+            val launcherApps = packageManager.queryIntentActivities(launcherIntent, 0)
+            
+            // Query for apps with LEANBACK_LAUNCHER category (Android TV apps)
+            val leanbackIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+            }
+            val leanbackApps = packageManager.queryIntentActivities(leanbackIntent, 0)
+            
+            // Combine both lists and remove duplicates based on package name
+            val allApps = (launcherApps + leanbackApps)
+                .distinctBy { it.activityInfo.packageName }
+                .filter { it.activityInfo.packageName != context.packageName } // Exclude ourselves
+                .sortedBy { it.loadLabel(packageManager).toString().lowercase() } // Sort alphabetically
+            
+            if (allApps.isEmpty()) {
+                Toast.makeText(context, "No apps found", Toast.LENGTH_SHORT).show()
+                return false
+            }
+            
+            // Create custom dialog for app selection (works better on Android TV)
+            val appNames = allApps.map { it.loadLabel(packageManager).toString() }.toTypedArray()
+            
+            AlertDialog.Builder(context)
+                .setTitle("Select App")
+                .setItems(appNames) { dialog, which ->
+                    val selectedApp = allApps[which]
+                    try {
+                        // Try to get the default launch intent first
+                        val intent = packageManager.getLaunchIntentForPackage(selectedApp.activityInfo.packageName)
+                        if (intent != null) {
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            context.startActivity(intent)
+                        } else {
+                            // If that fails, create an explicit intent to the activity
+                            val explicitIntent = Intent(Intent.ACTION_MAIN).apply {
+                                setClassName(
+                                    selectedApp.activityInfo.packageName,
+                                    selectedApp.activityInfo.name
+                                )
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             }
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            context.startActivity(explicitIntent)
                         }
-                    context.startActivity(chooser)
-                    true
-                } else {
-                    false
+                    } catch (e: Exception) {
+                        Log.e("LauncherHelper", "Failed to launch ${selectedApp.activityInfo.packageName}", e)
+                        Toast.makeText(context, "Failed to launch app: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                    dialog.dismiss()
                 }
-            } else {
-                false
-            }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+            
+            true
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to open app chooser", e)
+            Log.e("LauncherHelper", "Failed to open app chooser", e)
+            Toast.makeText(context, "Failed to open app chooser: ${e.message}", Toast.LENGTH_SHORT).show()
             false
         }
+    }
+
+    /**
+     * Launch a specific app by its ResolveInfo
+     */
+    fun launchApp(
+        context: Context,
+        resolveInfo: ResolveInfo,
+    ): Boolean {
+        return try {
+            val packageManager = context.packageManager
+            // Try to get the default launch intent first
+            val intent = packageManager.getLaunchIntentForPackage(resolveInfo.activityInfo.packageName)
+            if (intent != null) {
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                true
+            } else {
+                // If that fails, create an explicit intent to the activity
+                val explicitIntent =
+                    Intent(Intent.ACTION_MAIN).apply {
+                        setClassName(
+                            resolveInfo.activityInfo.packageName,
+                            resolveInfo.activityInfo.name,
+                        )
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                context.startActivity(explicitIntent)
+                true
+            }
+        } catch (e: Exception) {
+            Log.e("LauncherHelper", "Failed to launch ${resolveInfo.activityInfo.packageName}", e)
+            Toast.makeText(context, "Failed to launch app: ${e.message}", Toast.LENGTH_SHORT).show()
+            false
+        }
+    }
 
     /**
      * Opens the launcher chooser to temporarily switch to another launcher
@@ -113,7 +170,7 @@ object LauncherHelper {
             context.startActivity(intent)
             true
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to open launcher chooser", e)
+            Log.e("LauncherHelper", "Failed to open launcher chooser", e)
             false
         }
 
@@ -141,7 +198,7 @@ object LauncherHelper {
                 openAppChooser(context)
             }
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to open app drawer", e)
+            Log.e("LauncherHelper", "Failed to open app drawer", e)
             false
         }
 
@@ -154,6 +211,8 @@ object LauncherHelper {
         // Method 1: Try to open a specific file manager if installed (most reliable)
         val fileManagerPackages =
             listOf(
+                // TV/Android box specific
+                "com.softwinner.TvdFileManager", // Softwinner TV File Manager (common on Android TV boxes)
                 // MiXplorer variants
                 "com.mixplorer", // MiXplorer
                 "com.mixplorer.silver", // MiXplorer Silver
@@ -240,7 +299,7 @@ object LauncherHelper {
             true
         } catch (e: Exception) {
             // Fallback to general settings
-            android.util.Log.e("LauncherHelper", "Failed to open launcher settings", e)
+            Log.e("LauncherHelper", "Failed to open launcher settings", e)
             openAndroidSettings(context)
         }
 
@@ -259,7 +318,7 @@ object LauncherHelper {
                 context.startActivity(intent)
                 return true
             } catch (e: Exception) {
-                android.util.Log.d("LauncherHelper", "ACTION_HOME_SETTINGS not available, trying alternative", e)
+                Log.d("LauncherHelper", "ACTION_HOME_SETTINGS not available, trying alternative", e)
             }
 
             // Method 2: Trigger launcher chooser by simulating home button press
@@ -272,7 +331,7 @@ object LauncherHelper {
             context.startActivity(intent)
             true
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to trigger launcher selection", e)
+            Log.e("LauncherHelper", "Failed to trigger launcher selection", e)
             false
         }
     }
@@ -292,7 +351,7 @@ object LauncherHelper {
 
             resolveInfo?.activityInfo?.packageName == context.packageName
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to check default launcher", e)
+            Log.e("LauncherHelper", "Failed to check default launcher", e)
             false
         }
 
@@ -313,7 +372,7 @@ object LauncherHelper {
                 false
             }
         } catch (e: Exception) {
-            android.util.Log.e("LauncherHelper", "Failed to open app: $packageName", e)
+            Log.e("LauncherHelper", "Failed to open app: $packageName", e)
             false
         }
 
