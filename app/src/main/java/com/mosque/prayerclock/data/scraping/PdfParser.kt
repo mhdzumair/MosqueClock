@@ -31,11 +31,21 @@ class PdfParser
                 for (i in 1..numberOfPages) {
                     val pageText = PdfTextExtractor.getTextFromPage(pdfReader, i).trim()
                     extractedText.append(pageText).append("\n")
+                    Log.d(TAG, "📄 Page $i text (first 300 chars): ${pageText.take(300)}")
                 }
 
                 pdfReader.close()
                 val finalText = extractedText.toString()
                 Log.d(TAG, "✅ Extracted ${finalText.length} characters from $numberOfPages page(s)")
+                
+                // Log more text for debugging if it's a reasonable size
+                if (finalText.length > 0 && finalText.length < 5000) {
+                    Log.d(TAG, "📋 Full extracted text:\n$finalText")
+                } else if (finalText.length >= 5000) {
+                    Log.d(TAG, "📋 First 1000 chars:\n${finalText.take(1000)}")
+                    Log.d(TAG, "📋 Last 500 chars:\n${finalText.takeLast(500)}")
+                }
+                
                 finalText
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error extracting text from PDF", e)
@@ -47,8 +57,12 @@ class PdfParser
          */
         fun parsePrayerTimes(text: String): PrayerTimesData {
             try {
+                Log.d(TAG, "📋 Starting to parse prayer times from text (${text.length} chars)")
+                Log.d(TAG, "📋 First 500 chars of text: ${text.take(500)}")
+                
                 // Extract metadata
                 val metadata = extractMetadata(text)
+                Log.d(TAG, "📋 Extracted metadata: Zone=${metadata.zone}, Month=${metadata.month}, Year=${metadata.year}")
 
                 // Extract prayer times data
                 val prayerTimes = extractPrayerTimes(text, metadata.year)
@@ -193,51 +207,74 @@ class PdfParser
             // Try multiple patterns to handle different PDF formats
             val patterns =
                 listOf(
-                    // Pattern 1: Format with mixed AM/PM (11:57 AM for Dhuhr, rest as expected)
-                    // Example: 1-Oct 4:37 AM 5:54 AM 11:57 AM 3:12 PM 5:59 PM 7:07 PM
+                    // Pattern 1: Standard format with AM/PM (Dhuhr is PM, like 12:00 PM)
+                    // Example: 9-Dec 4:44 AM 6:06 AM 12:00 PM 3:21 PM 5:52 PM 7:06 PM
                     Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM""",
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
                         RegexOption.IGNORE_CASE,
                     ),
-                    // Pattern 2: Standard format with AM/PM (all PM after sunrise)
+                    // Pattern 2: Format with mixed AM/PM (Dhuhr is 11:XX AM before noon)
+                    // Example: 1-Dec 4:41 AM 6:03 AM 11:56 AM 3:18 PM 5:49 PM 7:02 PM
                     Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+AM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM\s+(\d{1,2}:\d{2})\s+PM""",
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
                         RegexOption.IGNORE_CASE,
                     ),
-                    // Pattern 3: Format without AM/PM markers
+                    // Pattern 3: More flexible with whitespace - with AM/PM markers (case insensitive)
+                    Regex(
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s*(?:AM|am)?\s+(\d{1,2}:\d{2})\s*(?:AM|am)?\s+(\d{1,2}:\d{2})\s*(?:AM|PM|am|pm)?\s+(\d{1,2}:\d{2})\s*(?:PM|pm)?\s+(\d{1,2}:\d{2})\s*(?:PM|pm)?\s+(\d{1,2}:\d{2})\s*(?:PM|pm)?""",
+                        RegexOption.IGNORE_CASE,
+                    ),
+                    // Pattern 4: Format without AM/PM markers
                     Regex(
                         """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
                     ),
-                    // Pattern 4: Format with varied whitespace
+                    // Pattern 5: Format with varied whitespace (including newlines and tabs)
                     Regex(
-                        """(\d{1,2})-(\w{3})\s*[:\s]\s*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
+                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
+                        setOf(RegexOption.MULTILINE),
                     ),
                 )
 
-            var matches = listOf<MatchResult>()
+            // Collect all matches from all patterns to handle mixed formats in the same PDF
+            val allMatches = mutableListOf<MatchResult>()
+            val matchedPatterns = mutableListOf<Int>()
 
-            for (pattern in patterns) {
-                matches = pattern.findAll(text).toList()
-                if (matches.isNotEmpty()) {
-                    break
+            for ((index, pattern) in patterns.withIndex()) {
+                val patternMatches = pattern.findAll(text).toList()
+                if (patternMatches.isNotEmpty()) {
+                    allMatches.addAll(patternMatches)
+                    matchedPatterns.add(index + 1)
+                    Log.d(TAG, "✅ Pattern ${index + 1} matched ${patternMatches.size} entries")
                 }
             }
 
-            if (matches.isEmpty()) {
-                Log.w(TAG, "⚠️ No prayer time entries found in PDF text")
+            // Remove duplicate matches by date (keep first occurrence)
+            val uniqueMatches = allMatches.distinctBy { match ->
+                // Extract date from match (first two groups are day and month)
+                "${match.groupValues[1]}-${match.groupValues[2]}"
+            }
+
+            if (uniqueMatches.isEmpty()) {
+                Log.w(TAG, "⚠️ No prayer time entries found in PDF text using any pattern")
                 // Try to find any date patterns to debug
                 val datePattern = Regex("""(\d{1,2})-(\w{3})""")
                 val dateMatches = datePattern.findAll(text).toList()
 
                 if (dateMatches.isNotEmpty()) {
                     Log.d(TAG, "Found ${dateMatches.size} date patterns but couldn't match complete prayer times")
-                    // Log first entry context for debugging
-                    val firstDate = dateMatches.first()
-                    val startIdx = maxOf(0, firstDate.range.first - 20)
-                    val endIdx = minOf(text.length, firstDate.range.last + 150)
-                    Log.d(TAG, "Sample: ${text.substring(startIdx, endIdx)}")
+                    // Log first 3 entries context for debugging
+                    for (i in 0 until minOf(3, dateMatches.size)) {
+                        val dateMatch = dateMatches[i]
+                        val startIdx = maxOf(0, dateMatch.range.first - 20)
+                        val endIdx = minOf(text.length, dateMatch.range.last + 200)
+                        Log.d(TAG, "Sample ${i + 1}: ${text.substring(startIdx, endIdx)}")
+                    }
                 }
+            } else {
+                Log.d(TAG, "✅ Successfully matched patterns ${matchedPatterns.joinToString(", ")} with ${uniqueMatches.size} unique entries")
             }
+
+            val matches = uniqueMatches
 
             for (match in matches) {
                 val (dayNum, monthAbbr, fajr, sunrise, dhuhr, asr, maghrib, isha) = match.destructured
@@ -324,6 +361,10 @@ class PdfParser
 
         /**
          * Convert parsed prayer times data to PrayerTimes entities for database storage
+         * 
+         * Note: Prayer times are year-agnostic (cyclical based on solar calendar).
+         * We store them with the full date for display, but use MM-DD for lookup to enable
+         * multi-year caching. This means prayer times scraped in 2025 will work for 2026+.
          */
         fun convertToPrayerTimesEntities(
             prayerTimesData: PrayerTimesData,
@@ -334,8 +375,14 @@ class PdfParser
             // Note: Iqamah times are no longer stored in the database
             // They will be calculated dynamically from user settings
             return prayerTimesData.prayerTimes.map { dailyTime ->
+                // Extract month-day for year-agnostic storage
+                // Format: YYYY-MM-DD -> MM-DD
+                val monthDay = dailyTime.date.substring(5) // Gets "MM-DD" from "YYYY-MM-DD"
+                
                 PrayerTimes(
-                    id = "${dailyTime.date}_$providerKey",
+                    // Use MM-DD based ID for year-agnostic storage
+                    id = "${monthDay}_$providerKey",
+                    // Store full date for display purposes
                     date = dailyTime.date,
                     providerKey = providerKey,
                     fajrAzan = dailyTime.fajr,
@@ -421,3 +468,4 @@ class PdfParsingException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
+

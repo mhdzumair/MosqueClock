@@ -137,22 +137,21 @@ class ACJUScraper
                     val pdfLink = pdfLinks[month - 1]
                     val pdfUrl = pdfLink.attr("abs:href")
                     
-                    // Extract year from PDF URL to verify it matches requested year
-                    // ACJU URLs typically contain the year, e.g., "...2025.pdf" or "...March_2025.pdf"
-                    // Look for 4 consecutive digits that represent a valid year (2020-2099)
+                    // Extract year from PDF URL for logging purposes
+                    // Note: Prayer times are year-agnostic (cyclical), so we accept PDFs from any year
+                    // A 2025 PDF will work perfectly fine for 2026+ since prayer times repeat annually
                     val yearPattern = Regex("(20\\d{2})")
                     val yearMatch = yearPattern.find(pdfUrl)
                     val urlYear = yearMatch?.value?.toIntOrNull()
                     
-                    if (urlYear != null && urlYear != year) {
-                        Log.d(TAG, "ℹ️ PDF is for year $urlYear, but requested year $year. PDF not available for $year yet.")
-                        return@withContext null
-                    }
-                    
                     if (urlYear != null) {
-                        Log.d(TAG, "✅ Found PDF URL for month $month, year $year: $pdfUrl")
+                        if (urlYear != year) {
+                            Log.d(TAG, "✅ Found PDF URL for month $month: $pdfUrl (PDF year: $urlYear, requested year: $year - year-agnostic)")
+                        } else {
+                            Log.d(TAG, "✅ Found PDF URL for month $month, year $year: $pdfUrl")
+                        }
                     } else {
-                        Log.d(TAG, "⚠️ Could not extract year from PDF URL, proceeding with: $pdfUrl")
+                        Log.d(TAG, "✅ Found PDF URL for month $month: $pdfUrl (year not detected in URL)")
                     }
                     return@withContext pdfUrl
                 } catch (e: Exception) {

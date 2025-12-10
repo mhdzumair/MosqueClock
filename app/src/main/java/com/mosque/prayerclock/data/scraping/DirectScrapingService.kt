@@ -326,23 +326,38 @@ class DirectScrapingService
 
         /**
          * Get cached prayer times for a specific date
+         * 
+         * Uses year-agnostic lookup (MM-DD based) since prayer times are cyclical.
+         * If found, updates the date field to match the requested year for display.
          */
         private suspend fun getCachedPrayerTimesForDate(
             zone: Int,
             date: LocalDate,
-        ): PrayerTimes? =
-            try {
+        ): PrayerTimes? {
+            return try {
                 val providerKey = "ACJU_DIRECT:$zone"
-                val dateStr = date.toString()
-                val cached = prayerTimesDao.getPrayerTimesByDateAndProvider(dateStr, providerKey)
+                
+                // Create month-day key for year-agnostic lookup (MM-DD format)
+                val monthDay = String.format("%02d-%02d", date.monthNumber, date.dayOfMonth)
+                val yearAgnosticId = "${monthDay}_$providerKey"
+                
+                // Query by ID directly (year-agnostic)
+                val cached = prayerTimesDao.getPrayerTimesById(yearAgnosticId)
+                
                 if (cached != null) {
-                    Log.d(TAG, "📋 Found cached prayer times for $dateStr")
+                    Log.d(TAG, "📋 Found cached prayer times for $monthDay (year-agnostic)")
+                    
+                    // Update the date to match the requested year for display
+                    val updatedDate = date.toString() // Full YYYY-MM-DD format
+                    cached.copy(date = updatedDate)
+                } else {
+                    null
                 }
-                cached
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error getting cached prayer times", e)
                 null
             }
+        }
 
         /**
          * Scrape and cache entire month's prayer times
@@ -368,14 +383,22 @@ class DirectScrapingService
                     Log.e(TAG, "❌ Failed to download PDF from $pdfUrl")
                     return null
                 }
+                
+                Log.d(TAG, "✅ Downloaded PDF (${pdfBytes.size} bytes) from $pdfUrl")
+                
                 val text = pdfParser.extractTextFromPdf(pdfBytes)
+                Log.d(TAG, "✅ Extracted ${text.length} characters from PDF")
+                
                 val prayerTimesData = pdfParser.parsePrayerTimes(text)
+                Log.d(TAG, "✅ Parsed prayer times data with ${prayerTimesData.prayerTimes.size} entries")
 
                 // Convert to PrayerTimes entities
                 val prayerTimesEntities = pdfParser.convertToPrayerTimesEntities(prayerTimesData, zone)
+                Log.d(TAG, "✅ Converted to ${prayerTimesEntities.size} PrayerTimes entities")
 
                 if (prayerTimesEntities.isEmpty()) {
                     Log.e(TAG, "⚠️ No prayer times extracted from PDF for Zone $zone, $year-$month")
+                    Log.e(TAG, "📋 Text sample: ${text.take(500)}")
                     return null
                 }
 
@@ -395,6 +418,9 @@ class DirectScrapingService
 
         /**
          * Check if we have complete monthly cache for a given month
+         * 
+         * Uses year-agnostic checking - verifies that all month-day combinations exist
+         * regardless of which year they were originally cached from.
          */
         private suspend fun hasCompleteMonthlyCache(
             zone: Int,
@@ -403,16 +429,24 @@ class DirectScrapingService
         ): Boolean =
             try {
                 val providerKey = "ACJU_DIRECT:$zone"
-                val startDate = LocalDate(year, month, 1).toString()
-                val firstDayOfNextMonth = LocalDate(year, month, 1).plus(1, DateTimeUnit.MONTH)
+                
+                // Calculate expected days in the month
+                val firstDayOfMonth = LocalDate(year, month, 1)
+                val firstDayOfNextMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH)
                 val lastDayOfMonth = firstDayOfNextMonth.plus(-1, DateTimeUnit.DAY)
-                val endDate = lastDayOfMonth.toString()
-
-                val cachedCount = prayerTimesDao.getMonthlyPrayerTimesCount(providerKey, startDate, endDate)
                 val expectedDays = lastDayOfMonth.dayOfMonth
 
-                Log.d(TAG, "📊 Monthly cache check for Zone $zone, $year-$month: $cachedCount/$expectedDays days")
-                cachedCount >= expectedDays
+                // Check if all days exist using year-agnostic IDs (MM-DD format)
+                var cachedDays = 0
+                for (day in 1..expectedDays) {
+                    val monthDay = String.format("%02d-%02d", month, day)
+                    val yearAgnosticId = "${monthDay}_$providerKey"
+                    val exists = prayerTimesDao.getPrayerTimesById(yearAgnosticId) != null
+                    if (exists) cachedDays++
+                }
+
+                Log.d(TAG, "📊 Monthly cache check for Zone $zone, $year-$month: $cachedDays/$expectedDays days (year-agnostic)")
+                cachedDays >= expectedDays
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error checking monthly cache", e)
                 false
@@ -524,6 +558,8 @@ class DirectScrapingService
 
         /**
          * Check cache status for remaining months of the year
+         * 
+         * Uses year-agnostic checking to match the new storage format.
          */
         suspend fun checkCacheStatus(zone: Int): CacheStatus {
             return withContext(Dispatchers.IO) {
@@ -543,18 +579,31 @@ class DirectScrapingService
                 // Check remaining months of current year
                 for (month in currentMonth..12) {
                     totalMonths++
-                    val providerKey = "ACJU_DIRECT:$zone"
-                    val startDate = LocalDate(currentYear, month, 1).toString()
-                    val firstDayOfNextMonth = LocalDate(currentYear, month, 1).plus(1, DateTimeUnit.MONTH)
+                    
+                    // Use year-agnostic checking
+                    val isComplete = hasCompleteMonthlyCache(zone, currentYear, month)
+                    
+                    // Calculate days
+                    val firstDayOfMonth = LocalDate(currentYear, month, 1)
+                    val firstDayOfNextMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH)
                     val lastDayOfMonth = firstDayOfNextMonth.plus(-1, DateTimeUnit.DAY)
-                    val endDate = lastDayOfMonth.toString()
                     val expectedDays = lastDayOfMonth.dayOfMonth
-                    val cached = prayerTimesDao.getMonthlyPrayerTimesCount(providerKey, startDate, endDate)
+                    
+                    // Count cached days using year-agnostic IDs
+                    val providerKey = "ACJU_DIRECT:$zone"
+                    var monthCachedDays = 0
+                    for (day in 1..expectedDays) {
+                        val monthDay = String.format("%02d-%02d", month, day)
+                        val yearAgnosticId = "${monthDay}_$providerKey"
+                        if (prayerTimesDao.getPrayerTimesById(yearAgnosticId) != null) {
+                            monthCachedDays++
+                        }
+                    }
 
                     totalDays += expectedDays
-                    cachedDays += cached
+                    cachedDays += monthCachedDays
 
-                    if (cached >= expectedDays) {
+                    if (isComplete) {
                         cachedMonths++
                     }
                 }
@@ -563,18 +612,31 @@ class DirectScrapingService
                 val nextYear = currentYear + 1
                 for (month in 1..3) {
                     totalMonths++
-                    val providerKey = "ACJU_DIRECT:$zone"
-                    val startDate = LocalDate(nextYear, month, 1).toString()
-                    val firstDayOfNextMonth = LocalDate(nextYear, month, 1).plus(1, DateTimeUnit.MONTH)
+                    
+                    // Use year-agnostic checking
+                    val isComplete = hasCompleteMonthlyCache(zone, nextYear, month)
+                    
+                    // Calculate days
+                    val firstDayOfMonth = LocalDate(nextYear, month, 1)
+                    val firstDayOfNextMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH)
                     val lastDayOfMonth = firstDayOfNextMonth.plus(-1, DateTimeUnit.DAY)
-                    val endDate = lastDayOfMonth.toString()
                     val expectedDays = lastDayOfMonth.dayOfMonth
-                    val cached = prayerTimesDao.getMonthlyPrayerTimesCount(providerKey, startDate, endDate)
+                    
+                    // Count cached days using year-agnostic IDs
+                    val providerKey = "ACJU_DIRECT:$zone"
+                    var monthCachedDays = 0
+                    for (day in 1..expectedDays) {
+                        val monthDay = String.format("%02d-%02d", month, day)
+                        val yearAgnosticId = "${monthDay}_$providerKey"
+                        if (prayerTimesDao.getPrayerTimesById(yearAgnosticId) != null) {
+                            monthCachedDays++
+                        }
+                    }
 
                     totalDays += expectedDays
-                    cachedDays += cached
+                    cachedDays += monthCachedDays
 
-                    if (cached >= expectedDays) {
+                    if (isComplete) {
                         cachedMonths++
                     }
                 }

@@ -31,7 +31,13 @@ object NetworkModule {
     fun provideOkHttpClient(): OkHttpClient {
         val loggingInterceptor =
             HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                // NONE = no logging, BASIC = request/response line only
+                // HEADERS = request/response line + headers, BODY = everything
+                level = if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.BASIC // Less verbose for debug builds
+                } else {
+                    HttpLoggingInterceptor.Level.NONE // No logging in release
+                }
             }
 
         return OkHttpClient
@@ -50,7 +56,13 @@ object NetworkModule {
     fun provideMosqueClockOkHttpClient(apiKeyInterceptor: ApiKeyInterceptor): OkHttpClient {
         val loggingInterceptor =
             HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                // NONE = no logging, BASIC = request/response line only
+                // HEADERS = request/response line + headers, BODY = everything
+                level = if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.BASIC // Less verbose for debug builds
+                } else {
+                    HttpLoggingInterceptor.Level.NONE // No logging in release
+                }
             }
 
         return OkHttpClient

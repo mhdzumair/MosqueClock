@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PrayerTimesDao {
+    // Year-agnostic query by ID (primary key)
+    @Query("SELECT * FROM prayer_times WHERE id = :id")
+    suspend fun getPrayerTimesById(id: String): PrayerTimes?
+    
     // Provider-specific queries
     @Query("SELECT * FROM prayer_times WHERE date = :date AND providerKey = :providerKey")
     suspend fun getPrayerTimesByDateAndProvider(
