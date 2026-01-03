@@ -15,14 +15,18 @@ import com.mosque.prayerclock.data.repository.HijriDateRepository
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import com.mosque.prayerclock.data.repository.WeatherRepository
+import com.mosque.prayerclock.utils.NetworkStatus
+import com.mosque.prayerclock.utils.SystemChangeEvent
 import com.mosque.prayerclock.utils.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
@@ -70,8 +74,117 @@ class MainViewModel
         private var cachedTomorrowFajr: PrayerTimesWithIqamah? = null
         private var cachedTomorrowDate: String? = null
 
+        // Network status tracking for auto-refresh after connectivity restored
+        private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Unavailable)
+        val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
+
+        // Track the date when prayer times were last successfully loaded
+        // Used to detect if we need to refresh after a time sync
+        @Volatile private var lastLoadedDate: String? = null
+
+        // Event to trigger Hijri date refresh in UI components
+        private val _hijriRefreshTrigger = MutableSharedFlow<Unit>(replay = 0)
+        val hijriRefreshTrigger = _hijriRefreshTrigger.asSharedFlow()
+
         init {
             // ViewModel initialized
+        }
+
+        /**
+         * Handle system change events (time/date/timezone changes).
+         * Called from UI when SystemChangeMonitor emits events.
+         */
+        fun onSystemChangeEvent(event: SystemChangeEvent) {
+            Log.i("MainViewModel", "System change event received: $event")
+
+            when (event) {
+                is SystemChangeEvent.TimeChanged,
+                is SystemChangeEvent.DateChanged,
+                is SystemChangeEvent.TimezoneChanged,
+                is SystemChangeEvent.SignificantTimeJump -> {
+                    // Check if the current date is different from when we last loaded
+                    val currentDate = Clock.System
+                        .now()
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                        .date
+                        .toString()
+
+                    val needsRefresh = lastLoadedDate != currentDate || lastLoadedDate == null
+
+                    Log.i(
+                        "MainViewModel",
+                        "Time sync detected - lastLoadedDate: $lastLoadedDate, currentDate: $currentDate, needsRefresh: $needsRefresh"
+                    )
+
+                    if (needsRefresh) {
+                        refreshAllData()
+                    }
+                }
+            }
+        }
+
+        /**
+         * Handle network status changes.
+         * Called from UI when NetworkMonitor emits events.
+         */
+        fun onNetworkStatusChange(status: NetworkStatus) {
+            val previousStatus = _networkStatus.value
+            _networkStatus.value = status
+
+            Log.i("MainViewModel", "Network status changed: $previousStatus -> $status")
+
+            // When network becomes available, check if we need to refresh data
+            if (status == NetworkStatus.Available && previousStatus == NetworkStatus.Unavailable) {
+                Log.i("MainViewModel", "Network restored - checking if data refresh needed")
+
+                viewModelScope.launch(Dispatchers.IO) {
+                    // Check if we have valid cached prayer times for today
+                    val hasValidCache = prayerTimesRepository.hasCachedPrayerTimesForCurrentSettings()
+
+                    if (!hasValidCache) {
+                        Log.i("MainViewModel", "No valid cache found after network restore - refreshing data")
+                        refreshAllData()
+                    } else {
+                        Log.d("MainViewModel", "Cache is valid - no refresh needed")
+                    }
+                }
+            }
+        }
+
+        /**
+         * Refresh all data: prayer times, Hijri date, and weather.
+         * Invalidates caches and triggers fresh fetch.
+         */
+        private fun refreshAllData() {
+            Log.i("MainViewModel", "Refreshing all data...")
+
+            viewModelScope.launch(Dispatchers.IO) {
+                // Invalidate prayer times cache to force fresh fetch
+                prayerTimesRepository.invalidatePrayerTimesCache()
+
+                // Also clear tomorrow's cache
+                cachedTomorrowFajr = null
+                cachedTomorrowDate = null
+
+                // Reset loading flag to allow new load
+                isLoadingPrayerTimes = false
+
+                // Trigger prayer times reload
+                loadPrayerTimes()
+
+                // Emit event to trigger Hijri date refresh in UI components
+                _hijriRefreshTrigger.emit(Unit)
+
+                Log.i("MainViewModel", "Data refresh triggered")
+            }
+        }
+
+        /**
+         * Force refresh of all data. Can be called from UI if needed.
+         */
+        fun forceRefresh() {
+            Log.i("MainViewModel", "Force refresh requested")
+            refreshAllData()
         }
 
         // Function to recalculate next prayer - can be called from UI when needed
@@ -100,6 +213,13 @@ class MainViewModel
                             _uiState.value = MainUiState.Loading
                         }
                         is NetworkResult.Success -> {
+                            // Track the date when prayer times were successfully loaded
+                            lastLoadedDate = Clock.System
+                                .now()
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                                .date
+                                .toString()
+
                             // Convert to PrayerTimesWithIqamah using current settings
                             // Iqamah times are calculated dynamically from settings
                             val prayerTimesWithIqamah = result.data.withIqamahTimes(currentSettings)
@@ -120,6 +240,8 @@ class MainViewModel
                                     nextPrayer = nextPrayer,
                                     nextDayFajr = nextDayFajr,
                                 )
+
+                            Log.d("MainViewModel", "Prayer times loaded successfully for date: $lastLoadedDate")
                         }
                         is NetworkResult.Error -> {
                             Log.e("MainViewModel", "Prayer times loading failed: ${result.message}")

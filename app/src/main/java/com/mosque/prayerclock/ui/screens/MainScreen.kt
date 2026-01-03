@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +84,8 @@ import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.ColorAzanTime
 import com.mosque.prayerclock.ui.theme.ColorIqamahTime
 import com.mosque.prayerclock.ui.theme.ColorSunriseTime
+import com.mosque.prayerclock.utils.NetworkMonitor
+import com.mosque.prayerclock.utils.SystemChangeMonitor
 import com.mosque.prayerclock.utils.TimeUtils
 import com.mosque.prayerclock.viewmodel.MainUiState
 import com.mosque.prayerclock.viewmodel.MainViewModel
@@ -152,6 +155,7 @@ fun MainScreen(
     onOpenSettings: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val weatherState by viewModel.weatherState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -170,6 +174,23 @@ fun MainScreen(
     // Only reload data when prayer-related settings change
     LaunchedEffect(settings.prayerServiceType, settings.city, settings.country, settings.showWeather) {
         viewModel.loadPrayerTimes()
+    }
+
+    // Monitor system time/date/timezone changes to auto-refresh after clock sync
+    // This handles the case where device boots without WiFi and later syncs time via NTP
+    LaunchedEffect(Unit) {
+        SystemChangeMonitor.observeSystemChanges(context).collect { event ->
+            Log.d("MainScreen", "System change event: $event")
+            viewModel.onSystemChangeEvent(event)
+        }
+    }
+
+    // Monitor network connectivity to auto-refresh when WiFi becomes available after boot
+    LaunchedEffect(Unit) {
+        NetworkMonitor.observeNetworkStatus(context).collect { status ->
+            Log.d("MainScreen", "Network status: $status")
+            viewModel.onNetworkStatusChange(status)
+        }
     }
 
     Box(
