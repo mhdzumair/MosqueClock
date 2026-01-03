@@ -27,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -38,16 +39,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.data.service.ApkDownloader
+import com.mosque.prayerclock.data.service.UpdateChecker
+import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.service.PrayerNotificationService
 import com.mosque.prayerclock.ui.LocalizedApp
+import com.mosque.prayerclock.ui.components.UpdateDialog
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.screens.MainScreen
 import com.mosque.prayerclock.ui.screens.SettingsScreen
 import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.ui.theme.MosqueClockTheme
 import com.mosque.prayerclock.viewmodel.MainViewModel
+import com.mosque.prayerclock.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
 @AndroidEntryPoint
@@ -198,6 +205,47 @@ class MainActivity : ComponentActivity() {
 fun MosqueClockApp(onExitApp: () -> Unit = {}) {
     val navController = rememberNavController()
     var showExitDialog by remember { mutableStateOf(false) }
+    
+    // Auto-update state
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
+    val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    val apkDownloader = remember { ApkDownloader() }
+    val updateChecker = remember { UpdateChecker() }
+    
+    // Check for updates on startup (only once)
+    var hasCheckedForUpdates by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(settings.autoUpdateCheckEnabled, hasCheckedForUpdates) {
+        if (settings.autoUpdateCheckEnabled && !hasCheckedForUpdates) {
+            hasCheckedForUpdates = true
+            // Small delay to let the app initialize first
+            delay(2000)
+            
+            try {
+                val currentVersion = BuildConfig.VERSION_NAME
+                val result = updateChecker.checkForUpdates(currentVersion)
+                
+                if (result != null && result.hasUpdate) {
+                    // Check if this version was skipped by user
+                    if (settings.skippedUpdateVersion != result.latestVersion) {
+                        updateInfo = result
+                        showUpdateDialog = true
+                        android.util.Log.d("MosqueClockApp", "Update available: ${result.latestVersion}")
+                    } else {
+                        android.util.Log.d("MosqueClockApp", "Update ${result.latestVersion} was skipped by user")
+                    }
+                } else {
+                    android.util.Log.d("MosqueClockApp", "No updates available or check failed")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MosqueClockApp", "Error checking for updates", e)
+            }
+        }
+    }
 
     // Handle back button properly for TV
     BackHandler(enabled = true) {
@@ -277,6 +325,20 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
                 dismissButton = {
                     TextButton(onClick = { showExitDialog = false }) {
                         Text(localizedStringResource(R.string.cancel))
+                    }
+                },
+            )
+        }
+        
+        // Auto-update dialog
+        if (showUpdateDialog && updateInfo != null) {
+            UpdateDialog(
+                updateInfo = updateInfo!!,
+                apkDownloader = apkDownloader,
+                onDismiss = { showUpdateDialog = false },
+                onSkipVersion = { version ->
+                    scope.launch {
+                        settingsViewModel.updateSkippedUpdateVersion(version)
                     }
                 },
             )

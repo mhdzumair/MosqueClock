@@ -299,6 +299,16 @@ class SettingsViewModel
             }
         }
 
+        fun updateAutoUpdateCheckEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateAutoUpdateCheckEnabled(enabled)
+            }
+        }
+
+        suspend fun updateSkippedUpdateVersion(version: String) {
+            settingsRepository.updateSkippedUpdateVersion(version)
+        }
+
         /**
          * Prefetch all remaining months of the year for offline use
          */

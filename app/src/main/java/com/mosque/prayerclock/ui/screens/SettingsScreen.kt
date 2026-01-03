@@ -325,7 +325,10 @@ fun SettingsScreen(
                 }
 
                 item {
-                    AboutSettings()
+                    AboutSettings(
+                        autoUpdateCheckEnabled = settings.autoUpdateCheckEnabled,
+                        onAutoUpdateCheckEnabledChange = viewModel::updateAutoUpdateCheckEnabled,
+                    )
                 }
             }
         }
@@ -3085,7 +3088,10 @@ private fun DataManagementSettings(
 }
 
 @Composable
-private fun AboutSettings() {
+private fun AboutSettings(
+    autoUpdateCheckEnabled: Boolean = true,
+    onAutoUpdateCheckEnabledChange: (Boolean) -> Unit = {},
+) {
     val context = LocalContext.current
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var isChecking by remember { mutableStateOf(false) }
@@ -3177,6 +3183,32 @@ private fun AboutSettings() {
                     text = stringResource(R.string.developer_name),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Auto Update Check Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.auto_update_title),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.auto_update_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+                Switch(
+                    checked = autoUpdateCheckEnabled,
+                    onCheckedChange = onAutoUpdateCheckEnabledChange,
                 )
             }
 

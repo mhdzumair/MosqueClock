@@ -59,6 +59,9 @@ data class AppSettings(
     // Jumma Night Bayan settings - applies to Thursday night Isha prayer
     val jummaNightBayanEnabled: Boolean = false, // Enable/disable Jumma Night Bayan feature
     val jummaNightBayanMinutes: Int = 30, // Duration in minutes for Jumma Night Bayan (default: 30 minutes)
+    // Auto-update settings
+    val autoUpdateCheckEnabled: Boolean = true, // Enable/disable automatic update check on app startup
+    val skippedUpdateVersion: String = "", // Version that user chose to skip (won't show dialog for this version)
 )
 
 enum class Language(

@@ -88,6 +88,9 @@ class SettingsRepository
             // Jumma Night Bayan settings
             val JUMMA_NIGHT_BAYAN_ENABLED = booleanPreferencesKey("jumma_night_bayan_enabled")
             val JUMMA_NIGHT_BAYAN_MINUTES = intPreferencesKey("jumma_night_bayan_minutes")
+            // Auto-update settings
+            val AUTO_UPDATE_CHECK_ENABLED = booleanPreferencesKey("auto_update_check_enabled")
+            val SKIPPED_UPDATE_VERSION = stringPreferencesKey("skipped_update_version")
         }
 
         fun getSettings(): Flow<AppSettings> =
@@ -194,6 +197,8 @@ class SettingsRepository
                     iqamahSoundUri = preferences[PreferencesKeys.IQAMAH_SOUND_URI] ?: "",
                     jummaNightBayanEnabled = preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_ENABLED] ?: false,
                     jummaNightBayanMinutes = preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_MINUTES] ?: 30,
+                    autoUpdateCheckEnabled = preferences[PreferencesKeys.AUTO_UPDATE_CHECK_ENABLED] ?: true,
+                    skippedUpdateVersion = preferences[PreferencesKeys.SKIPPED_UPDATE_VERSION] ?: "",
                 )
             }
 
@@ -414,5 +419,13 @@ class SettingsRepository
             dataStore.edit { preferences -> preferences[PreferencesKeys.JUMMA_NIGHT_BAYAN_MINUTES] = minutes }
             // Invalidate prayer times cache when Jumma Night Bayan duration changes
             prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
+        }
+
+        suspend fun updateAutoUpdateCheckEnabled(enabled: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.AUTO_UPDATE_CHECK_ENABLED] = enabled }
+        }
+
+        suspend fun updateSkippedUpdateVersion(version: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.SKIPPED_UPDATE_VERSION] = version }
         }
     }

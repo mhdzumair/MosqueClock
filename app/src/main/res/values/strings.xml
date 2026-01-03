@@ -257,4 +257,20 @@
     <string name="developer_name" translatable="false">Mohamed Zumair</string>
     <string name="open_source_licenses" translatable="false">Open Source Licenses</string>
     <string name="github_repository" translatable="false">GitHub Repository</string>
+    
+    <!-- Auto Update -->
+    <string name="auto_update_title" translatable="false">Auto Update Check</string>
+    <string name="auto_update_description" translatable="false">Automatically check for updates when app starts</string>
+    <string name="update_available_title" translatable="false">Update Available</string>
+    <string name="update_new_version" translatable="false">New Version</string>
+    <string name="update_current_version" translatable="false">Current</string>
+    <string name="update_whats_new" translatable="false">What\'s New:</string>
+    <string name="update_permission_required" translatable="false">Permission Required</string>
+    <string name="update_permission_message" translatable="false">Grant install permission to update the app</string>
+    <string name="update_grant_permission" translatable="false">Grant Permission</string>
+    <string name="update_downloading" translatable="false">Downloading…</string>
+    <string name="update_download_install" translatable="false">Download &amp; Install</string>
+    <string name="update_install_now" translatable="false">Install Now</string>
+    <string name="update_skip_version" translatable="false">Skip Version</string>
+    <string name="update_later" translatable="false">Later</string>
 </resources>
