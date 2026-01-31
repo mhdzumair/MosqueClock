@@ -6,7 +6,9 @@ import com.google.gson.JsonSyntaxException
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -398,16 +400,29 @@ class HijriDateScraper
                 val startDateStr = dateRanges["startDate"] as? String
                 val endDateStr = dateRanges["endDate"] as? String
 
-                if (startDateStr == null || endDateStr == null) {
-                    Log.w(TAG, "⚠️ Missing startDate or endDate in date ranges")
+                if (startDateStr == null) {
+                    Log.w(TAG, "⚠️ Missing startDate in date ranges")
                     return null
                 }
 
-                Log.d(TAG, "📅 Hijri month range: $startDateStr to $endDateStr")
-
                 val targetDate = LocalDate(year, month, day)
                 val startDate = LocalDate.parse(startDateStr)
-                val endDate = LocalDate.parse(endDateStr)
+
+                // Handle invalid endDate (ACJU returns "0000-00-00" when month end is not yet determined)
+                val endDate = if (endDateStr.isNullOrEmpty() || endDateStr == "0000-00-00") {
+                    // Default to 30 days from start (typical Hijri month length)
+                    Log.d(TAG, "📅 endDate is invalid ($endDateStr), using default 30-day month")
+                    startDate.plus(29, DateTimeUnit.DAY)
+                } else {
+                    try {
+                        LocalDate.parse(endDateStr)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "⚠️ Failed to parse endDate ($endDateStr), using default 30-day month")
+                        startDate.plus(29, DateTimeUnit.DAY)
+                    }
+                }
+
+                Log.d(TAG, "📅 Hijri month range: $startDateStr to $endDate")
 
                 // Check if target date is within the calendar range
                 if (targetDate < startDate || targetDate > endDate) {
@@ -450,8 +465,8 @@ class HijriDateScraper
                                 hijriMonth = hijriInfo.first,
                                 hijriYear = hijriInfo.second,
                                 gregorianDate = String.format("%04d-%02d-%02d", year, month, day),
-                                monthStartDate = dateRanges["startDate"] as? String,
-                                monthEndDate = dateRanges["endDate"] as? String,
+                                monthStartDate = startDateStr,
+                                monthEndDate = endDate.toString(),
                             )
                         } else {
                             Log.w(TAG, "⚠️ Could not parse Hijri description: $hijriDescription")
