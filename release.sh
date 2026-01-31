@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# MosqueClock - Automated Release Script
+# MosqueClock - Automated GitHub Release Script
+# Builds the 'github' flavor with self-update feature enabled
 # Handles version bumping, building, tagging, and GitHub release creation
+#
+# Note: This script builds the 'github' variant (with self-update feature)
+#       For Play Store releases, use: ./gradlew bundlePlaystoreRelease
 #
 # Usage:
 #   ./release.sh                    - Full automated release
@@ -24,8 +28,8 @@ NC='\033[0m' # No Color
 APP_NAME="MosqueClock"
 PACKAGE_NAME="com.mosque.prayerclock"
 BUILD_GRADLE="app/build.gradle.kts"
-OUTPUT_DIR="app/build/outputs/apk/release"
-APK_NAME="app-release.apk"
+OUTPUT_DIR="app/build/outputs/apk/github/release"
+APK_NAME="app-github-release.apk"
 RELEASE_DIR="release"
 GITHUB_REPO="mhdzumair/MosqueClock"
 
@@ -138,9 +142,8 @@ check_prerequisites() {
         print_warning "You have uncommitted changes"
         git status --short
         echo ""
-        read -p "Continue anyway? (y/n) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        read -p "Continue anyway? [Y/n] " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
             print_info "Release cancelled"
             exit 0
         fi
@@ -152,9 +155,8 @@ check_prerequisites() {
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
         print_warning "Not on main/master branch (current: $CURRENT_BRANCH)"
-        read -p "Continue anyway? (y/n) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        read -p "Continue anyway? [Y/n] " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
             print_info "Release cancelled"
             exit 0
         fi
@@ -231,10 +233,8 @@ prompt_new_version() {
     print_info "New Version Name: $NEW_VERSION_NAME"
     echo ""
     
-    read -p "Proceed with this version? (y/n) " -n 1 -r
-    echo ""
-    
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    read -p "Proceed with this version? [Y/n] " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         print_info "Release cancelled"
         exit 0
     fi
@@ -293,12 +293,12 @@ clean_build() {
 
 # Build release APK
 build_release() {
-    print_header "Building Release APK"
-    print_step "Building with ProGuard optimization..."
+    print_header "Building GitHub Release APK"
+    print_step "Building github variant with ProGuard optimization..."
     print_info "This may take a few minutes..."
     echo ""
     
-    ./gradlew assembleRelease
+    ./gradlew assembleGithubRelease
     
     print_success "Build completed successfully"
 }
@@ -357,8 +357,16 @@ copy_to_release() {
     # Create release directory
     mkdir -p "$RELEASE_DIR"
     
+    # Use current version if NEW_VERSION_NAME is not set (build-only mode)
+    if [ -z "$NEW_VERSION_NAME" ]; then
+        get_current_version
+        VERSION_FOR_RELEASE="$CURRENT_VERSION_NAME"
+    else
+        VERSION_FOR_RELEASE="$NEW_VERSION_NAME"
+    fi
+    
     # APK name for GitHub releases
-    RELEASE_APK_NAME="${APP_NAME}-v${NEW_VERSION_NAME}.apk"
+    RELEASE_APK_NAME="${APP_NAME}-v${VERSION_FOR_RELEASE}.apk"
     RELEASE_APK_PATH="$RELEASE_DIR/$RELEASE_APK_NAME"
     
     # Copy APK
@@ -463,10 +471,8 @@ EOF
     echo ""
     
     # Offer to edit release notes
-    read -p "Edit release notes now? (y/n) " -n 1 -r
-    echo ""
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    read -p "Edit release notes now? [Y/n] " -r
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         # Detect default editor
         if [ -n "$EDITOR" ]; then
             $EDITOR "$NOTES_FILE"
@@ -565,9 +571,10 @@ print_summary() {
     print_header "Release Summary"
     
     echo ""
-    echo -e "${GREEN}${BOLD}🎉 Release v${NEW_VERSION_NAME} completed successfully!${NC}"
+    echo -e "${GREEN}${BOLD}🎉 GitHub Release v${NEW_VERSION_NAME} completed successfully!${NC}"
     echo ""
     echo -e "${BOLD}📊 Release Details:${NC}"
+    echo "  ├─ Variant: github (self-update enabled)"
     echo "  ├─ Version: v${NEW_VERSION_NAME} (code: ${NEW_VERSION_CODE})"
     echo "  ├─ Tag: v${NEW_VERSION_NAME}"
     echo "  ├─ APK: ${APP_NAME}-v${NEW_VERSION_NAME}.apk"
@@ -584,6 +591,9 @@ print_summary() {
     echo "  1. Download APK from GitHub releases"
     echo "  2. Update via in-app updater (Settings → About → Check for Updates)"
     echo ""
+    echo -e "${BOLD}📦 For Play Store release:${NC}"
+    echo "  ./gradlew bundlePlaystoreRelease"
+    echo ""
     echo -e "${GREEN}✓ All done! Your release is live on GitHub${NC}"
     echo ""
 }
@@ -595,9 +605,10 @@ print_build_summary() {
     get_current_version
     
     echo ""
-    echo -e "${GREEN}${BOLD}✓ Build completed successfully!${NC}"
+    echo -e "${GREEN}${BOLD}✓ GitHub variant build completed successfully!${NC}"
     echo ""
     echo -e "${BOLD}📦 Build Details:${NC}"
+    echo "  ├─ Variant: github (self-update enabled)"
     echo "  ├─ Version: v${CURRENT_VERSION_NAME} (code: ${CURRENT_VERSION_CODE})"
     echo "  ├─ APK: ${APP_NAME}-v${CURRENT_VERSION_NAME}.apk"
     echo "  ├─ Location: $RELEASE_DIR/${APP_NAME}-v${CURRENT_VERSION_NAME}.apk"
@@ -606,6 +617,9 @@ print_build_summary() {
     echo ""
     echo -e "${BOLD}📱 Test Installation:${NC}"
     echo "  adb install $RELEASE_DIR/${APP_NAME}-v${CURRENT_VERSION_NAME}.apk"
+    echo ""
+    echo -e "${BOLD}📦 For Play Store:${NC}"
+    echo "  ./gradlew bundlePlaystoreRelease"
     echo ""
     echo -e "${GREEN}✓ APK ready for testing!${NC}"
     echo ""
@@ -619,13 +633,15 @@ main() {
     if [ "$BUILD_ONLY" = true ]; then
         echo "╔══════════════════════════════════════════════════════╗"
         echo "║                                                      ║"
-        echo "║         MosqueClock - Build APK Only                ║"
+        echo "║     MosqueClock - Build GitHub APK Only             ║"
+        echo "║         (with self-update feature)                  ║"
         echo "║                                                      ║"
         echo "╚══════════════════════════════════════════════════════╝"
     else
         echo "╔══════════════════════════════════════════════════════╗"
         echo "║                                                      ║"
-        echo "║         MosqueClock - Automated Release             ║"
+        echo "║     MosqueClock - Automated GitHub Release          ║"
+        echo "║         (with self-update feature)                  ║"
         echo "║                                                      ║"
         echo "╚══════════════════════════════════════════════════════╝"
     fi
@@ -640,10 +656,8 @@ main() {
             print_info "Incremental build mode: Skipping clean step for faster builds"
         fi
         echo ""
-        read -p "Continue with build? (y/n) " -n 1 -r
-        echo ""
-        
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        read -p "Continue with build? [Y/n] " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
             print_info "Build cancelled"
             exit 0
         fi
@@ -664,9 +678,9 @@ main() {
     print_warning "This will:"
     echo "  1. Update version in build.gradle.kts"
     if [ "$NO_CLEAN" = true ]; then
-        echo "  2. Build release APK (incremental, no clean)"
+        echo "  2. Build GitHub release APK (incremental, no clean)"
     else
-        echo "  2. Clean and build release APK"
+        echo "  2. Clean and build GitHub release APK"
     fi
     echo "  3. Generate checksums"
     echo "  4. Commit version changes"
@@ -674,10 +688,8 @@ main() {
     echo "  6. Push to GitHub"
     echo "  7. Create GitHub release with APK"
     echo ""
-    read -p "Continue with automated release? (y/n) " -n 1 -r
-    echo ""
-    
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    read -p "Continue with automated release? [Y/n] " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         print_info "Release cancelled"
         exit 0
     fi

@@ -211,16 +211,18 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     
+    // Self-update feature only available for GitHub/sideload distribution
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     val apkDownloader = remember { ApkDownloader() }
     val updateChecker = remember { UpdateChecker() }
     
-    // Check for updates on startup (only once)
+    // Check for updates on startup (only once) - GitHub distribution only
     var hasCheckedForUpdates by remember { mutableStateOf(false) }
     
     LaunchedEffect(settings.autoUpdateCheckEnabled, hasCheckedForUpdates) {
-        if (settings.autoUpdateCheckEnabled && !hasCheckedForUpdates) {
+        // Only check for updates if self-update is enabled (GitHub builds)
+        if (BuildConfig.ENABLE_SELF_UPDATE && settings.autoUpdateCheckEnabled && !hasCheckedForUpdates) {
             hasCheckedForUpdates = true
             // Small delay to let the app initialize first
             delay(2000)
@@ -330,8 +332,8 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
             )
         }
         
-        // Auto-update dialog
-        if (showUpdateDialog && updateInfo != null) {
+        // Auto-update dialog (GitHub distribution only)
+        if (BuildConfig.ENABLE_SELF_UPDATE && showUpdateDialog && updateInfo != null) {
             UpdateDialog(
                 updateInfo = updateInfo!!,
                 apkDownloader = apkDownloader,

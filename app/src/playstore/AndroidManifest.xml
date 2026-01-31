@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 
+    Play Store Flavor Manifest
+    Removes permissions that are not allowed for Play Store distribution:
+    - REQUEST_INSTALL_PACKAGES: Not needed since Play Store handles updates
+    
+    Note: QUERY_ALL_PACKAGES is kept because it's needed for the app drawer feature.
+    You'll need to declare this in Play Console with justification:
+    "Core functionality - launcher/home screen app that displays installed apps"
+    -->
+    
+    <!-- Remove self-update related permission for Play Store -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:node="remove" />
+
+</manifest>

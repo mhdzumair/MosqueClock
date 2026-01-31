@@ -128,20 +128,20 @@ android {
         }
     }
 
-    // Product flavors for different deployment scenarios (optional - comment out if not needed)
-    // flavorDimensions += "deployment"
-    // productFlavors {
-    //     create("production") {
-    //         dimension = "deployment"
-    //         applicationIdSuffix = ""
-    //         versionNameSuffix = ""
-    //     }
-    //     create("mosque") {
-    //         dimension = "deployment"
-    //         applicationIdSuffix = ".mosque"
-    //         versionNameSuffix = "-mosque"
-    //     }
-    // }
+    // Product flavors for different distribution channels
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("github") {
+            dimension = "distribution"
+            // GitHub/sideload distribution - includes self-update feature
+            buildConfigField("Boolean", "ENABLE_SELF_UPDATE", "true")
+        }
+        create("playstore") {
+            dimension = "distribution"
+            // Play Store distribution - self-update disabled (Google policy)
+            buildConfigField("Boolean", "ENABLE_SELF_UPDATE", "false")
+        }
+    }
 }
 
 dependencies {

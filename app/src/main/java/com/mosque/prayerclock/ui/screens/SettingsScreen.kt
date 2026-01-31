@@ -3186,313 +3186,319 @@ private fun AboutSettings(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Self-update features only available for GitHub/sideload distribution
+            // Play Store builds use Google Play for updates (per Google policy)
+            if (BuildConfig.ENABLE_SELF_UPDATE) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Auto Update Check Toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.auto_update_title),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.auto_update_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    )
-                }
-                Switch(
-                    checked = autoUpdateCheckEnabled,
-                    onCheckedChange = onAutoUpdateCheckEnabledChange,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Check for Updates Button
-            OutlinedButton(
-                onClick = {
-                    scope.launch {
-                        isChecking = true
-                        updateCheckError = false
-                        try {
-                            val updateChecker = UpdateChecker()
-                            val result = updateChecker.checkForUpdates(currentVersion)
-                            updateInfo = result
-                            if (result == null) {
-                                updateCheckError = true
-                            }
-                        } catch (e: Exception) {
-                            updateCheckError = true
-                        } finally {
-                            isChecking = false
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isChecking,
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    ),
-            ) {
+                // Auto Update Check Toggle
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (isChecking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp).padding(end = 8.dp),
-                            strokeWidth = 2.dp,
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.auto_update_title),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
-                        Text(stringResource(R.string.checking_updates))
-                    } else {
-                        Text(stringResource(R.string.check_for_updates))
+                        Text(
+                            text = stringResource(R.string.auto_update_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                    Switch(
+                        checked = autoUpdateCheckEnabled,
+                        onCheckedChange = onAutoUpdateCheckEnabledChange,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Check for Updates Button
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            isChecking = true
+                            updateCheckError = false
+                            try {
+                                val updateChecker = UpdateChecker()
+                                val result = updateChecker.checkForUpdates(currentVersion)
+                                updateInfo = result
+                                if (result == null) {
+                                    updateCheckError = true
+                                }
+                            } catch (e: Exception) {
+                                updateCheckError = true
+                            } finally {
+                                isChecking = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isChecking,
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        ),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (isChecking) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp).padding(end = 8.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Text(stringResource(R.string.checking_updates))
+                        } else {
+                            Text(stringResource(R.string.check_for_updates))
+                        }
                     }
                 }
             }
 
-            // Update Status
-            if (updateInfo != null && !isChecking) {
-                if (updateInfo!!.hasUpdate) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            ),
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.update_available, updateInfo!!.latestVersion),
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+            // Update Status (only for GitHub/sideload distribution)
+            if (BuildConfig.ENABLE_SELF_UPDATE) {
+                if (updateInfo != null && !isChecking) {
+                    if (updateInfo!!.hasUpdate) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                ),
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(R.string.update_available, updateInfo!!.latestVersion),
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                        Text(
+                                            text = "Current: v$currentVersion",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Install permission warning (Android 8.0+)
+                                if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors =
+                                            CardDefaults.cardColors(
+                                                containerColor =
+                                                    MaterialTheme.colorScheme.errorContainer.copy(
+                                                        alpha = 0.3f,
+                                                    ),
+                                            ),
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                        ) {
+                                            Text(
+                                                text = "⚠️ Install Permission Required",
+                                                style =
+                                                    MaterialTheme.typography.bodyMedium.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                    ),
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text =
+                                                    "To install updates, you need to grant install permission for this app.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Button(
+                                                onClick = {
+                                                    apkDownloader.requestInstallPermission(context)
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors =
+                                                    ButtonDefaults.buttonColors(
+                                                        containerColor = MaterialTheme.colorScheme.error,
+                                                    ),
+                                            ) {
+                                                Text("Grant Install Permission")
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+
+                                // Download and Install Button
+                                Button(
+                                    onClick = {
+                                        // Check permission first
+                                        if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                            apkDownloader.requestInstallPermission(context)
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "Please allow installing from this source to update the app",
+                                                    Toast.LENGTH_LONG,
+                                                ).show()
+                                            return@Button
+                                        }
+
+                                        if (isFileAlreadyDownloaded) {
+                                            // If file is already downloaded, just install it
+                                            val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)
+                                            val file = File(context.getExternalFilesDir(null), fileName)
+
+                                            if (!file.exists()) {
+                                                Toast.makeText(context, "APK file not found", Toast.LENGTH_SHORT).show()
+                                                isFileAlreadyDownloaded = false
+                                                return@Button
+                                            }
+
+                                            val uri: Uri =
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                                    FileProvider.getUriForFile(
+                                                        context,
+                                                        "${context.packageName}.fileprovider",
+                                                        file,
+                                                    )
+                                                } else {
+                                                    Uri.fromFile(file)
+                                                }
+
+                                            // Use ACTION_INSTALL_PACKAGE for better compatibility (Android 8.0+)
+                                            val installIntent =
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                                    Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                                                        setDataAndType(uri, "application/vnd.android.package-archive")
+                                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                        putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                                                        putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                                                    }
+                                                } else {
+                                                    Intent(Intent.ACTION_VIEW).apply {
+                                                        setDataAndType(uri, "application/vnd.android.package-archive")
+                                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                    }
+                                                }
+
+                                            if (installIntent.resolveActivity(context.packageManager) != null) {
+                                                context.startActivity(installIntent)
+                                                Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "No installer app found", Toast.LENGTH_LONG).show()
+                                            }
+                                        } else {
+                                            // Download the file
+                                            isDownloading = true
+                                            apkDownloader.downloadApk(
+                                                context = context,
+                                                downloadUrl = updateInfo!!.downloadUrl,
+                                                version = updateInfo!!.latestVersion,
+                                                onComplete = {
+                                                    isDownloading = false
+                                                    isFileAlreadyDownloaded = true
+                                                },
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isDownloading,
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (isDownloading) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp).padding(end = 8.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaterialTheme.colorScheme.onPrimary,
+                                            )
+                                            if (downloadProgress.progress > 0) {
+                                                Text("Downloading ${downloadProgress.progress}%")
+                                            } else {
+                                                Text("Downloading...")
+                                            }
+                                        } else {
+                                            Text(
+                                                if (isFileAlreadyDownloaded) {
+                                                    stringResource(R.string.install_update)
+                                                } else {
+                                                    stringResource(R.string.download_update)
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Download Progress Bar
+                                if (isDownloading && downloadProgress.progress > 0) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    androidx.compose.material3.LinearProgressIndicator(
+                                        progress = downloadProgress.progress / 100f,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                     )
                                     Text(
-                                        text = "Current: v$currentVersion",
+                                        text = "${apkDownloader.formatBytes(
+                                            downloadProgress.bytesDownloaded,
+                                        )} / ${apkDownloader.formatBytes(downloadProgress.totalBytes)}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                                     )
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Install permission warning (Android 8.0+)
-                            if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors =
-                                        CardDefaults.cardColors(
-                                            containerColor =
-                                                MaterialTheme.colorScheme.errorContainer.copy(
-                                                    alpha = 0.3f,
-                                                ),
-                                        ),
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(12.dp),
-                                    ) {
-                                        Text(
-                                            text = "⚠️ Install Permission Required",
-                                            style =
-                                                MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                ),
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text =
-                                                "To install updates, you need to grant install permission for this app.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Button(
-                                            onClick = {
-                                                apkDownloader.requestInstallPermission(context)
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors =
-                                                ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.error,
-                                                ),
-                                        ) {
-                                            Text("Grant Install Permission")
-                                        }
-                                    }
+                                // Release Notes (if available)
+                                if (updateInfo!!.releaseNotes.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "What's New:",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    // Show full release notes with markdown formatting
+                                    MarkdownText(
+                                        markdown = updateInfo!!.releaseNotes,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-
-                            // Download and Install Button
-                            Button(
-                                onClick = {
-                                    // Check permission first
-                                    if (!hasInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        apkDownloader.requestInstallPermission(context)
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                "Please allow installing from this source to update the app",
-                                                Toast.LENGTH_LONG,
-                                            ).show()
-                                        return@Button
-                                    }
-
-                                    if (isFileAlreadyDownloaded) {
-                                        // If file is already downloaded, just install it
-                                        val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)
-                                        val file = File(context.getExternalFilesDir(null), fileName)
-
-                                        if (!file.exists()) {
-                                            Toast.makeText(context, "APK file not found", Toast.LENGTH_SHORT).show()
-                                            isFileAlreadyDownloaded = false
-                                            return@Button
-                                        }
-
-                                        val uri: Uri =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                                FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.fileprovider",
-                                                    file,
-                                                )
-                                            } else {
-                                                Uri.fromFile(file)
-                                            }
-
-                                        // Use ACTION_INSTALL_PACKAGE for better compatibility (Android 8.0+)
-                                        val installIntent =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                                Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-                                                    setDataAndType(uri, "application/vnd.android.package-archive")
-                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                    putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-                                                    putExtra(Intent.EXTRA_RETURN_RESULT, true)
-                                                }
-                                            } else {
-                                                Intent(Intent.ACTION_VIEW).apply {
-                                                    setDataAndType(uri, "application/vnd.android.package-archive")
-                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                }
-                                            }
-
-                                        if (installIntent.resolveActivity(context.packageManager) != null) {
-                                            context.startActivity(installIntent)
-                                            Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, "No installer app found", Toast.LENGTH_LONG).show()
-                                        }
-                                    } else {
-                                        // Download the file
-                                        isDownloading = true
-                                        apkDownloader.downloadApk(
-                                            context = context,
-                                            downloadUrl = updateInfo!!.downloadUrl,
-                                            version = updateInfo!!.latestVersion,
-                                            onComplete = {
-                                                isDownloading = false
-                                                isFileAlreadyDownloaded = true
-                                            },
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = !isDownloading,
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (isDownloading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp).padding(end = 8.dp),
-                                            strokeWidth = 2.dp,
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                        )
-                                        if (downloadProgress.progress > 0) {
-                                            Text("Downloading ${downloadProgress.progress}%")
-                                        } else {
-                                            Text("Downloading...")
-                                        }
-                                    } else {
-                                        Text(
-                                            if (isFileAlreadyDownloaded) {
-                                                stringResource(R.string.install_update)
-                                            } else {
-                                                stringResource(R.string.download_update)
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Download Progress Bar
-                            if (isDownloading && downloadProgress.progress > 0) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                androidx.compose.material3.LinearProgressIndicator(
-                                    progress = downloadProgress.progress / 100f,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                )
-                                Text(
-                                    text = "${apkDownloader.formatBytes(
-                                        downloadProgress.bytesDownloaded,
-                                    )} / ${apkDownloader.formatBytes(downloadProgress.totalBytes)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                                )
-                            }
-
-                            // Release Notes (if available)
-                            if (updateInfo!!.releaseNotes.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "What's New:",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                                // Show full release notes with markdown formatting
-                                MarkdownText(
-                                    markdown = updateInfo!!.releaseNotes,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
                             }
                         }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.no_updates_available),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
                     }
-                } else {
+                }
+
+                if (updateCheckError && !isChecking) {
                     Text(
-                        text = stringResource(R.string.no_updates_available),
+                        text = stringResource(R.string.update_check_failed),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
-            }
-
-            if (updateCheckError && !isChecking) {
-                Text(
-                    text = stringResource(R.string.update_check_failed),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
