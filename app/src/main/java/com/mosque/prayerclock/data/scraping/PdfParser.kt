@@ -151,49 +151,40 @@ class PdfParser
         }
 
         private fun extractMonthAndYear(text: String): Pair<String, Int> {
-            // Try to find month from actual date entries first
-            val dateRegex = Regex("""(\d{1,2})-(\w{3})""")
-            val dateMatches = dateRegex.findAll(text).toList()
+            val monthMapping =
+                mapOf(
+                    "Jan" to "January", "Feb" to "February", "Mar" to "March", "Apr" to "April",
+                    "May" to "May", "Jun" to "June", "Jul" to "July", "Aug" to "August",
+                    "Sep" to "September", "Oct" to "October", "Nov" to "November", "Dec" to "December",
+                )
+
+            // Support both "1-Apr" (day-month) and "Apr-01" (month-day) formats
+            val dayMonthMatches = Regex("""(\d{1,2})-([A-Za-z]{3})""").findAll(text).toList()
+            val monthDayMatches = Regex("""([A-Za-z]{3})-(\d{1,2})""").findAll(text).toList()
+
+            val monthAbbr =
+                when {
+                    dayMonthMatches.isNotEmpty() -> dayMonthMatches.first().groupValues[2]
+                    monthDayMatches.isNotEmpty() -> monthDayMatches.first().groupValues[1]
+                    else -> null
+                }
 
             val month =
-                if (dateMatches.isNotEmpty()) {
-                    val monthAbbr = dateMatches.first().groupValues[2]
-                    val monthMapping =
-                        mapOf(
-                            "Jan" to "January",
-                            "Feb" to "February",
-                            "Mar" to "March",
-                            "Apr" to "April",
-                            "May" to "May",
-                            "Jun" to "June",
-                            "Jul" to "July",
-                            "Aug" to "August",
-                            "Sep" to "September",
-                            "Oct" to "October",
-                            "Nov" to "November",
-                            "Dec" to "December",
-                        )
-                    monthMapping[monthAbbr] ?: monthAbbr
+                if (monthAbbr != null) {
+                    monthMapping[monthAbbr.replaceFirstChar { it.titlecase() }] ?: monthAbbr
                 } else {
-                    // Fallback: Look for full month names
                     val monthRegex =
                         Regex(
                             """(?<!ACJU)(?<!News)\b(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\b""",
                             RegexOption.IGNORE_CASE,
                         )
-                    val monthMatch = monthRegex.find(text)
-                    monthMatch?.groupValues?.get(1)?.replaceFirstChar { it.titlecase() } ?: "Unknown"
+                    monthRegex.find(text)?.groupValues?.get(1)?.replaceFirstChar { it.titlecase() } ?: "Unknown"
                 }
 
-            // Extract year
             val yearRegex = Regex("""20\d{2}""")
-            val yearMatch = yearRegex.find(text)
             val year =
-                yearMatch?.value?.toIntOrNull()
-                    ?: Clock.System
-                        .now()
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .year
+                yearRegex.find(text)?.value?.toIntOrNull()
+                    ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
 
             return Pair(month, year)
         }
@@ -204,120 +195,112 @@ class PdfParser
         ): List<DailyPrayerTime> {
             val prayerTimes = mutableListOf<DailyPrayerTime>()
 
-            // Try multiple patterns to handle different PDF formats
-            val patterns =
+            val monthNumMap =
+                mapOf(
+                    "Jan" to "01", "Feb" to "02", "Mar" to "03", "Apr" to "04",
+                    "May" to "05", "Jun" to "06", "Jul" to "07", "Aug" to "08",
+                    "Sep" to "09", "Oct" to "10", "Nov" to "11", "Dec" to "12",
+                )
+
+            // Day-Month patterns: "1-Apr" or "9-Dec"
+            val dayMonthPatterns =
                 listOf(
-                    // Pattern 1: Standard format with AM/PM (Dhuhr is PM, like 12:00 PM)
-                    // Example: 9-Dec 4:44 AM 6:06 AM 12:00 PM 3:21 PM 5:52 PM 7:06 PM
+                    // Pattern 1: Dhuhr is PM (12:xx PM)
                     Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
+                        """(\d{1,2})-([A-Za-z]{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
                         RegexOption.IGNORE_CASE,
                     ),
-                    // Pattern 2: Format with mixed AM/PM (Dhuhr is 11:XX AM before noon)
-                    // Example: 1-Dec 4:41 AM 6:03 AM 11:56 AM 3:18 PM 5:49 PM 7:02 PM
+                    // Pattern 2: Dhuhr is AM (11:xx AM before noon)
                     Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
+                        """(\d{1,2})-([A-Za-z]{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
                         RegexOption.IGNORE_CASE,
                     ),
-                    // Pattern 3: More flexible with whitespace - with AM/PM markers (case insensitive)
+                    // Pattern 3: No AM/PM markers
                     Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s*(?:AM|am)?\s+(\d{1,2}:\d{2})\s*(?:AM|am)?\s+(\d{1,2}:\d{2})\s*(?:AM|PM|am|pm)?\s+(\d{1,2}:\d{2})\s*(?:PM|pm)?\s+(\d{1,2}:\d{2})\s*(?:PM|pm)?\s+(\d{1,2}:\d{2})\s*(?:PM|pm)?""",
-                        RegexOption.IGNORE_CASE,
-                    ),
-                    // Pattern 4: Format without AM/PM markers
-                    Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
-                    ),
-                    // Pattern 5: Format with varied whitespace (including newlines and tabs)
-                    Regex(
-                        """(\d{1,2})-(\w{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
-                        setOf(RegexOption.MULTILINE),
+                        """(\d{1,2})-([A-Za-z]{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
                     ),
                 )
 
-            // Collect all matches from all patterns to handle mixed formats in the same PDF
-            val allMatches = mutableListOf<MatchResult>()
-            val matchedPatterns = mutableListOf<Int>()
+            // Month-Day patterns: "May-01" (format introduced from May 2026 onwards)
+            val monthDayPatterns =
+                listOf(
+                    // Pattern 4: Dhuhr is PM (12:xx PM)
+                    Regex(
+                        """([A-Za-z]{3})-(\d{1,2})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
+                        RegexOption.IGNORE_CASE,
+                    ),
+                    // Pattern 5: Dhuhr is AM (11:xx AM before noon)
+                    Regex(
+                        """([A-Za-z]{3})-(\d{1,2})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
+                        RegexOption.IGNORE_CASE,
+                    ),
+                    // Pattern 6: No AM/PM markers
+                    Regex(
+                        """([A-Za-z]{3})-(\d{1,2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
+                    ),
+                )
 
-            for ((index, pattern) in patterns.withIndex()) {
-                val patternMatches = pattern.findAll(text).toList()
-                if (patternMatches.isNotEmpty()) {
-                    allMatches.addAll(patternMatches)
-                    matchedPatterns.add(index + 1)
-                    Log.d(TAG, "✅ Pattern ${index + 1} matched ${patternMatches.size} entries")
+            // Collect normalized (dayNum, monthAbbr, fajr, sunrise, dhuhr, asr, maghrib, isha) tuples
+            data class RawEntry(val dayNum: String, val monthAbbr: String, val fajr: String, val sunrise: String, val dhuhr: String, val asr: String, val maghrib: String, val isha: String)
+
+            val rawEntries = mutableListOf<RawEntry>()
+            val seenDates = mutableSetOf<String>()
+            val matchedPatternNums = mutableListOf<Int>()
+
+            for ((index, pattern) in dayMonthPatterns.withIndex()) {
+                for (match in pattern.findAll(text)) {
+                    val (day, mon, fajr, sunrise, dhuhr, asr, maghrib, isha) = match.destructured
+                    val key = "$day-$mon"
+                    if (seenDates.add(key)) rawEntries.add(RawEntry(day, mon, fajr, sunrise, dhuhr, asr, maghrib, isha))
+                }
+                if (rawEntries.isNotEmpty()) matchedPatternNums.add(index + 1)
+            }
+
+            if (rawEntries.isEmpty()) {
+                for ((index, pattern) in monthDayPatterns.withIndex()) {
+                    for (match in pattern.findAll(text)) {
+                        val (mon, day, fajr, sunrise, dhuhr, asr, maghrib, isha) = match.destructured
+                        val key = "$day-$mon"
+                        if (seenDates.add(key)) rawEntries.add(RawEntry(day, mon, fajr, sunrise, dhuhr, asr, maghrib, isha))
+                    }
+                    if (rawEntries.isNotEmpty()) matchedPatternNums.add(index + 4)
                 }
             }
 
-            // Remove duplicate matches by date (keep first occurrence)
-            val uniqueMatches = allMatches.distinctBy { match ->
-                // Extract date from match (first two groups are day and month)
-                "${match.groupValues[1]}-${match.groupValues[2]}"
-            }
-
-            if (uniqueMatches.isEmpty()) {
+            if (rawEntries.isEmpty()) {
                 Log.w(TAG, "⚠️ No prayer time entries found in PDF text using any pattern")
-                // Try to find any date patterns to debug
-                val datePattern = Regex("""(\d{1,2})-(\w{3})""")
-                val dateMatches = datePattern.findAll(text).toList()
-
-                if (dateMatches.isNotEmpty()) {
-                    Log.d(TAG, "Found ${dateMatches.size} date patterns but couldn't match complete prayer times")
-                    // Log first 3 entries context for debugging
-                    for (i in 0 until minOf(3, dateMatches.size)) {
-                        val dateMatch = dateMatches[i]
-                        val startIdx = maxOf(0, dateMatch.range.first - 20)
-                        val endIdx = minOf(text.length, dateMatch.range.last + 200)
+                val allDateMatches =
+                    Regex("""(\d{1,2})-([A-Za-z]{3})|([A-Za-z]{3})-(\d{1,2})""").findAll(text).toList()
+                if (allDateMatches.isNotEmpty()) {
+                    Log.d(TAG, "Found ${allDateMatches.size} date patterns but couldn't match complete prayer times")
+                    for (i in 0 until minOf(3, allDateMatches.size)) {
+                        val dm = allDateMatches[i]
+                        val startIdx = maxOf(0, dm.range.first - 20)
+                        val endIdx = minOf(text.length, dm.range.last + 200)
                         Log.d(TAG, "Sample ${i + 1}: ${text.substring(startIdx, endIdx)}")
                     }
                 }
             } else {
-                Log.d(TAG, "✅ Successfully matched patterns ${matchedPatterns.joinToString(", ")} with ${uniqueMatches.size} unique entries")
+                Log.d(TAG, "✅ Matched patterns ${matchedPatternNums.joinToString(", ")} — ${rawEntries.size} unique entries")
             }
 
-            val matches = uniqueMatches
-
-            for (match in matches) {
-                val (dayNum, monthAbbr, fajr, sunrise, dhuhr, asr, maghrib, isha) = match.destructured
-
-                // Convert times to 24-hour format
-                // Note: Some PDFs use "11:57 AM" for Dhuhr (noon prayer), which is correct since it's before 12:00 PM
-                val fajr24 = convertTo24Hour(fajr, "AM")
-                val sunrise24 = convertTo24Hour(sunrise, "AM")
-                // Dhuhr might be "11:57 AM" or "12:01 PM" depending on the PDF format
-                // If it starts with 11: it's AM, if 12: or 1: it's PM
+            for (entry in rawEntries) {
+                val fajr24 = convertTo24Hour(entry.fajr, "AM")
+                val sunrise24 = convertTo24Hour(entry.sunrise, "AM")
                 val dhuhr24 =
-                    if (dhuhr.startsWith("11:")) {
-                        convertTo24Hour(dhuhr, "AM")
-                    } else {
-                        convertTo24Hour(dhuhr, "PM")
-                    }
-                val asr24 = convertTo24Hour(asr, "PM")
-                val maghrib24 = convertTo24Hour(maghrib, "PM")
-                val isha24 = convertTo24Hour(isha, "PM")
+                    if (entry.dhuhr.startsWith("11:")) convertTo24Hour(entry.dhuhr, "AM")
+                    else convertTo24Hour(entry.dhuhr, "PM")
+                val asr24 = convertTo24Hour(entry.asr, "PM")
+                val maghrib24 = convertTo24Hour(entry.maghrib, "PM")
+                val isha24 = convertTo24Hour(entry.isha, "PM")
 
-                // Create date string
-                val monthNum =
-                    mapOf(
-                        "Jan" to "01",
-                        "Feb" to "02",
-                        "Mar" to "03",
-                        "Apr" to "04",
-                        "May" to "05",
-                        "Jun" to "06",
-                        "Jul" to "07",
-                        "Aug" to "08",
-                        "Sep" to "09",
-                        "Oct" to "10",
-                        "Nov" to "11",
-                        "Dec" to "12",
-                    )[monthAbbr] ?: "01"
-
-                val dateStr = "$year-$monthNum-${dayNum.padStart(2, '0')}"
+                val monthNum = monthNumMap[entry.monthAbbr.replaceFirstChar { it.titlecase() }] ?: "01"
+                val dateStr = "$year-$monthNum-${entry.dayNum.padStart(2, '0')}"
 
                 prayerTimes.add(
                     DailyPrayerTime(
                         date = dateStr,
-                        day = dayNum.toInt(),
+                        day = entry.dayNum.toInt(),
                         fajr = fajr24,
                         sunrise = sunrise24,
                         dhuhr = dhuhr24,
@@ -329,10 +312,7 @@ class PdfParser
             }
 
             if (prayerTimes.isNotEmpty()) {
-                Log.d(
-                    TAG,
-                    "✅ Parsed ${prayerTimes.size} prayer times (${prayerTimes.first().date} to ${prayerTimes.last().date})",
-                )
+                Log.d(TAG, "✅ Parsed ${prayerTimes.size} prayer times (${prayerTimes.first().date} to ${prayerTimes.last().date})")
             } else {
                 Log.w(TAG, "⚠️ No prayer times were parsed from PDF")
             }
