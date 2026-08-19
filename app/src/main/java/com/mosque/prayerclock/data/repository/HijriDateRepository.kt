@@ -753,8 +753,8 @@ class HijriDateRepository
             return when (normalizedName) {
                 "muharram" -> 1
                 "safar" -> 2
-                // Rabi' al-Awwal (3rd month) - ACJU format: "Rabi'ul Awwal"
-                "rabialawwal", "rabiulawwal", "rabialawal" -> 3
+                // Rabi' al-Awwal (3rd month) - ACJU format: "Rabi'ul Awwal" / "Rabee`unil Awwal"
+                "rabialawwal", "rabiulawwal", "rabialawal", "rabeeunilawwal" -> 3
                 // Rabi' al-Thani (4th month) - ACJU format: "Rabee`unith Thaani"
                 "rabialthani", "rabiulthani", "rabiathani", "rabeeuniththaani" -> 4
                 // Jumada al-Awwal (5th month) - ACJU format: "Jumaadal Oola"
