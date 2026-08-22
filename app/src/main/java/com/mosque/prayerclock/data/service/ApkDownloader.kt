@@ -14,6 +14,7 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.mosque.prayerclock.utils.PermissionsHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -77,11 +78,7 @@ class ApkDownloader
          * Required for Android 8.0 (API 26) and above
          */
         fun canInstallPackages(context: Context): Boolean =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.packageManager.canRequestPackageInstalls()
-            } else {
-                true // Permission not required for older Android versions
-            }
+            PermissionsHelper.hasInstallPackagesPermission(context)
 
         /**
          * Request install packages permission

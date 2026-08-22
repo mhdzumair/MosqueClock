@@ -72,12 +72,23 @@ object PermissionsHelper {
     /**
      * Check if app has install packages permission
      */
-    fun hasInstallPackagesPermission(context: Context): Boolean =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.packageManager.canRequestPackageInstalls()
-        } else {
-            true
-        }
+    fun hasInstallPackagesPermission(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+
+        // Play Store builds deliberately remove REQUEST_INSTALL_PACKAGES. Android throws a
+        // SecurityException when canRequestPackageInstalls() is queried by an app which did not
+        // declare it, so checking a status must never be allowed to terminate Settings.
+        if (!isPermissionDeclared(context, Manifest.permission.REQUEST_INSTALL_PACKAGES)) return false
+        return runCatching { context.packageManager.canRequestPackageInstalls() }.getOrDefault(false)
+    }
+
+    private fun isPermissionDeclared(context: Context, permission: String): Boolean =
+        runCatching {
+            context.packageManager
+                .getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS)
+                .requestedPermissions
+                ?.contains(permission) == true
+        }.getOrDefault(false)
 
     /**
      * Check if app has storage permission (for older Android versions)
@@ -210,7 +221,10 @@ object PermissionsHelper {
         }
 
         // Install Packages Permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            isPermissionDeclared(context, Manifest.permission.REQUEST_INSTALL_PACKAGES)
+        ) {
             permissions.add(
                 PermissionStatus(
                     name = "Install Unknown Apps",
@@ -422,4 +436,3 @@ object PermissionsHelper {
         }
     }
 }
-

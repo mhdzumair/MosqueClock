@@ -209,6 +209,12 @@ class SettingsViewModel
             }
         }
 
+        fun updateScreenFaceId(faceId: String) {
+            viewModelScope.launch {
+                settingsRepository.updateScreenFaceId(faceId)
+            }
+        }
+
         fun updateWeatherApiKey(apiKey: String) {
             viewModelScope.launch {
                 settingsRepository.updateWeatherApiKey(apiKey)

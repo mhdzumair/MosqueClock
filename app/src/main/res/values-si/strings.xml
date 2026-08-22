@@ -85,6 +85,18 @@
     <string name="color_theme_title">වර්ණ තේමාව</string>
     <string name="color_theme_description">ඔබේ කැමති වර්ණ තෝරන්න</string>
 
+    <!-- Screen Face -->
+    <string name="screen_face_settings_title">තිර මුහුණ</string>
+    <string name="screen_face_settings_description">සමස්ත තිර බිම් සැලසුම සහ සැලසුම තෝරන්න</string>
+    <string name="screen_face_classic">සම්භාව්‍ය</string>
+    <string name="screen_face_classic_description">ඔරලෝසුව, යාඥා කාලසටහන සහ කාලගුණය සහිත සාම්ප්‍රදායික සැලසුම</string>
+
+    <!-- Clock Face -->
+    <string name="clock_face_settings_title">ඔරලෝසු මුහුණ</string>
+    <string name="clock_face_settings_description">ඩිජිටල් සහ ඇනලොග් ඔරලෝසු සඳහා මුහුණු සැලසුම තෝරන්න</string>
+    <string name="clock_face_digital_section">ඩිජිටල් ඔරලෝසු මුහුණ</string>
+    <string name="clock_face_analog_section">ඇනලොග් ඔරලෝසු මුහුණ</string>
+
     <!-- Prayer Time Letters (for highlighting) -->
     <string name="azan_letter">අදාන්</string>
     <string name="iqamah_letter">ඉකාමත්</string>
@@ -130,6 +142,7 @@
     <string name="countdown_label_minutes">මිනිත්තු</string>
     <string name="countdown_label_seconds">තත්පර</string>
     <string name="best_time_dua">දුආ කිරීමට හොඳම කාලය</string>
+    <string name="friday_night_bayan">සිකුරාදා රාත්‍රී බයාන්</string>
     
     <!-- Dua for Joining Saff (Prayer Row) -->
     <string name="dua_joining_saff_title">පේළියට එකතු වන විට කියන දුආව</string>
@@ -148,4 +161,13 @@
     <string name="open_android_settings" translatable="false">Android සැකසුම් විවෘත කරන්න</string>
     <string name="open_date_time_settings" translatable="false">දිනය සහ වේලා සැකසුම් විවෘත කරන්න</string>
     <string name="install_update" translatable="false">යාවත්කාලීනය ස්ථාපනය කරන්න</string>
+    <string-array name="weekdays">
+        <item>සඳුදා</item>
+        <item>අඟහරුවාදා</item>
+        <item>බදාදා</item>
+        <item>බ්‍රහස්පතින්දා</item>
+        <item>සිකුරාදා</item>
+        <item>සෙනසුරාදා</item>
+        <item>ඉරිදා</item>
+    </string-array>
 </resources>

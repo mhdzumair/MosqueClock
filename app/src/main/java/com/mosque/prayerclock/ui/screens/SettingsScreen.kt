@@ -108,6 +108,7 @@ import com.mosque.prayerclock.data.service.ApkDownloader
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.ui.components.MarkdownText
+import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
 import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.utils.LauncherHelper
 import com.mosque.prayerclock.viewmodel.CacheStats
@@ -273,6 +274,13 @@ fun SettingsScreen(
                         show24Hour = settings.show24HourFormat,
                         onShowSecondsChange = viewModel::updateShowSeconds,
                         onShow24HourChange = viewModel::updateShow24HourFormat,
+                    )
+                }
+
+                item {
+                    ScreenFaceSettings(
+                        selectedFaceId = settings.screenFaceId,
+                        onFaceChange = viewModel::updateScreenFaceId,
                     )
                 }
 
@@ -2375,6 +2383,89 @@ private fun ColorPreviewBox(color: androidx.compose.ui.graphics.Color) {
                     shape = RoundedCornerShape(4.dp),
                 ),
     )
+}
+
+@Composable
+private fun ScreenFaceSettings(
+    selectedFaceId: String,
+    onFaceChange: (String) -> Unit,
+) {
+    val allFaces = ScreenFaceRegistry.faces
+    var isExpanded by remember { mutableStateOf(false) }
+    val currentFace = ScreenFaceRegistry.get(selectedFaceId)
+    val canonicalSelectedId = currentFace.id
+
+    SettingsCard {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.screen_face_settings_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    currentFace.let {
+                        Text(
+                            text = it.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            AnimatedVisibility(visible = isExpanded) {
+                Column {
+                    allFaces.forEach { face ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onFaceChange(face.id) }
+                                .padding(vertical = 12.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = face.name,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = if (face.id == canonicalSelectedId) FontWeight.Bold else FontWeight.Normal,
+                                    ),
+                                    color = if (face.id == canonicalSelectedId) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = face.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                )
+                            }
+                            if (face.id == canonicalSelectedId) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

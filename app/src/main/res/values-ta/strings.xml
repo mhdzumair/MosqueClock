@@ -100,7 +100,19 @@
     <!-- Color Theme -->
     <string name="color_theme_title">வண்ண தீம்</string>
     <string name="color_theme_description">உங்களுக்கு விருப்பமான வண்ண தேர்வு</string>
-    
+
+    <!-- Screen Face -->
+    <string name="screen_face_settings_title">திரை முகம்</string>
+    <string name="screen_face_settings_description">ஒட்டுமொத்த திரை தளவமைப்பு மற்றும் வடிவமைப்பை தேர்வு செய்யவும்</string>
+    <string name="screen_face_classic">கிளாசிக்</string>
+    <string name="screen_face_classic_description">கடிகாரம், தொழுகை அட்டவணை மற்றும் வானிலை கொண்ட பாரம்பரிய தளவமைப்பு</string>
+
+    <!-- Clock Face -->
+    <string name="clock_face_settings_title">கடிகார முகம்</string>
+    <string name="clock_face_settings_description">டிஜிட்டல் மற்றும் அனலாக் கடிகாரங்களுக்கு முக வடிவமைப்பை தேர்வு செய்யவும்</string>
+    <string name="clock_face_digital_section">டிஜிட்டல் கடிகார முகம்</string>
+    <string name="clock_face_analog_section">அனலாக் கடிகார முகம்</string>
+
     <!-- Prayer Settings -->
     <string name="manual_prayer_times">கைமுறை தொழுகை நேரங்கள்</string>
     <string name="manual_prayer_times_description">API க்கு பதிலாக கைமுறை நேரங்களைப் பயன்படுத்தவும்</string>
@@ -172,6 +184,7 @@
     <string name="countdown_label_minutes">நிமிடங்கள்</string>
     <string name="countdown_label_seconds">விநாடிகள்</string>
     <string name="best_time_dua">துஆ செய்ய சிறந்த நேரம்</string>
+    <string name="friday_night_bayan">வெள்ளிக்கிழமை இரவு பயான்</string>
     
     <!-- Dua for Joining Saff (Prayer Row) -->
     <string name="dua_joining_saff_title">வரிசையில் சேரும் போது ஓதும் துஆ</string>
@@ -190,4 +203,13 @@
     <string name="open_android_settings" translatable="false">Android அமைப்புகளைத் திறக்கவும்</string>
     <string name="open_date_time_settings" translatable="false">தேதி மற்றும் நேர அமைப்புகளைத் திறக்கவும்</string>
     <string name="install_update" translatable="false">புதுப்பிப்பை நிறுவவும்</string>
+    <string-array name="weekdays">
+        <item>திங்கள்</item>
+        <item>செவ்வாய்</item>
+        <item>புதன்</item>
+        <item>வியாழன்</item>
+        <item>வெள்ளி</item>
+        <item>சனி</item>
+        <item>ஞாயிறு</item>
+    </string-array>
 </resources>

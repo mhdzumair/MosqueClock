@@ -71,6 +71,7 @@ class SettingsRepository
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
             val FULL_SCREEN_COUNTDOWN_ENABLED = booleanPreferencesKey("full_screen_countdown_enabled")
             val COLOR_THEME = stringPreferencesKey("color_theme")
+            val SCREEN_FACE_ID = stringPreferencesKey("screen_face_id")
             val WEATHER_API_KEY = stringPreferencesKey("weather_api_key")
             val OPENWEATHERMAP_API_KEY = stringPreferencesKey("openweathermap_api_key")
             val MOSQUE_CLOCK_BACKEND_URL = stringPreferencesKey("mosque_clock_backend_url")
@@ -128,6 +129,7 @@ class SettingsRepository
                         preferences[PreferencesKeys.SHOW_24_HOUR_FORMAT]
                             ?: false,
                     colorTheme = preferences[PreferencesKeys.COLOR_THEME] ?: "classic_mosque",
+                    screenFaceId = preferences[PreferencesKeys.SCREEN_FACE_ID] ?: "classic",
                     manualFajrAzan = preferences[PreferencesKeys.MANUAL_FAJR_AZAN] ?: "05:30",
                     manualSunrise = preferences[PreferencesKeys.MANUAL_SUNRISE] ?: "06:15",
                     manualDhuhrAzan = preferences[PreferencesKeys.MANUAL_DHUHR_AZAN] ?: "12:15",
@@ -355,6 +357,10 @@ class SettingsRepository
 
         suspend fun updateColorTheme(themeId: String) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.COLOR_THEME] = themeId }
+        }
+
+        suspend fun updateScreenFaceId(faceId: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.SCREEN_FACE_ID] = faceId }
         }
 
         suspend fun updateWeatherApiKey(apiKey: String) {

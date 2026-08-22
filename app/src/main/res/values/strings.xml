@@ -197,6 +197,7 @@
     <string name="countdown_label_minutes">MINUTES</string>
     <string name="countdown_label_seconds">SECONDS</string>
     <string name="best_time_dua">Best time to make Dua</string>
+    <string name="friday_night_bayan">Friday Night Bayan</string>
     
     <!-- Dua for Joining Saff (Prayer Row) -->
     <string name="dua_joining_saff_title">Dua When Joining the Saff</string>
@@ -242,7 +243,19 @@
     <!-- Color Theme -->
     <string name="color_theme_title">Color Theme</string>
     <string name="color_theme_description">Choose your preferred color palette</string>
-    
+
+    <!-- Screen Face -->
+    <string name="screen_face_settings_title">Screen Face</string>
+    <string name="screen_face_settings_description">Choose the overall screen layout and design</string>
+    <string name="screen_face_classic">Classic</string>
+    <string name="screen_face_classic_description">Traditional layout with clock, prayer cards, and weather</string>
+
+    <!-- Clock Face -->
+    <string name="clock_face_settings_title">Clock Face</string>
+    <string name="clock_face_settings_description">Choose the clock face design for digital and analog clocks</string>
+    <string name="clock_face_digital_section">Digital Clock Face</string>
+    <string name="clock_face_analog_section">Analog Clock Face</string>
+
     <!-- About/Version -->
     <string name="about_app" translatable="false">About</string>
     <string name="app_version" translatable="false">Version</string>
@@ -273,4 +286,13 @@
     <string name="update_install_now" translatable="false">Install Now</string>
     <string name="update_skip_version" translatable="false">Skip Version</string>
     <string name="update_later" translatable="false">Later</string>
+    <string-array name="weekdays">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
 </resources>

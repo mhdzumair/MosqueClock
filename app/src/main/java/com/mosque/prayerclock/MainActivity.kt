@@ -31,12 +31,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.service.ApkDownloader
@@ -204,7 +207,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MosqueClockApp(onExitApp: () -> Unit = {}) {
     val navController = rememberNavController()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    var settingsNavigationPending by remember { mutableStateOf(false) }
+    var consumeSettingsOpenKey by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentRoute) {
+        settingsNavigationPending = false
+    }
+    val openSettings = {
+        if (currentRoute == "main" && !settingsNavigationPending) {
+            settingsNavigationPending = true
+            navController.navigate("settings") { launchSingleTop = true }
+        }
+    }
     
     // Auto-update state
     val settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -251,7 +268,6 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
 
     // Handle back button properly for TV
     BackHandler(enabled = true) {
-        val currentRoute = navController.currentBackStackEntry?.destination?.route
         when (currentRoute) {
             "settings" -> navController.popBackStack()
             "main" -> showExitDialog = true
@@ -261,32 +277,37 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
 
     Box(
         modifier =
-            Modifier.fillMaxSize().onKeyEvent { keyEvent ->
+            Modifier.fillMaxSize().onPreviewKeyEvent { keyEvent ->
                 when (keyEvent.key) {
                     Key.Menu, Key.DirectionCenter -> {
-                        // Menu key or center D-pad to open settings
-                        if (navController.currentBackStackEntry?.destination?.route ==
-                            "main"
-                        ) {
-                            navController.navigate("settings")
+                        // Consume both halves of the key sequence that opens Settings. Otherwise
+                        // its key-up can activate the first newly focused Settings action.
+                        if (consumeSettingsOpenKey) {
+                            if (keyEvent.type == KeyEventType.KeyUp) consumeSettingsOpenKey = false
+                            true
+                        } else if (currentRoute == "main" && keyEvent.type == KeyEventType.KeyDown) {
+                            consumeSettingsOpenKey = true
+                            openSettings()
                             true
                         } else {
                             false
                         }
                     }
                     Key.Back -> {
-                        val currentRoute =
-                            navController.currentBackStackEntry?.destination?.route
-                        when (currentRoute) {
-                            "settings" -> {
-                                navController.popBackStack()
-                                true
+                        if (keyEvent.type == KeyEventType.KeyDown) {
+                            true
+                        } else {
+                            when (currentRoute) {
+                                "settings" -> {
+                                    navController.popBackStack()
+                                    true
+                                }
+                                "main" -> {
+                                    showExitDialog = true
+                                    true
+                                }
+                                else -> false
                             }
-                            "main" -> {
-                                showExitDialog = true
-                                true
-                            }
-                            else -> false
                         }
                     }
                     else -> false
@@ -295,7 +316,7 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
     ) {
         NavHost(navController = navController, startDestination = "main") {
             composable("main") {
-                MainScreen(onOpenSettings = { navController.navigate("settings") })
+                MainScreen(onOpenSettings = openSettings)
             }
 
             composable("settings") {

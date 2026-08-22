@@ -4,6 +4,19 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 
 ## 📸 Screenshots
 
+### Screen Face Scenario Gallery
+
+Classic and Horizon are independently registered screen faces. The complete gallery covers all
+six display scenarios across every color theme in English, Tamil, and Sinhala.
+
+<p align="center">
+  <a href="docs/face-gallery/Classic-Amber-TA.png"><img src="docs/face-gallery/Classic-Amber-TA.png" width="48%" alt="Classic Amber Tamil scenario sheet" /></a>
+  <a href="docs/face-gallery/Horizon-Burgundy-SI.png"><img src="docs/face-gallery/Horizon-Burgundy-SI.png" width="48%" alt="Horizon Burgundy Sinhala scenario sheet" /></a>
+</p>
+
+Browse the [complete face/theme/language scenario gallery](docs/face-gallery/README.md), or regenerate
+it using `./scripts/generate_face_gallery.sh` with an Android emulator connected.
+
 ### Classic Mosque Theme (Default)
 Traditional forest green with elegant brass accents
 <p align="center">
@@ -160,6 +173,7 @@ Full support for English, Tamil, and Sinhala with dynamic language switching
 ### ⚙️ Customization Options
 - **Mosque Name**: Add custom mosque name display
 - **Location Settings**: Configure region, city, and zones
+- **Screen Face Registry**: Classic and Horizon provide complete dashboard, countdown, bayan, and dua experiences through one extensible face contract
 - **Color Theme Selection**: 10 beautiful themes - Classic Mosque, Midnight Blue, Desert Sand, Royal Purple, Ocean Teal, Elegant Charcoal, Emerald Garden, Burgundy Elegance, Sapphire Night, Amber Sunset
 - **Clock Type**: Choose between Digital, Analog, or Both clocks displayed simultaneously
 - **Font Sizes**: Adjustable font sizes (Small, Medium, Large, Extra Large)

@@ -103,7 +103,7 @@
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:screenOrientation="landscape"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Theme.MosqueClock.SplashScreen"
             android:launchMode="singleTop"
             android:clearTaskOnLaunch="true">
@@ -126,7 +126,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:screenOrientation="landscape"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Theme.MosqueClock"
             android:launchMode="singleTop"
             android:clearTaskOnLaunch="true">
