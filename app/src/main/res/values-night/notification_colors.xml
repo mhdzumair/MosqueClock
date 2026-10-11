@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="notification_prayer_card">#253B35</color>
+    <color name="notification_prayer_ink">#ECF6F1</color>
+    <color name="notification_prayer_muted">#B2C9BF</color>
+    <color name="notification_prayer_accent">#89D8C2</color>
+    <color name="notification_prayer_selected">#175244</color>
+    <color name="notification_prayer_on_selected">#ECFFF5</color>
+</resources>

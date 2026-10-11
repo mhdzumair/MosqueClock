@@ -30,8 +30,10 @@ select faces, languages, or alternate palettes with `FACE_GALLERY_FACES`,
 
 On phones and tablets, restarting the device starts the prayer reminder service without
 opening the app. In Settings, enable **Show prayer times in notification** and allow
-Android notification permission. Expand the ongoing notification to see Fajr, Sunrise,
-Dhuhr, Asr, Maghrib and Isha, with Azan times only. It follows the selected language
+Android notification permission. The compact notification shows two rows of three labeled times;
+expanding it reveals a grid of prayer cards with day/night icons and a highlight for the
+next prayer. Fajr, Sunrise, Dhuhr, Asr, Maghrib and Isha show Azan times only. The layout
+supports light and dark mode. It follows the selected language
 and 12/24-hour format, refreshes daily, and also works when sounds are disabled.
 Multi Language uses English for the notification. The option is off by default.
 

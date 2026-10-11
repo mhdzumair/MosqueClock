@@ -26,6 +26,7 @@ import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import com.mosque.prayerclock.utils.TimeUtils
+import com.mosque.prayerclock.ui.notifications.PrayerTimetableNotification
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -307,21 +308,7 @@ class PrayerNotificationService : Service() {
         val context = notificationContext(settings)
         val showTimes = settings != null && shouldShowPrayerTimes(settings)
         val title = context.getString(if (showTimes) R.string.prayer_times_notification_title else R.string.app_name)
-        val rows = if (showTimes && times != null) {
-            listOf(
-                R.string.fajr to times.fajrAzan,
-                R.string.sunrise to times.sunrise,
-                R.string.dhuhr to times.dhuhrAzan,
-                R.string.asr to times.asrAzan,
-                R.string.maghrib to times.maghribAzan,
-                R.string.isha to times.ishaAzan,
-            ).map { (name, time) ->
-                "${context.getString(name)}  ${TimeUtils.formatTimeBasedOnPreference(time, settings!!.show24HourFormat)}"
-            }
-        } else {
-            emptyList()
-        }
-        val text = if (rows.isNotEmpty()) rows.joinToString(" · ") else context.getString(
+        val text = context.getString(
             if (showTimes) R.string.prayer_times_notification_unavailable else R.string.prayer_service_running,
         )
         val openApp = PendingIntent.getActivity(
@@ -341,12 +328,8 @@ class PrayerNotificationService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-        if (rows.isNotEmpty()) {
-            val style = NotificationCompat.InboxStyle()
-            style.setBigContentTitle(title)
-            rows.forEach { style.addLine(it) }
-            style.setSummaryText(times!!.date)
-            builder.setStyle(style)
+        if (showTimes && settings != null && times != null) {
+            PrayerTimetableNotification.apply(builder, context, settings, times)
         }
         return builder.build()
     }
@@ -356,6 +339,7 @@ class PrayerNotificationService : Service() {
         val key = listOf(
             settings?.language.toString(), settings?.showPrayerTimesNotification.toString(),
             settings?.show24HourFormat.toString(), cachedPrayerTimes.toString(),
+            cachedPrayerTimes?.let { PrayerTimetableNotification.nextPrayerIndex(it) }.toString(),
         )
         val now = System.currentTimeMillis()
         // Repost occasionally if notification permission was restored or Android allowed dismissal.

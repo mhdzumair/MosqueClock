@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/prayer_cell" android:layout_width="0dp" android:layout_height="match_parent"
+    android:layout_weight="1" android:layout_marginStart="2dp" android:layout_marginEnd="2dp"
+    android:orientation="horizontal" android:gravity="center_vertical" android:baselineAligned="false"
+    android:paddingStart="3dp" android:paddingEnd="3dp" android:paddingTop="2dp" android:paddingBottom="2dp"
+    android:background="@drawable/notification_prayer_compact_card">
+    <TextView android:id="@+id/prayer_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+        android:layout_marginEnd="2dp" android:textSize="9sp" android:textColor="@color/notification_prayer_muted" android:gravity="start|center_vertical"
+        android:autoSizeTextType="uniform" android:autoSizeMinTextSize="7sp" android:autoSizeMaxTextSize="9sp" android:autoSizeStepGranularity="1sp"
+        android:maxLines="1" android:ellipsize="end" android:includeFontPadding="false" />
+    <TextView android:id="@+id/prayer_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:textSize="10sp" android:fontFamily="sans-serif-medium" android:textColor="@color/notification_prayer_ink"
+        android:gravity="end|center_vertical" android:maxLines="1" android:includeFontPadding="false" />
+    <TextView android:id="@+id/prayer_period" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textSize="8sp" android:textColor="@color/notification_prayer_muted" android:gravity="center"
+        android:maxLines="1" android:includeFontPadding="false" />
+</LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp" android:orientation="vertical"
+    android:paddingTop="1dp" android:paddingBottom="1dp">
+    <LinearLayout android:id="@+id/prayer_first_row" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:layout_marginBottom="4dp" android:orientation="horizontal"
+        android:baselineAligned="false" />
+    <LinearLayout android:id="@+id/prayer_second_row" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal"
+        android:baselineAligned="false" />
+</LinearLayout>
