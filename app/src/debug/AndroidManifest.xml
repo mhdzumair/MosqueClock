@@ -4,7 +4,7 @@
         <activity
             android:name=".FacePreviewActivity"
             android:exported="true"
-            android:screenOrientation="landscape"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Theme.MosqueClock" />
     </application>
 </manifest>

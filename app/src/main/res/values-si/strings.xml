@@ -16,6 +16,10 @@
     <string name="iqamah">ඉකාමත්</string>
     <string name="current_time">දැන් කාලය</string>
     <string name="next_prayer">මීලඟ</string>
+    <string name="prayer_countdown_heading">%1$s %2$s දක්වා</string>
+    <string name="prayer_countdown_in">%1$s %2$s දක්වා</string>
+    <string name="now_label">දැන්</string>
+    <string name="prayer">සලාතය</string>
     <string name="time_remaining">ඉතිරි කාලය</string>
     <string name="current_prayer">දැන්</string>
     <string name="in_progress">ක්‍රියාත්මක වේ</string>
@@ -80,6 +84,14 @@
     <string name="weather_city">කාලගුණ නගරය</string>
     <string name="weather_city_description">කාලගුණ තොරතුරු සඳහා නගරය</string>
     <string name="weather_placeholder">නගර නාමය ඇතුල් කරන්න</string>
+    <string name="weather_feels_like">දැනෙන</string>
+    <string name="weather_humidity">තෙතමනය</string>
+    <string name="weather_wind">සුළං</string>
+    <string name="weather_uv">UV</string>
+    <string name="weather_condition_short">තත්ත්වය</string>
+    <string name="weather_temperature_short">උෂ්ණත්වය</string>
+    <string name="hijri_label_short">හිජ්රි</string>
+    <string name="date_label_short">දිනය</string>
 
     <!-- Color Theme -->
     <string name="color_theme_title">වර්ණ තේමාව</string>
@@ -150,6 +162,7 @@
     <string name="dua_joining_saff_meaning">යා අල්ලාහ්, ඔබේ දැහැමි සේවකයන්ට ඔබ ලබා දෙන දෙයින් හොඳම දේ මට ලබා දෙන්න.</string>
     
     <!-- Jumu'ah Prayer -->
+    <string name="safaa_kicker">නමාස්කාර කාල නිවේදනය</string>
     <string name="jummah_in_progress_title">කුත්බා දේශනාව</string>
     <string name="jummah_prayer_reminder">දේශනාවට හොඳින් සවන් දෙන්න, අල්ලාහ්ව සිහිපත් කරන්න, සහ නබි ﷺ තුමාණන්ට බහුල ලෙස සලවාත් කියන්න</string>
     

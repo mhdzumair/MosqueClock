@@ -161,7 +161,7 @@ object HorizonMobileScreenFace : ScreenFace {
                     if (data.settings.showWeather) {
                         when (val ws = data.weatherState) {
                             is WeatherUiState.Loading -> Box(
-                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                modifier = Modifier.fillMaxWidth().weight(1.5f),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(
@@ -171,9 +171,9 @@ object HorizonMobileScreenFace : ScreenFace {
                             }
                             is WeatherUiState.Success -> WeatherCard(
                                 weatherInfo = ws.weatherInfo,
-                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                modifier = Modifier.fillMaxWidth().weight(1.5f),
                             )
-                            is WeatherUiState.Error -> Spacer(modifier = Modifier.weight(1f))
+                            is WeatherUiState.Error -> Spacer(modifier = Modifier.weight(1.5f))
                         }
                     }
                 }

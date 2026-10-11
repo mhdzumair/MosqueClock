@@ -1,6 +1,7 @@
 package com.mosque.prayerclock.ui
 
 import android.content.Context
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.ui.theme.AppFonts
 import com.mosque.prayerclock.utils.LocaleManager
 
 val LocalLocalizedContext = compositionLocalOf<Context> { error("No localized context provided") }
@@ -33,6 +35,9 @@ fun LocalizedApp(
     CompositionLocalProvider(
         LocalLocalizedContext provides localizedContext,
         LocalEffectiveLanguage provides language,
+        // Every Text() that doesn't set its own fontFamily (the vast majority of the app) falls
+        // back to this — so switching language also switches to that script's bundled font.
+        LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = AppFonts.bodyFor(language)),
     ) {
         content()
     }

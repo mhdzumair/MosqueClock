@@ -24,4 +24,25 @@ class ScreenFaceRegistryTest {
         assertSame(ClassicScreenFace, ScreenFaceRegistry.get("does_not_exist"))
         assertTrue(ScreenFaceRegistry.faces.contains(ClassicScreenFace))
     }
+
+    @Test
+    fun `v2 design expansion faces are registered`() {
+        assertTrue(
+            ScreenFaceRegistry.faces.map { it.id }.containsAll(
+                listOf("ufuq", "safaa", "noor", "sahar", "kaash", "mihrab"),
+            ),
+        )
+    }
+
+    @Test
+    fun `each tv face recommends its canonical palette`() {
+        val recommendations = ScreenFaceRegistry.faces.associate { it.id to it.recommendedColorThemeId }
+
+        assertEquals("horizon_dusk", recommendations["ufuq"])
+        assertEquals("notice_paper", recommendations["safaa"])
+        assertEquals("amber_matrix", recommendations["noor"])
+        assertEquals("daylight_ivory", recommendations["sahar"])
+        assertEquals("ink_saffron", recommendations["kaash"])
+        assertEquals("sand_terracotta", recommendations["mihrab"])
+    }
 }

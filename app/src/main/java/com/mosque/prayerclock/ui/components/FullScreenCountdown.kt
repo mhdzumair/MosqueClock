@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerType
+import com.mosque.prayerclock.ui.components.screenfaces.shared.fullScreenCountdownTitle
 import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.theme.AlphaValues
@@ -101,14 +102,7 @@ fun FullScreenCountdown(
                 verticalArrangement = Arrangement.Center,
             ) {
                 // Prayer name + Azan/Iqamah title (except for Sunrise which doesn't need the label)
-                val titleText =
-                    if (prayerType == PrayerType.SUNRISE) {
-                        prayerName
-                    } else {
-                        val azanOrIqamah =
-                            localizedStringResource(if (isIqamah) R.string.iqamah else R.string.azan)
-                        "$prayerName $azanOrIqamah"
-                    }
+                val titleText = fullScreenCountdownTitle(prayerName, prayerType, isIqamah)
 
                 Text(
                     text = titleText,

@@ -2,7 +2,6 @@ package com.mosque.prayerclock.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
@@ -10,7 +9,7 @@ val Typography =
     Typography(
         bodyLarge =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = AppFonts.Display,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
@@ -18,7 +17,7 @@ val Typography =
             ),
         titleLarge =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = AppFonts.Display,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
                 lineHeight = 36.sp,
@@ -26,7 +25,7 @@ val Typography =
             ),
         displayLarge =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = AppFonts.Display,
                 fontWeight = FontWeight.Bold,
                 fontSize = 48.sp,
                 lineHeight = 56.sp,
@@ -34,7 +33,7 @@ val Typography =
             ),
         displayMedium =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = AppFonts.Display,
                 fontWeight = FontWeight.Bold,
                 fontSize = 36.sp,
                 lineHeight = 44.sp,
@@ -42,7 +41,7 @@ val Typography =
             ),
         headlineLarge =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = AppFonts.Display,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 32.sp,
                 lineHeight = 40.sp,
@@ -50,7 +49,7 @@ val Typography =
             ),
         headlineMedium =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = AppFonts.Display,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 24.sp,
                 lineHeight = 32.sp,

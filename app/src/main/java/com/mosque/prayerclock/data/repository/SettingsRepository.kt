@@ -359,8 +359,11 @@ class SettingsRepository
             dataStore.edit { preferences -> preferences[PreferencesKeys.COLOR_THEME] = themeId }
         }
 
-        suspend fun updateScreenFaceId(faceId: String) {
-            dataStore.edit { preferences -> preferences[PreferencesKeys.SCREEN_FACE_ID] = faceId }
+        suspend fun updateScreenFaceId(faceId: String, recommendedThemeId: String? = null) {
+            dataStore.edit { preferences ->
+                preferences[PreferencesKeys.SCREEN_FACE_ID] = faceId
+                recommendedThemeId?.let { preferences[PreferencesKeys.COLOR_THEME] = it }
+            }
         }
 
         suspend fun updateWeatherApiKey(apiKey: String) {

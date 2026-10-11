@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.PrayerTimes
 import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
@@ -15,6 +16,9 @@ import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.ui.components.clockfaces.ClockDisplayData
 import com.mosque.prayerclock.ui.components.clockfaces.rememberClockDisplayData
 import com.mosque.prayerclock.ui.components.getCountdownData
+import com.mosque.prayerclock.ui.components.screenfaces.shared.isPrayerUpcomingOrActive
+import com.mosque.prayerclock.ui.components.screenfaces.shared.minutesOfDay
+import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.utils.TimeUtils
 import com.mosque.prayerclock.viewmodel.MainUiState
 import com.mosque.prayerclock.viewmodel.MainViewModel
@@ -33,6 +37,8 @@ data class FullScreenCountdownData(
     val minutes: Long,
     val seconds: Long,
     val azanTime: String,
+    val targetTime: String = azanTime,
+    val totalDurationSeconds: Long = 600,
     val kind: CountdownKind,
 )
 
@@ -98,6 +104,8 @@ data class ScreenDisplayData(
                         icon = "partly_cloudy",
                         humidity = 75,
                         feelsLike = 31.0,
+                        windSpeed = 14.8,
+                        uvIndex = 1.0,
                     )
                 ),
                 currentTime = Clock.System.now(),
@@ -153,11 +161,15 @@ fun rememberScreenDisplayData(viewModel: MainViewModel): ScreenDisplayData {
         hijriDateRepository = viewModel.hijriDateRepository,
     )
 
+    val prayerNames = rememberLocalizedPrayerNames()
+
     val computed = when (val state = uiState) {
         is MainUiState.Success -> {
             val currentTime = globalCurrentTime
-            val prayerInfoList = createPrayerInfoListSimple(state.prayerTimes, currentTime)
-            val nextPrayerInfo = prayerInfoList.find { it.type == state.nextPrayer }
+            val prayerInfoList = createPrayerInfoListSimple(state.prayerTimes, currentTime, prayerNames)
+            val resolvedNext =
+                resolveSimpleNextPrayer(prayerInfoList, state.nextPrayer, currentTime, state.nextDayFajr)
+            val nextPrayerInfo = resolvedNext
 
             remember(nextPrayerInfo?.azanTime, nextPrayerInfo?.iqamahTime, currentTime) {
                 if (nextPrayerInfo != null) {
@@ -200,24 +212,73 @@ private data class SimplePrayerInfo(
     val name: String,
 )
 
+/** Localized prayer names, resolved once at the composable call site so [createPrayerInfoListSimple] —
+ *  which runs inside a `remember` calculation block and so cannot call composables itself — can use them. */
+private data class LocalizedPrayerNames(
+    val fajr: String,
+    val sunrise: String,
+    val dhuhr: String,
+    val jummah: String,
+    val asr: String,
+    val maghrib: String,
+    val isha: String,
+)
+
+@Composable
+private fun rememberLocalizedPrayerNames() = LocalizedPrayerNames(
+    fajr = localizedStringResource(R.string.fajr),
+    sunrise = localizedStringResource(R.string.sunrise),
+    dhuhr = localizedStringResource(R.string.dhuhr),
+    jummah = localizedStringResource(R.string.jummah),
+    asr = localizedStringResource(R.string.asr),
+    maghrib = localizedStringResource(R.string.maghrib),
+    isha = localizedStringResource(R.string.isha),
+)
+
 private fun createPrayerInfoListSimple(
     prayerTimes: PrayerTimesWithIqamah,
     currentTime: Instant,
+    names: LocalizedPrayerNames,
 ): List<SimplePrayerInfo> {
     val isFriday = currentTime.toLocalDateTime(TimeZone.currentSystemDefault()).dayOfWeek == DayOfWeek.FRIDAY
     return listOf(
-        SimplePrayerInfo(PrayerType.FAJR, prayerTimes.fajrAzan, prayerTimes.fajrIqamah, "Fajr"),
-        SimplePrayerInfo(PrayerType.SUNRISE, prayerTimes.sunrise, null, "Sunrise"),
+        SimplePrayerInfo(PrayerType.FAJR, prayerTimes.fajrAzan, prayerTimes.fajrIqamah, names.fajr),
+        SimplePrayerInfo(PrayerType.SUNRISE, prayerTimes.sunrise, null, names.sunrise),
         SimplePrayerInfo(
             PrayerType.DHUHR,
             prayerTimes.dhuhrAzan,
             if (isFriday) null else prayerTimes.dhuhrIqamah,
-            if (isFriday) "Jummah" else "Dhuhr",
+            if (isFriday) names.jummah else names.dhuhr,
         ),
-        SimplePrayerInfo(PrayerType.ASR, prayerTimes.asrAzan, prayerTimes.asrIqamah, "Asr"),
-        SimplePrayerInfo(PrayerType.MAGHRIB, prayerTimes.maghribAzan, prayerTimes.maghribIqamah, "Maghrib"),
-        SimplePrayerInfo(PrayerType.ISHA, prayerTimes.ishaAzan, prayerTimes.ishaIqamah, "Isha"),
+        SimplePrayerInfo(PrayerType.ASR, prayerTimes.asrAzan, prayerTimes.asrIqamah, names.asr),
+        SimplePrayerInfo(PrayerType.MAGHRIB, prayerTimes.maghribAzan, prayerTimes.maghribIqamah, names.maghrib),
+        SimplePrayerInfo(PrayerType.ISHA, prayerTimes.ishaAzan, prayerTimes.ishaIqamah, names.isha),
     )
+}
+
+/** Skips events whose time has already passed — mirrors [resolveDisplayNextPrayer] for non-composable data. */
+private fun resolveSimpleNextPrayer(
+    rows: List<SimplePrayerInfo>,
+    nextPrayer: PrayerType?,
+    currentTime: Instant,
+    nextDayFajr: PrayerTimesWithIqamah? = null,
+): SimplePrayerInfo? {
+    val now = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
+    val nowMinutes = now.hour * 60 + now.minute
+    rows.firstOrNull { it.type == nextPrayer }?.let { matched ->
+        if (isPrayerUpcomingOrActive(matched.type, matched.azanTime, matched.iqamahTime, nowMinutes)) {
+            return matched
+        }
+    }
+    rows.firstOrNull {
+        isPrayerUpcomingOrActive(it.type, it.azanTime, it.iqamahTime, nowMinutes)
+    }?.let { return it }
+    val fajr = rows.firstOrNull { it.type == PrayerType.FAJR } ?: return null
+    return if (nextDayFajr != null) {
+        fajr.copy(azanTime = nextDayFajr.fajrAzan, iqamahTime = nextDayFajr.fajrIqamah)
+    } else {
+        fajr
+    }
 }
 
 private fun computeScreenValues(
@@ -292,6 +353,8 @@ private fun computeScreenValues(
             minutes = countdownData.minutes,
             seconds = countdownData.seconds,
             azanTime = azanTime,
+            targetTime = targetTime,
+            totalDurationSeconds = (maxCountdownMinutes * 60).coerceAtLeast(1),
             kind = when {
                 isFridayNightBayan -> CountdownKind.FRIDAY_NIGHT_BAYAN
                 shouldShowIqamah -> CountdownKind.IQAMAH

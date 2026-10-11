@@ -2,8 +2,10 @@ package com.mosque.prayerclock.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.luminance
 
 @Composable
 fun MosqueClockTheme(
@@ -12,7 +14,23 @@ fun MosqueClockTheme(
 ) {
     CompositionLocalProvider(LocalColorTheme provides colorTheme) {
         // Create dynamic color scheme based on selected theme
-        val dynamicColorScheme =
+        val dynamicColorScheme = if (colorTheme.backgroundMain.luminance() > 0.5f) {
+            lightColorScheme(
+                primary = colorTheme.uiPrimary,
+                secondary = colorTheme.uiSecondary,
+                tertiary = colorTheme.uiTertiary,
+                background = colorTheme.backgroundMain,
+                surface = colorTheme.surfaceCard,
+                onPrimary = colorTheme.textPrimary,
+                onSecondary = colorTheme.textPrimary,
+                onTertiary = colorTheme.textPrimary,
+                onBackground = colorTheme.textPrimary,
+                onSurface = colorTheme.textPrimary,
+                primaryContainer = colorTheme.uiPrimary.copy(alpha = 0.3f),
+                secondaryContainer = colorTheme.uiSecondary.copy(alpha = 0.3f),
+                tertiaryContainer = colorTheme.uiTertiary.copy(alpha = 0.3f),
+            )
+        } else {
             darkColorScheme(
                 primary = colorTheme.uiPrimary, // Primary UI color from theme
                 secondary = colorTheme.uiSecondary, // Secondary UI from theme
@@ -28,6 +46,7 @@ fun MosqueClockTheme(
                 secondaryContainer = colorTheme.uiSecondary.copy(alpha = 0.3f),
                 tertiaryContainer = colorTheme.uiTertiary.copy(alpha = 0.3f),
             )
+        }
 
         MaterialTheme(
             colorScheme = dynamicColorScheme,

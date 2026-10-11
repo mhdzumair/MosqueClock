@@ -53,6 +53,7 @@ import com.mosque.prayerclock.viewmodel.MainUiState
 import com.mosque.prayerclock.viewmodel.WeatherUiState
 
 object ClassicScreenFace : ScreenFace {
+    override val recommendedColorThemeId = "classic_mosque"
     override val id = "classic"
     override val name = "Classic TV"
     override val description = "Traditional landscape layout with clock, prayer cards, and weather"

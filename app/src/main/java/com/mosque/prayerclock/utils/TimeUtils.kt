@@ -67,12 +67,22 @@ object TimeUtils {
     ): Int {
         val format = SimpleDateFormat("HH:mm", Locale.getDefault())
         return try {
-            val date1 = format.parse(time1)
-            val date2 = format.parse(time2)
+            val date1 = format.parse(normalizeClockTime(time1))
+            val date2 = format.parse(normalizeClockTime(time2))
             date1?.compareTo(date2) ?: 0
         } catch (e: Exception) {
             0
         }
+    }
+
+    /** Normalises prayer/clock strings to HH:mm so comparisons stay stable across "6:03" vs "06:03". */
+    fun normalizeClockTime(time: String): String {
+        val clean = formatTime(time)
+        val parts = clean.split(":")
+        if (parts.size != 2) return clean
+        val hour = parts[0].toIntOrNull() ?: return clean
+        val minute = parts[1].take(2).toIntOrNull() ?: return clean
+        return "%02d:%02d".format(hour, minute)
     }
 
     /**
@@ -112,5 +122,24 @@ object TimeUtils {
             }
 
         return "$displayHour:$minute $period"
+    }
+
+    /** 12-hour clock face without an AM/PM suffix — used on matrix-style boards (Noor). */
+    fun formatTimeWithoutPeriod(
+        time: String,
+        show24Hour: Boolean,
+    ): String {
+        val clean = formatTime(time)
+        if (show24Hour) return clean
+        val parts = clean.split(":")
+        if (parts.size != 2) return clean
+        val hour = parts[0].toIntOrNull() ?: return clean
+        val displayHour =
+            when (hour) {
+                0 -> 12
+                in 1..12 -> hour
+                else -> hour - 12
+            }
+        return "$displayHour:${parts[1]}"
     }
 }

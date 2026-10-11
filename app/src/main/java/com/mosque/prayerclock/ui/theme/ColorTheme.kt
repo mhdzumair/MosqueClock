@@ -62,6 +62,155 @@ data class ColorTheme(
  */
 object AppColorThemes {
     /**
+     * Expands the five portable face roles from the v2 design document into the
+     * application's richer theme contract. Keeping this mapping in one place means
+     * face packs never need to know which named palette is active.
+     */
+    private fun portableTheme(
+        id: String,
+        name: String,
+        description: String,
+        background: Color,
+        panel: Color,
+        ink: Color,
+        accent: Color,
+        alert: Color,
+    ) = ColorTheme(
+        id = id,
+        name = name,
+        description = description,
+        primaryAccent = accent,
+        primaryAccentLight = accent,
+        primaryAccentDark = accent.copy(alpha = 0.82f),
+        surfacePrimary = panel,
+        surfaceSecondary = panel.copy(alpha = 0.92f),
+        surfaceTertiary = accent.copy(alpha = 0.24f),
+        surfaceDark = background,
+        surfaceCenter = panel,
+        secondaryAccent = ink,
+        azanTime = accent,
+        iqamahTime = ink.copy(alpha = 0.82f),
+        sunriseTime = alert,
+        nextAzanTime = accent,
+        nextIqamahTime = accent,
+        nextSunriseTime = alert,
+        backgroundMain = background,
+        surfaceCard = panel,
+        cardBackground = panel,
+        uiPrimary = accent,
+        uiSecondary = ink.copy(alpha = 0.78f),
+        uiTertiary = alert,
+        textPrimary = ink,
+        textSecondary = ink.copy(alpha = 0.62f),
+        shadowColor = Color.Black,
+        overlayColor = background,
+    )
+
+    val DaylightIvory = ColorTheme(
+        id = "daylight_ivory", name = "Daylight Ivory", description = "Sahar's warm hairline daylight palette",
+        primaryAccent = Color(0xFF1F6F5C), primaryAccentLight = Color(0xFF1F6F5C), primaryAccentDark = Color(0xFF185747),
+        surfacePrimary = Color(0xFFFFFFFF), surfaceSecondary = Color(0xFFDED8CB), surfaceTertiary = Color(0xFFC2BBAE),
+        surfaceDark = Color(0xFFF4F1EA), surfaceCenter = Color(0xFFA39C90), secondaryAccent = Color(0xFF6F6A60),
+        azanTime = Color(0xFF191713), iqamahTime = Color(0xFF6F6A60), sunriseTime = Color(0xFFB4552B),
+        nextAzanTime = Color(0xFF1F6F5C), nextIqamahTime = Color(0xFF1F6F5C), nextSunriseTime = Color(0xFFB4552B),
+        backgroundMain = Color(0xFFF4F1EA), surfaceCard = Color(0xFFFFFFFF), cardBackground = Color(0xFFDED8CB),
+        uiPrimary = Color(0xFF1F6F5C), uiSecondary = Color(0xFF6F6A60), uiTertiary = Color(0xFFB4552B),
+        textPrimary = Color(0xFF191713), textSecondary = Color(0xFF6F6A60), shadowColor = Color(0x22000000),
+        overlayColor = Color(0xFFF4F1EA),
+    )
+    val MorningMist = portableTheme(
+        "morning_mist", "Morning Mist", "Cool daylight palette with blue accents",
+        Color(0xFFEEF1F4), Color(0xFFFFFFFF), Color(0xFF16202A), Color(0xFF2F7D94), Color(0xFFA8571F),
+    )
+    val ParchmentSepia = portableTheme(
+        "parchment_sepia", "Parchment Sepia", "Printed parchment with sepia ink",
+        Color(0xFFEFE6D3), Color(0xFFF9F3E6), Color(0xFF33291B), Color(0xFF8A6A34), Color(0xFFA6432C),
+    )
+    val SandTerracotta = ColorTheme(
+        id = "sand_terracotta", name = "Sand Terracotta", description = "Mihrab's dark ornamental earth and gradient gold",
+        primaryAccent = Color(0xFFE3B169), primaryAccentLight = Color(0xFFEEC388), primaryAccentDark = Color(0xFFB07B3C),
+        surfacePrimary = Color(0xFF221913), surfaceSecondary = Color(0xFF3D2C21), surfaceTertiary = Color(0xFFC98F4A),
+        surfaceDark = Color(0xFF17110E), surfaceCenter = Color(0xFF221913), secondaryAccent = Color(0xFFA08C7D),
+        azanTime = Color(0xFFF4E8DD), iqamahTime = Color(0xFFA08C7D), sunriseTime = Color(0xFFD97742),
+        nextAzanTime = Color(0xFFE3B169), nextIqamahTime = Color(0xFFE3B169), nextSunriseTime = Color(0xFFD97742),
+        backgroundMain = Color(0xFF17110E), surfaceCard = Color(0xFF221913), cardBackground = Color(0xFF3D2C21),
+        uiPrimary = Color(0xFFE3B169), uiSecondary = Color(0xFFA08C7D), uiTertiary = Color(0xFFD97742),
+        textPrimary = Color(0xFFF4E8DD), textSecondary = Color(0xFFA08C7D), shadowColor = Color.Black,
+        overlayColor = Color(0xFF17110E),
+    )
+    val SlateSteel = portableTheme(
+        "slate_steel", "Slate & Steel", "Cool slate with steel-blue accents",
+        Color(0xFF101418), Color(0xFF1A2027), Color(0xFFE8EDF2), Color(0xFF7FA6C9), Color(0xFFD98A5A),
+    )
+    val ForestMoss = portableTheme(
+        "forest_moss", "Forest Moss", "Deep woodland green and moss",
+        Color(0xFF0D130F), Color(0xFF151D17), Color(0xFFE9F1E6), Color(0xFF8FBF6A), Color(0xFFD9A05A),
+    )
+    val RoseCopper = portableTheme(
+        "rose_copper", "Rose Copper", "Dark rose with copper highlights",
+        Color(0xFF1A1315), Color(0xFF241A1D), Color(0xFFF6E9E6), Color(0xFFD98A72), Color(0xFFC96A86),
+    )
+    val InkSaffron = ColorTheme(
+        id = "ink_saffron", name = "Ink & Saffron", description = "Kaash's outlined bento board and saffron signal",
+        primaryAccent = Color(0xFFF0B429), primaryAccentLight = Color(0xFFF4C654), primaryAccentDark = Color(0xFFC9921C),
+        surfacePrimary = Color(0xFF101216), surfaceSecondary = Color(0xFF1B1E24), surfaceTertiary = Color(0xFF2B2F36),
+        surfaceDark = Color(0xFF07080A), surfaceCenter = Color(0xFF585D66), secondaryAccent = Color(0xFF8B8F98),
+        azanTime = Color(0xFFF2EFE9), iqamahTime = Color(0xFF8B8F98), sunriseTime = Color(0xFFE2703A),
+        nextAzanTime = Color(0xFFF0B429), nextIqamahTime = Color(0xFFF0B429), nextSunriseTime = Color(0xFFE2703A),
+        backgroundMain = Color(0xFF07080A), surfaceCard = Color(0xFF101216), cardBackground = Color(0xFF1B1E24),
+        uiPrimary = Color(0xFFF0B429), uiSecondary = Color(0xFF8B8F98), uiTertiary = Color(0xFFE2703A),
+        textPrimary = Color(0xFFF2EFE9), textSecondary = Color(0xFF8B8F98), shadowColor = Color.Black,
+        overlayColor = Color(0xFF07080A),
+    )
+    val JewelAmethyst = portableTheme(
+        "jewel_amethyst", "Jewel Amethyst", "Deep violet with amethyst accents",
+        Color(0xFF130E1C), Color(0xFF1D1629), Color(0xFFEFE9F6), Color(0xFFA97CE0), Color(0xFFE08A9C),
+    )
+    val MonoContrast = portableTheme(
+        "mono_contrast", "Mono Contrast", "Maximum-contrast monochrome display",
+        Color(0xFF000000), Color(0xFF141414), Color(0xFFFFFFFF), Color(0xFFE0E0E0), Color(0xFF8F8F8F),
+    )
+
+    val HorizonDusk = ColorTheme(
+        id = "horizon_dusk", name = "Horizon Dusk", description = "Ufuq's dusk sky and horizon rail",
+        primaryAccent = Color(0xFFE8B04B), primaryAccentLight = Color(0xFFF2C66E), primaryAccentDark = Color(0xFFC78D2D),
+        surfacePrimary = Color(0xFF1D4459), surfaceSecondary = Color(0xFF2F6274), surfaceTertiary = Color(0xFF1C3542),
+        surfaceDark = Color(0xFF0E1A22), surfaceCenter = Color(0xFF12232D), secondaryAccent = Color(0xFF5D8595),
+        azanTime = Color(0xFFE8B04B), iqamahTime = Color(0xFF5D8595), sunriseTime = Color(0xFFD9694A),
+        nextAzanTime = Color(0xFFE8B04B), nextIqamahTime = Color(0xFFE9F0F3), nextSunriseTime = Color(0xFFD9694A),
+        backgroundMain = Color(0xFF0E1A22), surfaceCard = Color(0xFF12232D), cardBackground = Color(0xFF1C3542),
+        uiPrimary = Color(0xFFE8B04B), uiSecondary = Color(0xFF5D8595), uiTertiary = Color(0xFFD9694A),
+        textPrimary = Color(0xFFE9F0F3), textSecondary = Color(0xFF5D8595), shadowColor = Color.Black,
+        overlayColor = Color(0xFF0E1A22),
+    )
+
+    val NoticePaper = ColorTheme(
+        id = "notice_paper", name = "Notice Paper", description = "Safaa's ruled ivory notice sheet",
+        primaryAccent = Color(0xFF7A2E2E), primaryAccentLight = Color(0xFF9B4C4C), primaryAccentDark = Color(0xFF5D2020),
+        surfacePrimary = Color(0xFFFDFBF6), surfaceSecondary = Color(0xFFCFC8BB), surfaceTertiary = Color(0xFFA09A86),
+        surfaceDark = Color(0xFFF7F4EE), surfaceCenter = Color(0xFFFDFBF6), secondaryAccent = Color(0xFF5D5847),
+        azanTime = Color(0xFF17150F), iqamahTime = Color(0xFF5D5847), sunriseTime = Color(0xFFB5651F),
+        nextAzanTime = Color(0xFF7A2E2E), nextIqamahTime = Color(0xFF7A2E2E), nextSunriseTime = Color(0xFFB5651F),
+        backgroundMain = Color(0xFFF7F4EE), surfaceCard = Color(0xFFFDFBF6), cardBackground = Color(0xFFFDFBF6),
+        uiPrimary = Color(0xFF7A2E2E), uiSecondary = Color(0xFF5D5847), uiTertiary = Color(0xFFB5651F),
+        textPrimary = Color(0xFF17150F), textSecondary = Color(0xFF5D5847), shadowColor = Color(0x33000000),
+        overlayColor = Color(0xFFF7F4EE),
+    )
+
+    val AmberMatrix = ColorTheme(
+        id = "amber_matrix", name = "Amber Matrix", description = "Noor's high-contrast amber LED board",
+        primaryAccent = Color(0xFFFFD27A), primaryAccentLight = Color(0xFFFFE0A0), primaryAccentDark = Color(0xFFA5741A),
+        surfacePrimary = Color(0xFF0B0906), surfaceSecondary = Color(0xFF201606), surfaceTertiary = Color(0xFFA5741A),
+        surfaceDark = Color(0xFF050608), surfaceCenter = Color(0xFF0B0906), secondaryAccent = Color(0xFFA5741A),
+        azanTime = Color(0xFFFFB000), iqamahTime = Color(0xFFA5741A), sunriseTime = Color(0xFFE0762A),
+        nextAzanTime = Color(0xFFFFD27A), nextIqamahTime = Color(0xFFFFD27A), nextSunriseTime = Color(0xFFE0762A),
+        backgroundMain = Color(0xFF050608), surfaceCard = Color(0xFF0B0906), cardBackground = Color(0xFF201606),
+        uiPrimary = Color(0xFFFFB000), uiSecondary = Color(0xFFA5741A), uiTertiary = Color(0xFFE0762A),
+        textPrimary = Color(0xFFFFB000), textSecondary = Color(0xFFC79A45), shadowColor = Color.Black,
+        overlayColor = Color(0xFF050608),
+    )
+
+    /**
      * Classic Mosque Theme (Default)
      * Deep forest green with brass/gold accents
      * Traditional and elegant, perfect for mosque environments
@@ -510,6 +659,19 @@ object AppColorThemes {
             BurgundyElegance,
             SapphireNight,
             AmberSunset,
+            DaylightIvory,
+            MorningMist,
+            ParchmentSepia,
+            SandTerracotta,
+            SlateSteel,
+            ForestMoss,
+            RoseCopper,
+            InkSaffron,
+            JewelAmethyst,
+            MonoContrast,
+            HorizonDusk,
+            NoticePaper,
+            AmberMatrix,
         )
 
     /**

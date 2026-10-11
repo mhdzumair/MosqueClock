@@ -4,115 +4,25 @@ A comprehensive Android TV application designed for mosques to display prayer ti
 
 ## 📸 Screenshots
 
-### Screen Face Scenario Gallery
+### Clock face gallery
 
-Classic and Horizon are independently registered screen faces. The complete gallery covers all
-six display scenarios across every color theme in English, Tamil, and Sinhala.
+Eight TV faces—Classic, Horizon, Ufuq, Safaa, Noor, Sahar, Kaash, and Mihrab—provide
+individually styled clock, prayer schedule, countdown, bayan, and dua screens.
+Horizon Mobile provides a portrait schedule with azan and iqamah visible together.
+
+[**Browse all clock faces and screens**](docs/face-gallery.md) in English, Tamil, and Sinhala.
+The gallery includes expandable language sections and clickable full-size images.
 
 <p align="center">
-  <a href="docs/face-gallery/Classic-Amber-TA.png"><img src="docs/face-gallery/Classic-Amber-TA.png" width="48%" alt="Classic Amber Tamil scenario sheet" /></a>
-  <a href="docs/face-gallery/Horizon-Burgundy-SI.png"><img src="docs/face-gallery/Horizon-Burgundy-SI.png" width="48%" alt="Horizon Burgundy Sinhala scenario sheet" /></a>
+  <a href="docs/face-gallery/Ufuq-Horizon-Dusk-EN.png"><img src="docs/face-gallery/Ufuq-Horizon-Dusk-EN.png" width="100%" alt="Ufuq: ten clock and prayer screens in English" /></a>
+  <a href="docs/face-gallery/Sahar-Daylight-Ivory-TA.png"><img src="docs/face-gallery/Sahar-Daylight-Ivory-TA.png" width="100%" alt="Sahar: ten clock and prayer screens in Tamil" /></a>
 </p>
 
-Browse the [complete face/theme/language scenario gallery](docs/face-gallery/README.md), or regenerate
-it using `./scripts/generate_face_gallery.sh` with an Android emulator connected.
-
-### Classic Mosque Theme (Default)
-Traditional forest green with elegant brass accents
-<p align="center">
-  <img src="docs/screenshot-classic-digital.png" width="45%" alt="Classic Mosque - Digital Clock" />
-  <img src="docs/screenshot-classic-analog.png" width="45%" alt="Classic Mosque - Analog Clock" />
-</p>
-
-### Midnight Blue Theme
-Deep navy blue with elegant silver accents
-<p align="center">
-  <img src="docs/screenshot-midnight-digital.png" width="45%" alt="Midnight Blue - Digital Clock" />
-  <img src="docs/screenshot-midnight-analog.png" width="45%" alt="Midnight Blue - Analog Clock" />
-</p>
-
-### Desert Sand Theme
-Warm desert tones with copper accents
-<p align="center">
-  <img src="docs/screenshot-dessert-digital.png" width="45%" alt="Desert Sand - Digital Clock" />
-  <img src="docs/screenshot-dessert-analog.png" width="45%" alt="Desert Sand - Analog Clock" />
-</p>
-
-### Royal Purple Theme
-Majestic purple with luxurious gold accents
-<p align="center">
-  <img src="docs/screenshot-royal-digital.png" width="45%" alt="Royal Purple - Digital Clock" />
-  <img src="docs/screenshot-royal-analog.png" width="45%" alt="Royal Purple - Analog Clock" />
-</p>
-
-### Ocean Teal Theme
-Serene teal with pearl white accents
-<p align="center">
-  <img src="docs/screenshot-ocean-digital.png" width="45%" alt="Ocean Teal - Digital Clock" />
-  <img src="docs/screenshot-ocean-analog.png" width="45%" alt="Ocean Teal - Analog Clock" />
-</p>
-
-### Elegant Charcoal Theme
-Modern charcoal with rose gold accents
-<p align="center">
-  <img src="docs/screenshot-elegant-digital.png" width="45%" alt="Elegant Charcoal - Digital Clock" />
-  <img src="docs/screenshot-elegant-analog.png" width="45%" alt="Elegant Charcoal - Analog Clock" />
-</p>
-
-### Emerald Garden Theme
-Vibrant emerald green with golden highlights
-<p align="center">
-  <img src="docs/screenshot-emerald-digital.png" width="45%" alt="Emerald Garden - Digital Clock" />
-  <img src="docs/screenshot-emerald-analog.png" width="45%" alt="Emerald Garden - Analog Clock" />
-</p>
-
-### Burgundy Elegance Theme
-Deep burgundy red with elegant silver accents
-<p align="center">
-  <img src="docs/screenshot-burgundy-digital.png" width="45%" alt="Burgundy Elegance - Digital Clock" />
-  <img src="docs/screenshot-burgundy-analog.png" width="45%" alt="Burgundy Elegance - Analog Clock" />
-</p>
-
-### Sapphire Night Theme
-Deep sapphire blue with pearl white elegance
-<p align="center">
-  <img src="docs/screenshot-sapphire-digital.png" width="45%" alt="Sapphire Night - Digital Clock" />
-  <img src="docs/screenshot-sapphire-analog.png" width="45%" alt="Sapphire Night - Analog Clock" />
-</p>
-
-### Amber Sunset Theme
-Warm amber sunset with cream highlights
-<p align="center">
-  <img src="docs/screenshot-amber-digital.png" width="45%" alt="Amber Sunset - Digital Clock" />
-  <img src="docs/screenshot-amber-analog.png" width="45%" alt="Amber Sunset - Analog Clock" />
-</p>
-
-### Full-Screen Countdown Feature
-Activates when 10 minutes or less remain before Azan or Iqamah
-<p align="center">
-  <img src="docs/screenshot-full-screen-countdown.png" width="70%" alt="Full-Screen Countdown" />
-</p>
-
-### Additional Features
-
-#### Prayer in Progress - Silent Phone Notification
-When a prayer is in progress, the app displays a reminder to silence phones
-<p align="center">
-  <img src="docs/screenshot3.png" width="70%" alt="Silent Phone Reminder During Prayer" />
-</p>
-
-#### Multi-Language Support
-Full support for English, Tamil, and Sinhala with dynamic language switching
-
-**Tamil Display (தமிழ்)**
-<p align="center">
-  <img src="docs/screenshot4.png" width="70%" alt="Tamil Language Support" />
-</p>
-
-**Sinhala Display (සිංහල)**
-<p align="center">
-  <img src="docs/screenshot5.png" width="70%" alt="Sinhala Language Support" />
-</p>
+See the [refinement review](docs/face-refinement-review.md) for the latest improvements and
+screen coverage. Regenerate the TV sheets with `./scripts/generate_face_gallery.sh` using
+an Android device or emulator and ImageMagick. Each face uses its recommended palette;
+select faces, languages, or alternate palettes with `FACE_GALLERY_FACES`,
+`FACE_GALLERY_LANGUAGES`, and `FACE_GALLERY_THEMES`.
 
 ## 🌟 Features
 
@@ -173,8 +83,8 @@ Full support for English, Tamil, and Sinhala with dynamic language switching
 ### ⚙️ Customization Options
 - **Mosque Name**: Add custom mosque name display
 - **Location Settings**: Configure region, city, and zones
-- **Screen Face Registry**: Classic and Horizon provide complete dashboard, countdown, bayan, and dua experiences through one extensible face contract
-- **Color Theme Selection**: 10 beautiful themes - Classic Mosque, Midnight Blue, Desert Sand, Royal Purple, Ocean Teal, Elegant Charcoal, Emerald Garden, Burgundy Elegance, Sapphire Night, Amber Sunset
+- **Screen Face Registry**: Classic, Horizon, Ufuq, Safaa, Noor, Sahar, Kaash, and Mihrab provide complete dashboard, countdown, bayan, and dua experiences through one extensible face contract; Horizon Mobile provides a portrait layout
+- **Color Theme Selection**: 23 portable themes, including three face-specific canonical palettes
 - **Clock Type**: Choose between Digital, Analog, or Both clocks displayed simultaneously
 - **Font Sizes**: Adjustable font sizes (Small, Medium, Large, Extra Large)
 - **Dynamic Scaling**: All elements automatically scale for optimal TV viewing
@@ -755,6 +665,15 @@ All themes are optimized for TV viewing with high contrast and excellent readabi
     - Warm amber and orange with cream accents
     - Warm and welcoming, sunset-inspired
     - Orange/coral prayer indicators, ideal for evening displays
+
+The v2 portable palettes add **Daylight Ivory**, **Morning Mist**, **Parchment Sepia**,
+**Sand Terracotta**, **Slate & Steel**, **Forest Moss**, **Rose Copper**, **Ink & Saffron**,
+**Jewel Amethyst**, and **Mono Contrast**. Each palette maps the same background, panel, ink,
+accent, and alert roles, so it works with every registered face without layout-specific colors.
+
+Ufuq, Safaa, and Noor additionally provide their exact canonical palettes: **Horizon Dusk**,
+**Notice Paper**, and **Amber Matrix**. Selecting a face applies its recommended palette once;
+the color-theme setting remains independently changeable afterward.
 
 ### Dynamic Color Features
 - **Next Prayer Highlighting**: Each theme has dedicated brighter colors for the upcoming prayer

@@ -13,6 +13,7 @@ interface ScreenFace {
     val id: String
     val name: String
     val description: String
+    val recommendedColorThemeId: String? get() = null
     val legacyIds: Set<String> get() = emptySet()
 
     @Composable
@@ -89,6 +90,12 @@ object ScreenFaceRegistry {
     val faces: List<ScreenFace> = listOf(
         ClassicScreenFace,
         HorizonScreenFace,
+        UfuqScreenFace,
+        SafaaScreenFace,
+        NoorScreenFace,
+        SaharScreenFace,
+        KaashScreenFace,
+        MihrabScreenFace,
         MobileScreenFace,
         HorizonMobileScreenFace,
     )

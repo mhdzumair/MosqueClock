@@ -220,7 +220,8 @@ fun NextPrayerSection(
                                 // Display prayer name with Azan/Iqamah suffix for prayers (not sunrise/jummah)
                                 val displayText =
                                     when {
-                                        nextPrayerInfo.iqamahTime == null -> nextPrayerInfo.name // Sunrise or Jummah
+                                        nextPrayerInfo.type == PrayerType.SUNRISE ||
+                                            nextPrayerInfo.iqamahTime == null -> nextPrayerInfo.name
                                         shouldShowIqamah ->
                                             "${nextPrayerInfo.name} ${localizedStringResource(R.string.iqamah)}"
                                         else -> "${nextPrayerInfo.name} ${localizedStringResource(R.string.azan)}"

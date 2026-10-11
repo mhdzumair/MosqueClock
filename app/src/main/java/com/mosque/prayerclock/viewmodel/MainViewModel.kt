@@ -366,25 +366,24 @@ class MainViewModel
                     PrayerType.ISHA to Pair(prayerTimes.ishaAzan, prayerTimes.ishaIqamah),
                 )
 
-            // First check if we're between Azan and Iqamah time OR within Dua duration after Iqamah
+            // Active salah window (azan → iqamah + dua). Sunrise is informational only — never a salah period.
             for ((prayerType, times) in prayers) {
-                val azanTime = times.first
-                val iqamahTime = times.second
+                if (prayerType == PrayerType.SUNRISE) continue
 
-                if (iqamahTime != null) { // Only check if Iqamah time exists
+                val azanTime = times.first
+                val iqamahTime = times.second?.takeIf { it.isNotBlank() }
+
+                if (iqamahTime != null) {
                     val bufferTime = TimeUtils.addMinutesToTime(iqamahTime, currentSettings.duaDisplayDurationMinutes)
 
-                    // Check if we're between Azan and Iqamah + Dua duration buffer
                     if (TimeUtils.compareTimeStrings(azanTime, currentTime) <= 0 &&
                         TimeUtils.compareTimeStrings(currentTime, bufferTime) < 0
                     ) {
-                        // We're in the current prayer period (from Azan to Iqamah + Dua duration)
                         return prayerType
                     }
                 } else if (prayerType == PrayerType.DHUHR && isFriday) {
-                    // For Friday, use configurable Jummah duration after Azan for Bayan
-                    val bayanEndTime = TimeUtils.addMinutesToTime(times.first, currentSettings.jummahDurationMinutes)
-                    if (TimeUtils.compareTimeStrings(times.first, currentTime) <= 0 &&
+                    val bayanEndTime = TimeUtils.addMinutesToTime(azanTime, currentSettings.jummahDurationMinutes)
+                    if (TimeUtils.compareTimeStrings(azanTime, currentTime) <= 0 &&
                         TimeUtils.compareTimeStrings(currentTime, bayanEndTime) < 0
                     ) {
                         return prayerType
@@ -392,10 +391,18 @@ class MainViewModel
                 }
             }
 
-            // Regular logic: find next prayer that hasn't started yet
+            // Next upcoming event — skip sunrise once it has passed
             val nextTodayPrayer =
                 prayers
-                    .firstOrNull { (_, times) -> TimeUtils.compareTimeStrings(currentTime, times.first) < 0 }
+                    .firstOrNull { (type, times) ->
+                        if (type == PrayerType.SUNRISE &&
+                            TimeUtils.compareTimeStrings(times.first, currentTime) <= 0
+                        ) {
+                            false
+                        } else {
+                            TimeUtils.compareTimeStrings(currentTime, times.first) < 0
+                        }
+                    }
                     ?.first
 
             // If no more prayers today, next prayer is Fajr of tomorrow

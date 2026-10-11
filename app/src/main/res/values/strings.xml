@@ -16,6 +16,10 @@
     <string name="iqamah">Iqamah</string>
     <string name="current_time">Current Time</string>
     <string name="next_prayer">Next</string>
+    <string name="prayer_countdown_heading">%1$s %2$s in</string>
+    <string name="prayer_countdown_in">%1$s %2$s in</string>
+    <string name="now_label">Now</string>
+    <string name="prayer">Prayer</string>
     <string name="time_remaining">Time Remaining</string>
     <string name="current_prayer">Now</string>
     <string name="in_progress">In Progress</string>
@@ -125,7 +129,15 @@
     <string name="weather_city">Weather City</string>
     <string name="weather_city_description">City for weather information (separate from prayer times location)</string>
     <string name="weather_placeholder">Enter city name for weather</string>
-    
+    <string name="weather_feels_like">Feels</string>
+    <string name="weather_humidity">Humidity</string>
+    <string name="weather_wind">Wind</string>
+    <string name="weather_uv">UV</string>
+    <string name="weather_condition_short">Cond</string>
+    <string name="weather_temperature_short">Temp</string>
+    <string name="hijri_label_short">Hijri</string>
+    <string name="date_label_short">Date</string>
+
     <!-- Prayer Settings -->
     <string name="manual_prayer_times" translatable="false">Manual Prayer Times</string>
     <string name="manual_prayer_times_description" translatable="false">Use manual times instead of API</string>
@@ -143,7 +155,7 @@
     <string name="clock_format" translatable="false">Clock Format</string>
     
     <!-- Prayer Buffer Period -->
-    <string name="silent_your_phone">Silent Your Phone</string>
+    <string name="silent_your_phone">Silence Your Phone</string>
     
     <!-- Time Calculation -->
     <string name="hours_short" translatable="false">hours</string>
@@ -205,6 +217,9 @@
     <string name="dua_joining_saff_transliteration">Allāhumma āthinī afḍala mā tu\'tī ʿibādakaṣ-ṣāliḥīn</string>
     <string name="dua_joining_saff_meaning">O Allah, grant me the best of what You grant to Your righteous servants.</string>
     
+    <!-- Screen face masthead -->
+    <string name="safaa_kicker">Prayer Time Notice</string>
+
     <!-- Jumu'ah Prayer -->
     <string name="jummah_in_progress_title">Khutbah Sermon</string>
     <string name="jummah_prayer_reminder">Listen to the Khutbah attentively, remember Allah, and send abundant blessings upon the Prophet ﷺ</string>

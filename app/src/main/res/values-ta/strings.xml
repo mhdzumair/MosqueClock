@@ -16,6 +16,10 @@
     <string name="iqamah">இகாமத்</string>
     <string name="current_time">தற்போதைய நேரம்</string>
     <string name="next_prayer">அடுத்து</string>
+    <string name="prayer_countdown_heading">%1$s %2$s வரை</string>
+    <string name="prayer_countdown_in">%1$s %2$s வரை</string>
+    <string name="now_label">தற்போது</string>
+    <string name="prayer">தொழுகை</string>
     <string name="time_remaining">எஞ்சிய நேரம்</string>
     <string name="current_prayer">தற்போது</string>
     <string name="in_progress">நடைபெறுகிறது</string>
@@ -96,6 +100,14 @@
     <string name="weather_city">காலநிலை நகரம்</string>
     <string name="weather_city_description">காலநிலை தகவலுக்கான நகரம் (தொழுகை நேர இடத்திலிருந்து தனி)</string>
     <string name="weather_placeholder">காலநிலைக்கான நகர பெயரை உள்ளிடவும்</string>
+    <string name="weather_feels_like">உணர்வு</string>
+    <string name="weather_humidity">ஈரம்</string>
+    <string name="weather_wind">காற்று</string>
+    <string name="weather_uv">UV</string>
+    <string name="weather_condition_short">நிலை</string>
+    <string name="weather_temperature_short">வெப்பம்</string>
+    <string name="hijri_label_short">ஹிஜ்ரி</string>
+    <string name="date_label_short">தேதி</string>
     
     <!-- Color Theme -->
     <string name="color_theme_title">வண்ண தீம்</string>
@@ -192,6 +204,7 @@
     <string name="dua_joining_saff_meaning">யா அல்லாஹ், உன் நல்லடியார்களுக்கு நீ வழங்குவதில் சிறந்ததை எனக்கு வழங்குவாயாக.</string>
     
     <!-- Jumu'ah Prayer -->
+    <string name="safaa_kicker">தொழுகை நேர அறிவிப்பு</string>
     <string name="jummah_in_progress_title">குத்பா பிரசங்கம்</string>
     <string name="jummah_prayer_reminder">குத்பாவை காது தாழ்த்தி கேளுங்கள், அல்லாஹ்வை நினைவு கூருங்கள், மற்றும் நபி ﷺ அவர்கள் மீது அதிகம் ஸலவாத் சொல்லுங்கள்</string>
     

@@ -53,6 +53,9 @@ import com.mosque.prayerclock.ui.LocalEffectiveLanguage
 import com.mosque.prayerclock.ui.components.getCountdownData
 import com.mosque.prayerclock.ui.components.rememberTvTextScale
 import com.mosque.prayerclock.ui.components.TvAutoSizeText
+import com.mosque.prayerclock.ui.components.screenfaces.shared.fullScreenCountdownTitle
+import com.mosque.prayerclock.ui.components.screenfaces.shared.FacePanelClock
+import com.mosque.prayerclock.ui.components.screenfaces.shared.resolveDisplayNextPrayer
 import com.mosque.prayerclock.ui.theme.ColorAzanTime
 import com.mosque.prayerclock.ui.theme.ColorNextAzanTime
 import com.mosque.prayerclock.ui.theme.ColorNextSunriseTime
@@ -69,6 +72,7 @@ import kotlinx.datetime.toLocalDateTime
  * identity and dates, current/next prayer, then the full day at a glance.
  */
 object HorizonScreenFace : ScreenFace {
+    override val recommendedColorThemeId = "slate_steel"
     override val id = "horizon"
     override val legacyIds = setOf("modern_tv", "modern")
     override val name = "Horizon"
@@ -123,11 +127,7 @@ object HorizonScreenFace : ScreenFace {
     @Composable
     override fun Countdown(data: ScreenDisplayData, countdown: FullScreenCountdownData, modifier: Modifier) {
         HorizonBackdrop(modifier) { scale ->
-            val event = if (countdown.prayerType == PrayerType.SUNRISE) {
-                countdown.prayerName
-            } else {
-                "${countdown.prayerName} ${localizedStringResource(if (countdown.isIqamah) R.string.iqamah else R.string.azan)}"
-            }
+            val event = fullScreenCountdownTitle(countdown.prayerName, countdown.prayerType, countdown.isIqamah, countdown.kind)
             TvAutoSizeText(
                 text = event.uppercase(),
                 color = MaterialTheme.colorScheme.primary,
@@ -147,14 +147,19 @@ object HorizonScreenFace : ScreenFace {
                 minFontSize = scale.hero * 0.55f,
                 lineHeightRatio = 1.02f,
                 fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
             )
             TvAutoSizeText(
-                text = if (countdown.isIqamah) localizedStringResource(R.string.best_time_dua)
-                else TimeUtils.formatTimeBasedOnPreference(countdown.azanTime, data.settings.show24HourFormat),
+                text = if (countdown.isIqamah) {
+                    TimeUtils.formatTimeBasedOnPreference(countdown.targetTime, data.settings.show24HourFormat)
+                } else {
+                    TimeUtils.formatTimeBasedOnPreference(countdown.azanTime, data.settings.show24HourFormat)
+                },
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
                 maxFontSize = scale.body,
                 minFontSize = scale.body * 0.55f,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
             )
@@ -187,6 +192,7 @@ object HorizonScreenFace : ScreenFace {
                 minFontSize = scale.hero * 0.55f,
                 lineHeightRatio = 1.02f,
                 fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
             )
             TvAutoSizeText(
@@ -286,6 +292,7 @@ object HorizonScreenFace : ScreenFace {
                 minFontSize = scale.hero * 0.5f,
                 lineHeightRatio = 1.02f,
                 fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
             )
             TvAutoSizeText(
@@ -333,9 +340,13 @@ private fun HorizonBackdrop(
         val scale = HorizonSpecialScale(
             eyebrow = scaleForRegion.height(0.064f),
             title = scaleForRegion.height(0.100f),
-            hero = scaleForRegion.fit(0.285f, characterSlots = 8f, glyphWidthFactor = 1.15f),
+            hero = if (maxHeight > maxWidth) {
+                scaleForRegion.fit(0.20f, characterSlots = 5f, glyphWidthFactor = 1.5f)
+            } else {
+                scaleForRegion.fit(0.285f, characterSlots = 8f, glyphWidthFactor = 1.15f)
+            },
             arabic = scaleForRegion.height(0.120f),
-            body = scaleForRegion.height(0.062f),
+            body = scaleForRegion.height(0.11f),
             detail = scaleForRegion.height(0.052f),
             spacing = scaleForRegion.heightDp(0.014f),
         )
@@ -497,20 +508,16 @@ private fun HorizonClock(data: ScreenDisplayData, onClick: () -> Unit, modifier:
 private fun HorizonDigitalTime(data: ScreenDisplayData, modifier: Modifier) {
     BoxWithConstraints(modifier, contentAlignment = Alignment.CenterStart) {
         val scale = rememberTvTextScale(maxWidth, maxHeight)
-        val timeSize = scale.fit(
-            heightFraction = 0.50f,
-            characterSlots = data.clock.formattedTime.length.coerceAtLeast(1).toFloat(),
-            glyphWidthFactor = 1.78f,
-        )
-        Column(verticalArrangement = Arrangement.Center) {
-            TvAutoSizeText(
-                text = data.clock.formattedTime,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxFontSize = timeSize,
-                minFontSize = timeSize * 0.72f,
-                lineHeightRatio = 1.05f,
+        Column(Modifier.fillMaxSize()) {
+            FacePanelClock(
+                clock = data.clock,
+                primaryColor = MaterialTheme.colorScheme.onBackground,
+                mutedColor = MaterialTheme.colorScheme.onBackground.copy(alpha = .65f),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 fontWeight = FontWeight.Black,
-                maxLines = 1,
+                secondaryScale = .40f,
+                amLabel = localizedStringResource(R.string.am),
+                pmLabel = localizedStringResource(R.string.pm),
             )
             Box(
                 Modifier.padding(top = scale.heightDp(0.035f))
@@ -525,18 +532,21 @@ private fun HorizonDigitalTime(data: ScreenDisplayData, modifier: Modifier) {
 private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
     when (val state = data.mainState) {
         is MainUiState.Success -> {
-            val prayer = horizonPrayers(state.prayerTimes, data.currentTime).firstOrNull { it.type == state.nextPrayer }
+            val rows = horizonPrayers(state.prayerTimes, data.currentTime)
+            val prayer = resolveDisplayNextPrayer(rows, state.nextPrayer, data.currentTime, state.nextDayFajr)
             val currentLocalTime = data.currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
             val currentTimeString = "%02d:%02d".format(currentLocalTime.hour, currentLocalTime.minute)
-            val isIqamahTarget = prayer?.iqamahTime?.let { iqamah ->
+            val isIqamahTarget = prayer.iqamahTime?.let { iqamah ->
                 TimeUtils.compareTimeStrings(prayer.azanTime, currentTimeString) <= 0 &&
                     TimeUtils.compareTimeStrings(currentTimeString, iqamah) < 0
             } == true
-            val countdown = prayer?.let {
-                getCountdownData(if (isIqamahTarget) it.iqamahTime ?: it.azanTime else it.azanTime, data.currentTime)
-            }
+            val targetTime = if (isIqamahTarget) prayer.iqamahTime ?: prayer.azanTime else prayer.azanTime
+            val countdown = getCountdownData(
+                targetTime,
+                data.currentTime,
+            )
             val showInlineCountdown = data.isCountdownVisibleForWeight &&
-                countdown != null && countdown.totalSeconds >= 0 && countdown.totalMinutes < 60
+                countdown.totalSeconds >= 0 && countdown.totalMinutes < 60
             BoxWithConstraints(modifier.padding(horizontal = 12.dp)) {
                 val scale = rememberTvTextScale(maxWidth, maxHeight)
                 val titleSize = scale.height(0.085f)
@@ -546,7 +556,6 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
                     characterSlots = 8f,
                     glyphWidthFactor = 1.35f,
                 )
-                val iqamahSize = scale.height(if (showInlineCountdown) 0.08f else 0.10f)
                 val countdownSize = scale.height(0.16f)
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -564,7 +573,7 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
                 )
                 Spacer(Modifier.height(12.dp))
                 TvAutoSizeText(
-                    text = prayer?.name.orEmpty(),
+                    text = prayer.name,
                     color = MaterialTheme.colorScheme.onBackground,
                     maxFontSize = nameSize,
                     minFontSize = nameSize * 0.58f,
@@ -574,9 +583,7 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
                 )
                 Spacer(Modifier.height(8.dp))
                 TvAutoSizeText(
-                    text = prayer?.let {
-                        TimeUtils.formatTimeBasedOnPreference(it.azanTime, data.settings.show24HourFormat)
-                    }.orEmpty(),
+                    text = TimeUtils.formatTimeBasedOnPreference(targetTime, data.settings.show24HourFormat),
                     color = ColorNextAzanTime,
                     maxFontSize = timeSize,
                     minFontSize = timeSize * 0.58f,
@@ -584,35 +591,29 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
                     fontWeight = FontWeight.Black,
                     maxLines = 1,
                 )
-                prayer?.iqamahTime?.let {
-                    TvAutoSizeText(
-                        text = "${localizedStringResource(R.string.iqamah_letter)}  ${TimeUtils.formatTimeBasedOnPreference(it, data.settings.show24HourFormat)}",
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
-                        maxFontSize = iqamahSize,
-                        minFontSize = iqamahSize * 0.55f,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                    )
-                }
-                if (showInlineCountdown && countdown != null) {
+                if (showInlineCountdown) {
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TvAutoSizeText(
-                            text = localizedStringResource(if (isIqamahTarget) R.string.iqamah else R.string.azan).uppercase(),
-                            color = MaterialTheme.colorScheme.primary,
-                            maxFontSize = countdownSize * 0.42f,
-                            minFontSize = countdownSize * 0.24f,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            maxLines = 1,
-                        )
-                        Spacer(Modifier.width(12.dp))
+                        if (prayer.type != PrayerType.SUNRISE) {
+                            TvAutoSizeText(
+                                text = localizedStringResource(if (isIqamahTarget) R.string.iqamah else R.string.azan).uppercase(),
+                                color = MaterialTheme.colorScheme.primary,
+                                maxFontSize = countdownSize * 0.42f,
+                                minFontSize = countdownSize * 0.24f,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.weight(0.38f),
+                                maxLines = 1,
+                            )
+                            Spacer(Modifier.width(12.dp))
+                        }
                         TvAutoSizeText(
                             text = "%02d:%02d".format(countdown.minutes, countdown.seconds),
                             color = MaterialTheme.colorScheme.onBackground,
                             maxFontSize = countdownSize,
                             minFontSize = countdownSize * 0.7f,
                             fontWeight = FontWeight.Black,
+                            modifier = Modifier.weight(0.62f),
                             maxLines = 1,
                         )
                     }

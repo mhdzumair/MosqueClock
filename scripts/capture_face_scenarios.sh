@@ -4,14 +4,32 @@ set -euo pipefail
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 output_dir="${1:-$workspace_dir/build/face-screenshots}"
 resolution_matrix="${FACE_PREVIEW_RESOLUTIONS:-current}"
-face_matrix="${FACE_PREVIEW_FACES:-horizon,classic}"
-scenario_matrix="${FACE_PREVIEW_SCENARIOS:-digital,analog,azan-hour,countdown,dua,bayan}"
+face_matrix="${FACE_PREVIEW_FACES:-classic,horizon,ufuq,safaa,noor,sahar,kaash,mihrab}"
+scenario_matrix="${FACE_PREVIEW_SCENARIOS:-digital,analog,azan-hour,iqamah-hour,countdown,iqamah-countdown,friday-night-bayan,dua,bayan}"
 language_matrix="${FACE_PREVIEW_LANGUAGES:-en,ta,si}"
-theme_matrix="${FACE_PREVIEW_THEMES:-classic_mosque}"
+# Leave unset to use each face's own canonical palette (see face_theme below). Set to a
+# comma-separated theme list to sweep every selected face through those themes instead.
+theme_override="${FACE_PREVIEW_THEMES:-}"
 verify_ui="${FACE_PREVIEW_VERIFY_UI:-true}"
 settle_seconds="${FACE_PREVIEW_SETTLE_SECONDS:-3}"
+clean_output_dir="${FACE_PREVIEW_CLEAN:-true}"
 package_name="com.mosque.prayerclock.debug"
 preview_activity="$package_name/com.mosque.prayerclock.FacePreviewActivity"
+
+# Each face's canonical palette — mirrors ScreenFace.recommendedColorThemeId in Kotlin.
+face_theme() {
+    case "$1" in
+        classic) echo "classic_mosque" ;;
+        horizon) echo "slate_steel" ;;
+        horizon_mobile) echo "slate_steel" ;;
+        ufuq) echo "horizon_dusk" ;;
+        safaa) echo "notice_paper" ;;
+        noor) echo "amber_matrix" ;;
+        sahar) echo "daylight_ivory" ;;
+        kaash) echo "ink_saffron" ;;
+        mihrab) echo "sand_terracotta" ;;
+    esac
+}
 
 if ! command -v adb >/dev/null 2>&1; then
     echo "adb is required" >&2
@@ -23,9 +41,13 @@ if ! adb get-state >/dev/null 2>&1; then
     exit 1
 fi
 
-rm -rf "$output_dir"
+if [[ "$clean_output_dir" == "true" ]]; then
+    rm -rf "$output_dir"
+fi
 mkdir -p "$output_dir"
-"$workspace_dir/gradlew" :app:installPlaystoreDebug >/dev/null
+if [[ "${FACE_PREVIEW_INSTALL:-true}" == "true" ]]; then
+    "$workspace_dir/gradlew" :app:installPlaystoreDebug >/dev/null
+fi
 
 original_size="$(adb shell wm size | awk '/Override size:/ {print $3; found=1} END {if (!found) print "reset"}')"
 restore_display_size() {
@@ -52,26 +74,42 @@ capture() {
         --es face "$face" \
         --es scenario "$scenario" \
         --es language "$language" \
-        --es theme "$theme" >/dev/null
+        --es theme "$theme" \
+        --ez show24Hour "${FACE_PREVIEW_SHOW_24_HOUR:-false}" \
+        --ez showSeconds "${FACE_PREVIEW_SHOW_SECONDS:-true}" \
+        --ez showWeather "${FACE_PREVIEW_SHOW_WEATHER:-true}" >/dev/null
     case "$scenario" in
-        digital|analog|azan-hour) expected_text="Dickwella Jummah Mosque" ;;
-        countdown) expected_text="03:46" ;;
+        digital|analog|azan-hour|iqamah-hour|after-isha)
+            if [[ "$face" == *mobile ]]; then expected_text="1448"; else expected_text="Dickwella Jummah Mosque"; fi ;;
+        countdown|iqamah-countdown|friday-night-bayan) expected_text="03" ;;
         dua) expected_text="اللَّهُمَّ" ;;
         bayan) expected_text="42:44" ;;
     esac
     if [[ "$verify_ui" == "true" ]]; then
+        scene_found=false
         # Capture only after the localized target scene exists.
         for _ in 1 2 3 4 5; do
             sleep 1
             adb shell uiautomator dump /sdcard/face-preview.xml >/dev/null 2>&1 || true
-            if adb shell cat /sdcard/face-preview.xml 2>/dev/null | grep -Fq "$expected_text"; then
+            if adb shell cat /sdcard/face-preview.xml 2>/dev/null | grep -Fiq "$expected_text"; then
+                scene_found=true
                 break
             fi
         done
+        if [[ "$scene_found" != "true" ]]; then
+            echo "Preview did not render: $face / $scenario / $language / $resolution" >&2
+            adb logcat -b crash -d -t 80 >&2
+            exit 1
+        fi
     fi
     # Let Compose finish all draw passes after a locale-triggered recreation. In particular,
     # capturing an analogue Canvas too early can produce a valid PNG containing only that layer.
     sleep "$settle_seconds"
+    if ! adb shell pidof "$package_name" >/dev/null; then
+        echo "Preview crashed: $face / $scenario / $language / $resolution" >&2
+        adb logcat -b crash -d -t 80 >&2
+        exit 1
+    fi
     if [[ "$verify_ui" == "true" ]]; then
         adb exec-out screencap -p >/dev/null
         sleep 1
@@ -96,10 +134,14 @@ for resolution in "${resolutions[@]}"; do
     IFS=',' read -r -a faces <<< "$face_matrix"
     IFS=',' read -r -a scenarios <<< "$scenario_matrix"
     IFS=',' read -r -a languages <<< "$language_matrix"
-    IFS=',' read -r -a themes <<< "$theme_matrix"
     for language in "${languages[@]}"; do
-        for theme in "${themes[@]}"; do
-            for face in "${faces[@]}"; do
+        for face in "${faces[@]}"; do
+            if [[ -n "$theme_override" ]]; then
+                IFS=',' read -r -a face_themes <<< "$theme_override"
+            else
+                face_themes=("$(face_theme "$face")")
+            fi
+            for theme in "${face_themes[@]}"; do
                 for scenario in "${scenarios[@]}"; do
                     capture "$face" "$scenario" "$language" "$theme"
                 done

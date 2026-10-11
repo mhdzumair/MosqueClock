@@ -62,7 +62,7 @@ fun HorizonAnalogClock(data: ClockDisplayData, modifier: Modifier = Modifier) {
                 val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     color = foreground.copy(alpha = 0.84f).toArgb()
                     textAlign = Paint.Align.CENTER
-                    textSize = radius * 0.14f
+                    textSize = radius * 0.18f
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 }
                 drawIntoCanvas { canvas ->

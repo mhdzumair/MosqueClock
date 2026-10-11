@@ -15,6 +15,7 @@ import com.mosque.prayerclock.data.repository.HijriDateRepository
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
 import com.mosque.prayerclock.data.scraping.DirectScrapingService
+import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -211,7 +212,8 @@ class SettingsViewModel
 
         fun updateScreenFaceId(faceId: String) {
             viewModelScope.launch {
-                settingsRepository.updateScreenFaceId(faceId)
+                val face = ScreenFaceRegistry.get(faceId)
+                settingsRepository.updateScreenFaceId(face.id, face.recommendedColorThemeId)
             }
         }
 
@@ -412,4 +414,3 @@ sealed class PrefetchState {
     data class Success(val result: DirectScrapingService.PrefetchResult) : PrefetchState()
     data class Error(val message: String) : PrefetchState()
 }
-
