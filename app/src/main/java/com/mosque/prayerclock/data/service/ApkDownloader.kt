@@ -1,15 +1,10 @@
 package com.mosque.prayerclock.data.service
 
 import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.database.Cursor
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -21,9 +16,17 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import okhttp3.Call
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +36,8 @@ data class DownloadProgress(
     val status: DownloadStatus = DownloadStatus.IDLE,
     val bytesDownloaded: Long = 0,
     val totalBytes: Long = 0,
+    val version: String? = null,
+    val errorMessage: String? = null,
 )
 
 enum class DownloadStatus {
@@ -47,14 +52,22 @@ enum class DownloadStatus {
 class ApkDownloader
     @Inject
     constructor() {
-        private val _downloadProgress = MutableStateFlow(DownloadProgress())
-        val downloadProgress: StateFlow<DownloadProgress> = _downloadProgress
+        companion object {
+            // Both the startup dialog and Settings observe the same transfer.
+            private val progressState = MutableStateFlow(DownloadProgress())
+            private val transferLock = Any()
+            @Volatile private var transferId = 0L
+            private var transferJob: Job? = null
+            private var activeCall: Call? = null
+            private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            private val client = OkHttpClient.Builder()
+                .connectTimeout(20, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .callTimeout(10, TimeUnit.MINUTES)
+                .build()
+        }
 
-        private var downloadId: Long = -1
-        private var downloadManager: DownloadManager? = null
-        private var onDownloadCompleteReceiver: BroadcastReceiver? = null
-        private var progressMonitorJob: Job? = null
-        private val scope = CoroutineScope(Dispatchers.IO)
+        val downloadProgress: StateFlow<DownloadProgress> = progressState
 
         /**
          * Check if APK file is already downloaded
@@ -65,7 +78,7 @@ class ApkDownloader
         ): Boolean {
             val fileName = "MosqueClock-v$version.apk"
             val file = File(context.getExternalFilesDir(null), fileName)
-            return file.exists()
+            return isValidApk(context, file, version)
         }
 
         /**
@@ -121,7 +134,7 @@ class ApkDownloader
          * Clean up old APK files to save space
          * Keeps only the current version and latest downloaded version
          */
-        fun cleanupOldApkFiles(context: Context, currentVersion: String) {
+        fun cleanupOldApkFiles(context: Context, currentVersion: String, keepVersion: String? = null) {
             try {
                 val apkDir = context.getExternalFilesDir(null) ?: return
                 val apkFiles = apkDir.listFiles { file ->
@@ -132,7 +145,7 @@ class ApkDownloader
                 
                 apkFiles.forEach { file ->
                     // Don't delete the current version APK
-                    if (file.name != currentFileName) {
+                    if (file.name != currentFileName && file.name != keepVersion?.let(::getApkFileName)) {
                         val deleted = file.delete()
                         if (deleted) {
                             Log.d("ApkDownloader", "Cleaned up old APK: ${file.name}")
@@ -144,209 +157,161 @@ class ApkDownloader
             }
         }
 
-        /**
-         * Download APK from the given URL
-         */
+        /** Stream the user-requested APK directly, without a DownloadManager job. */
         fun downloadApk(
             context: Context,
             downloadUrl: String,
             version: String,
             onComplete: (() -> Unit)? = null,
+            installAfterDownload: Boolean = true,
         ) {
-            try {
-                Log.d("ApkDownloader", "Starting download from: $downloadUrl")
-
-                // Cancel any existing download
-                cancelDownload(context)
-
-                // Initialize download manager
-                downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-
-                // Prepare download request
-                val fileName = "MosqueClock-v$version.apk"
-                
-                // Use external cache directory for better compatibility with PackageInstaller
-                // This avoids permission issues that occur with public Downloads directory on some devices
-                val destination = File(context.getExternalFilesDir(null), fileName)
-                
-                val request =
-                    DownloadManager
-                        .Request(Uri.parse(downloadUrl))
-                        .setTitle("MosqueClock Update")
-                        .setDescription("Downloading v$version")
-                        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        .setDestinationUri(Uri.fromFile(destination))
-                        .setAllowedOverMetered(true)
-                        .setAllowedOverRoaming(true)
-
-                // Start download
-                downloadId = downloadManager?.enqueue(request) ?: -1
-
-                if (downloadId != -1L) {
-                    Log.d("ApkDownloader", "Download started with ID: $downloadId")
-                    _downloadProgress.value =
-                        DownloadProgress(
-                            downloadId = downloadId,
-                            status = DownloadStatus.DOWNLOADING,
-                        )
-
-                    // Start monitoring download progress (primary completion handler)
-                    startProgressMonitoring(context, fileName, onComplete)
-
-                    // Register download complete receiver (backup handler)
-                    registerDownloadCompleteReceiver(context, fileName, onComplete)
-
-                    Toast.makeText(context, "Downloading update v$version", Toast.LENGTH_SHORT).show()
-                } else {
-                    _downloadProgress.value =
-                        DownloadProgress(
-                            status = DownloadStatus.FAILED,
-                        )
-                    Toast.makeText(context, "Failed to start download", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Log.e("ApkDownloader", "Error downloading APK", e)
-                _downloadProgress.value =
-                    DownloadProgress(
-                        status = DownloadStatus.FAILED,
-                    )
-                Toast.makeText(context, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        /**
-         * Start monitoring download progress in background
-         */
-        private fun startProgressMonitoring(
-            context: Context,
-            fileName: String,
-            onComplete: (() -> Unit)? = null,
-        ) {
-            // Cancel existing monitoring job
-            progressMonitorJob?.cancel()
-
-            progressMonitorJob =
-                scope.launch {
-                    while (isActive && downloadId != -1L) {
-                        try {
-                            val progress = queryDownloadProgress(context)
-                            if (progress != null) {
-                                _downloadProgress.value = progress
-
-                                Log.d(
-                                    "ApkDownloader",
-                                    "Progress: ${progress.progress}% " +
-                                        "(${formatBytes(
-                                            progress.bytesDownloaded,
-                                        )}/${formatBytes(progress.totalBytes)}) " +
-                                        "Status: ${progress.status}",
-                                )
-
-                                // If download completed, handle it directly
-                                // (BroadcastReceiver is a backup for this)
-                                if (progress.status == DownloadStatus.COMPLETED) {
-                                    Log.d(
-                                        "ApkDownloader",
-                                        "Download completed via progress monitor - triggering installation",
-                                    )
-
-                                    // Notify callback
-                                    onComplete?.invoke()
-
-                                    // Open installer
-                                    installApk(context, fileName)
-
-                                    break
-                                }
-
-                                // Stop monitoring if failed
-                                if (progress.status == DownloadStatus.FAILED) {
-                                    Log.e("ApkDownloader", "Download failed")
-                                    break
+            val appContext = context.applicationContext
+            synchronized(transferLock) {
+                activeCall?.cancel()
+                transferJob?.cancel()
+                val id = ++transferId
+                progressState.value = DownloadProgress(downloadId = id, version = version, status = DownloadStatus.DOWNLOADING)
+                transferJob = scope.launch {
+                    var partial: File? = null
+                    try {
+                        require(version.matches(Regex("[A-Za-z0-9._-]+"))) { "Invalid update version" }
+                        val directory = appContext.getExternalFilesDir(null)
+                            ?: throw IOException("Update storage is unavailable")
+                        val fileName = getApkFileName(version)
+                        val destination = File(directory, fileName)
+                        val temporary = File(directory, "$fileName.$id.partial.apk")
+                        partial = temporary
+                        removeLegacyDownloads(appContext)
+                        ensureActive()
+                        val call = client.newCall(Request.Builder().url(downloadUrl).build())
+                        synchronized(transferLock) {
+                            ensureActive()
+                            if (transferId != id) throw CancellationException()
+                            activeCall = call
+                        }
+                        var bytesDownloaded = 0L
+                        var totalBytes = 0L
+                        call.execute().use { response ->
+                            if (!response.isSuccessful) throw IOException("Download server returned HTTP ${response.code}")
+                            val body = response.body ?: throw IOException("Download server returned no APK")
+                            totalBytes = body.contentLength().coerceAtLeast(0)
+                            var lastProgressUpdate = 0L
+                            body.byteStream().use { input ->
+                                temporary.outputStream().buffered().use { output ->
+                                    val buffer = ByteArray(32 * 1024)
+                                    while (true) {
+                                        ensureActive()
+                                        val count = input.read(buffer)
+                                        if (count == -1) break
+                                        output.write(buffer, 0, count)
+                                        bytesDownloaded += count
+                                        val now = android.os.SystemClock.elapsedRealtime()
+                                        if (now - lastProgressUpdate >= 200) {
+                                            synchronized(transferLock) {
+                                                if (transferId == id) progressState.value = DownloadProgress(
+                                                    downloadId = id, version = version,
+                                                    status = DownloadStatus.DOWNLOADING,
+                                                    bytesDownloaded = bytesDownloaded, totalBytes = totalBytes,
+                                                    progress = if (totalBytes > 0) ((bytesDownloaded * 100 / totalBytes).toInt()).coerceIn(0, 99) else 0,
+                                                )
+                                            }
+                                            lastProgressUpdate = now
+                                        }
+                                    }
                                 }
                             }
-                            delay(500) // Update every 500ms
-                        } catch (e: Exception) {
-                            Log.e("ApkDownloader", "Error monitoring progress", e)
-                            break
                         }
-                    }
-                }
-        }
-
-        /**
-         * Get current download progress
-         */
-        private fun queryDownloadProgress(context: Context): DownloadProgress? {
-            if (downloadId == -1L || downloadManager == null) return null
-
-            val query = DownloadManager.Query().setFilterById(downloadId)
-            val cursor: Cursor? = downloadManager?.query(query)
-
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val bytesDownloadedIndex = it.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                    val bytesTotalIndex = it.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                    val statusIndex = it.getColumnIndex(DownloadManager.COLUMN_STATUS)
-
-                    val bytesDownloaded = if (bytesDownloadedIndex >= 0) it.getLong(bytesDownloadedIndex) else 0L
-                    val bytesTotal = if (bytesTotalIndex >= 0) it.getLong(bytesTotalIndex) else 0L
-                    val status = if (statusIndex >= 0) it.getInt(statusIndex) else DownloadManager.STATUS_FAILED
-
-                    val progress =
-                        if (bytesTotal > 0) {
-                            ((bytesDownloaded * 100) / bytesTotal).toInt()
-                        } else {
-                            0
+                        ensureActive()
+                        if (bytesDownloaded == 0L || (totalBytes > 0 && bytesDownloaded != totalBytes)) {
+                            throw IOException("The APK download is incomplete. Please retry.")
                         }
-
-                    val downloadStatus =
-                        when (status) {
-                            DownloadManager.STATUS_RUNNING -> DownloadStatus.DOWNLOADING
-                            DownloadManager.STATUS_SUCCESSFUL -> DownloadStatus.COMPLETED
-                            DownloadManager.STATUS_FAILED -> DownloadStatus.FAILED
-                            DownloadManager.STATUS_PAUSED -> DownloadStatus.DOWNLOADING
-                            else -> DownloadStatus.IDLE
+                        if (!isValidApk(appContext, temporary, version)) {
+                            throw IOException("The downloaded file is not a valid update for this app.")
                         }
-
-                    return DownloadProgress(
-                        downloadId = downloadId,
-                        progress = progress,
-                        status = downloadStatus,
-                        bytesDownloaded = bytesDownloaded,
-                        totalBytes = bytesTotal,
-                    )
-                }
-            }
-
-            return null
-        }
-
-        /**
-         * Cancel current download
-         */
-        fun cancelDownload(context: Context) {
-            if (downloadId != -1L) {
-                Log.d("ApkDownloader", "Cancelling download: $downloadId")
-
-                // Stop progress monitoring
-                progressMonitorJob?.cancel()
-                progressMonitorJob = null
-
-                downloadManager?.remove(downloadId)
-                downloadId = -1
-                _downloadProgress.value = DownloadProgress(status = DownloadStatus.CANCELLED)
-
-                // Unregister receiver
-                onDownloadCompleteReceiver?.let {
-                    try {
-                        context.unregisterReceiver(it)
+                        synchronized(transferLock) {
+                            ensureActive()
+                            if (transferId != id) throw CancellationException()
+                            if (destination.exists() && !destination.delete()) throw IOException("Cannot replace the previous APK")
+                            if (!temporary.renameTo(destination)) throw IOException("Cannot save the downloaded APK")
+                            progressState.value = DownloadProgress(
+                                downloadId = id, version = version, status = DownloadStatus.COMPLETED,
+                                progress = 100, bytesDownloaded = bytesDownloaded, totalBytes = bytesDownloaded,
+                            )
+                        }
+                        withContext(Dispatchers.Main) {
+                            if (transferId == id) {
+                                onComplete?.invoke()
+                                if (installAfterDownload) installApk(appContext, fileName)
+                            }
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
-                        // Receiver not registered
+                        ensureActive()
+                        synchronized(transferLock) {
+                            if (transferId == id) progressState.value = progressState.value.copy(
+                                status = DownloadStatus.FAILED, errorMessage = e.message ?: "Download failed. Please retry.",
+                            )
+                        }
+                        Log.e("ApkDownloader", "APK download failed", e)
+                    } finally {
+                        partial?.delete()
+                        synchronized(transferLock) {
+                            if (transferId == id) {
+                                activeCall = null
+                                transferJob = null
+                            }
+                        }
                     }
                 }
-                onDownloadCompleteReceiver = null
             }
+        }
+
+        @Suppress("DEPRECATION")
+        private fun isValidApk(context: Context, file: File, version: String): Boolean {
+            if (!file.isFile || file.length() == 0L) return false
+            val archive = context.packageManager.getPackageArchiveInfo(file.absolutePath, 0) ?: return false
+            val expectedPackage = context.packageName.removeSuffix(".debug")
+            return archive.packageName == expectedPackage && archive.versionName == version
+        }
+
+        /** Remove only this app's queued updater jobs from the previous implementation. */
+        private fun removeLegacyDownloads(context: Context) {
+            try {
+                val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                val ids = mutableListOf<Long>()
+                val query = DownloadManager.Query().setFilterByStatus(
+                    DownloadManager.STATUS_PENDING or DownloadManager.STATUS_PAUSED or DownloadManager.STATUS_RUNNING,
+                )
+                manager.query(query)?.use { cursor ->
+                    val uriColumn = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_URI)
+                    val idColumn = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_ID)
+                    while (cursor.moveToNext()) {
+                        if (cursor.getString(uriColumn).startsWith("https://github.com/mhdzumair/MosqueClock/releases/download/")) {
+                            ids.add(cursor.getLong(idColumn))
+                        }
+                    }
+                }
+                if (ids.isNotEmpty()) manager.remove(*ids.toLongArray())
+            } catch (e: Exception) {
+                Log.w("ApkDownloader", "Could not remove old download jobs", e)
+            }
+        }
+
+        fun cancelDownload(context: Context) {
+            synchronized(transferLock) {
+                if (progressState.value.status != DownloadStatus.DOWNLOADING) return
+                ++transferId
+                activeCall?.cancel()
+                transferJob?.cancel()
+                activeCall = null
+                transferJob = null
+                progressState.value = progressState.value.copy(status = DownloadStatus.CANCELLED)
+            }
+        }
+
+        fun installDownloadedApk(context: Context, version: String) {
+            installApk(context.applicationContext, getApkFileName(version))
         }
 
         /**
@@ -357,7 +322,7 @@ class ApkDownloader
             fileName: String,
         ) {
             // Launch installation in a coroutine with a small delay to ensure file is fully written
-            scope.launch {
+            scope.launch(Dispatchers.Main) {
                 try {
                     // Small delay to ensure file is completely written to disk
                     delay(500)
@@ -479,63 +444,6 @@ class ApkDownloader
                         Toast.makeText(context, "Installation failed: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
-            }
-        }
-
-        /**
-         * Register broadcast receiver for download completion
-         */
-        private fun registerDownloadCompleteReceiver(
-            context: Context,
-            fileName: String,
-            onComplete: (() -> Unit)?,
-        ) {
-            // Unregister existing receiver if any
-            onDownloadCompleteReceiver?.let {
-                try {
-                    context.unregisterReceiver(it)
-                } catch (e: Exception) {
-                    // Receiver not registered
-                }
-            }
-
-            onDownloadCompleteReceiver =
-                object : BroadcastReceiver() {
-                    override fun onReceive(
-                        context: Context,
-                        intent: Intent,
-                    ) {
-                        val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                        if (id == downloadId) {
-                            Log.d("ApkDownloader", "Download completed: $id")
-                            _downloadProgress.value =
-                                DownloadProgress(
-                                    downloadId = id,
-                                    progress = 100,
-                                    status = DownloadStatus.COMPLETED,
-                                )
-
-                            // Notify completion callback
-                            onComplete?.invoke()
-
-                            // Automatically open installer
-                            installApk(context, fileName)
-
-                            // Unregister receiver
-                            try {
-                                context.unregisterReceiver(this)
-                            } catch (e: Exception) {
-                                // Already unregistered
-                            }
-                        }
-                    }
-                }
-
-            val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(onDownloadCompleteReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                context.registerReceiver(onDownloadCompleteReceiver, filter)
             }
         }
 

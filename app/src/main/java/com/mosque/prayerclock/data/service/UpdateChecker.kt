@@ -69,7 +69,8 @@ class UpdateChecker
 
                     // Find the APK asset (MosqueClock-v*.apk)
                     val apkAsset = release.assets.firstOrNull { it.name.endsWith(".apk") }
-                    val downloadUrl = apkAsset?.browserDownloadUrl ?: release.htmlUrl
+                    val downloadUrl = apkAsset?.browserDownloadUrl
+                        ?: throw IllegalStateException("The release has no APK asset")
 
                     Log.d("UpdateChecker", "APK download URL: $downloadUrl")
 

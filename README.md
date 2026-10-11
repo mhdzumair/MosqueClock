@@ -46,6 +46,20 @@ display and reminder monitoring. For Play Store distribution, declare this use c
 Play Console under **Policy → App content → Foreground service permissions**, as required
 by [Android's foreground service documentation](https://developer.android.com/develop/background-work/services/fgs/service-types#special-use).
 
+### In-app updates (GitHub builds)
+
+Updates download directly over HTTPS with byte progress and a cancel button. Downloads
+have connection/read timeouts and a ten-minute total timeout; errors leave the button
+available for retry. A temporary file becomes installable only after its size, package
+name and version are validated. The startup dialog and Settings share one transfer.
+The downloader also removes this app's queued update jobs from the old DownloadManager
+implementation when starting a new download.
+
+This avoids DownloadManager's background job scheduling delays without changing Android's
+thermal protections. Existing versions with the old updater need a manual update once
+to receive this fix. Live device checks are opt-in:
+`./gradlew :app:connectedGithubDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.verifyLiveUpdate=true`.
+
 ### 🕌 Prayer Times Display
 - **Multiple Prayer Time Sources**: 
   - **Direct ACJU Scraping**: Real-time web scraping from ACJU.lk with PDF parsing

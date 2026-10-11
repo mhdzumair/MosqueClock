@@ -109,9 +109,11 @@ import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
 import com.mosque.prayerclock.utils.PermissionsHelper
 import com.mosque.prayerclock.data.service.ApkDownloader
+import com.mosque.prayerclock.data.service.DownloadStatus
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.ui.components.MarkdownText
+import com.mosque.prayerclock.ui.components.rememberInstallPermission
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
 import com.mosque.prayerclock.ui.theme.AppColorThemes
@@ -3261,20 +3263,20 @@ private fun AboutSettings(
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var isChecking by remember { mutableStateOf(false) }
     var updateCheckError by remember { mutableStateOf(false) }
-    var isDownloading by remember { mutableStateOf(false) }
     var isFileAlreadyDownloaded by remember { mutableStateOf(false) }
-    var hasInstallPermission by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val apkDownloader = remember { ApkDownloader() }
+    val hasInstallPermission by rememberInstallPermission(apkDownloader)
     val downloadProgress by apkDownloader.downloadProgress.collectAsState()
+    val isDownloading = downloadProgress.status == DownloadStatus.DOWNLOADING
+    LaunchedEffect(downloadProgress.status, updateInfo) {
+        if (downloadProgress.status == DownloadStatus.COMPLETED && downloadProgress.version == updateInfo?.latestVersion) {
+            isFileAlreadyDownloaded = true
+        }
+    }
 
     // Get current version from BuildConfig
     val currentVersion = BuildConfig.VERSION_NAME
-
-    // Check install permission on composition
-    LaunchedEffect(Unit) {
-        hasInstallPermission = apkDownloader.canInstallPackages(context)
-    }
 
     // Check if APK is already downloaded when update info changes
     LaunchedEffect(updateInfo) {
@@ -3284,8 +3286,6 @@ private fun AboutSettings(
                     context = context,
                     version = updateInfo!!.latestVersion,
                 )
-            // Also re-check permission
-            hasInstallPermission = apkDownloader.canInstallPackages(context)
         }
     }
 
@@ -3524,59 +3524,14 @@ private fun AboutSettings(
                                         }
 
                                         if (isFileAlreadyDownloaded) {
-                                            // If file is already downloaded, just install it
-                                            val fileName = apkDownloader.getApkFileName(updateInfo!!.latestVersion)
-                                            val file = File(context.getExternalFilesDir(null), fileName)
-
-                                            if (!file.exists()) {
-                                                Toast.makeText(context, "APK file not found", Toast.LENGTH_SHORT).show()
-                                                isFileAlreadyDownloaded = false
-                                                return@Button
-                                            }
-
-                                            val uri: Uri =
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                                    FileProvider.getUriForFile(
-                                                        context,
-                                                        "${context.packageName}.fileprovider",
-                                                        file,
-                                                    )
-                                                } else {
-                                                    Uri.fromFile(file)
-                                                }
-
-                                            // Use ACTION_INSTALL_PACKAGE for better compatibility (Android 8.0+)
-                                            val installIntent =
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                                    Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-                                                        setDataAndType(uri, "application/vnd.android.package-archive")
-                                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                        putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-                                                        putExtra(Intent.EXTRA_RETURN_RESULT, true)
-                                                    }
-                                                } else {
-                                                    Intent(Intent.ACTION_VIEW).apply {
-                                                        setDataAndType(uri, "application/vnd.android.package-archive")
-                                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                    }
-                                                }
-
-                                            if (installIntent.resolveActivity(context.packageManager) != null) {
-                                                context.startActivity(installIntent)
-                                                Toast.makeText(context, "Opening installer...", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "No installer app found", Toast.LENGTH_LONG).show()
-                                            }
+                                            apkDownloader.installDownloadedApk(context, updateInfo!!.latestVersion)
                                         } else {
                                             // Download the file
-                                            isDownloading = true
                                             apkDownloader.downloadApk(
                                                 context = context,
                                                 downloadUrl = updateInfo!!.downloadUrl,
                                                 version = updateInfo!!.latestVersion,
                                                 onComplete = {
-                                                    isDownloading = false
                                                     isFileAlreadyDownloaded = true
                                                 },
                                             )
@@ -3612,8 +3567,21 @@ private fun AboutSettings(
                                     }
                                 }
 
+                                if (downloadProgress.status == DownloadStatus.FAILED && downloadProgress.version == updateInfo?.latestVersion) {
+                                    Text(
+                                        text = downloadProgress.errorMessage ?: "Download failed. Please retry.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                                if (isDownloading) {
+                                    TextButton(onClick = { apkDownloader.cancelDownload(context) }) {
+                                        Text(localizedStringResource(R.string.cancel))
+                                    }
+                                }
+
                                 // Download Progress Bar
-                                if (isDownloading && downloadProgress.progress > 0) {
+                                if (isDownloading && downloadProgress.totalBytes > 0) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     androidx.compose.material3.LinearProgressIndicator(
                                         progress = downloadProgress.progress / 100f,

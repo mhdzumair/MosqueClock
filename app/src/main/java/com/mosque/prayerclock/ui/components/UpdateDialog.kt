@@ -63,11 +63,10 @@ fun UpdateDialog(
     val downloadProgress by apkDownloader.downloadProgress.collectAsState()
     
     var isFileAlreadyDownloaded by remember { mutableStateOf(false) }
-    var hasInstallPermission by remember { mutableStateOf(false) }
+    val hasInstallPermission by rememberInstallPermission(apkDownloader)
     
     // Check install permission and if APK is already downloaded
     LaunchedEffect(updateInfo) {
-        hasInstallPermission = apkDownloader.canInstallPackages(context)
         isFileAlreadyDownloaded = apkDownloader.isApkAlreadyDownloaded(
             context = context,
             version = updateInfo.latestVersion,
@@ -75,7 +74,8 @@ fun UpdateDialog(
     }
     
     val isDownloading = downloadProgress.status == DownloadStatus.DOWNLOADING
-    val isDownloadComplete = downloadProgress.status == DownloadStatus.COMPLETED || isFileAlreadyDownloaded
+    val isDownloadComplete = (downloadProgress.status == DownloadStatus.COMPLETED &&
+        downloadProgress.version == updateInfo.latestVersion) || isFileAlreadyDownloaded
     
     AlertDialog(
         onDismissRequest = {
@@ -210,6 +210,14 @@ fun UpdateDialog(
                     }
                 }
                 
+                if (downloadProgress.status == DownloadStatus.FAILED && downloadProgress.version == updateInfo.latestVersion) {
+                    Text(
+                        text = downloadProgress.errorMessage ?: "Download failed. Please retry.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
                 // Download progress
                 if (isDownloading) {
                     Column(
@@ -281,41 +289,7 @@ fun UpdateDialog(
                 isDownloadComplete -> {
                     Button(
                         onClick = {
-                            // Clean up old APKs before installing
-                            apkDownloader.cleanupOldApkFiles(context, updateInfo.currentVersion)
-                            
-                            // Trigger installation from already downloaded file
-                            val fileName = apkDownloader.getApkFileName(updateInfo.latestVersion)
-                            val file = java.io.File(context.getExternalFilesDir(null), fileName)
-                            
-                            if (file.exists()) {
-                                val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                    androidx.core.content.FileProvider.getUriForFile(
-                                        context,
-                                        "${context.packageName}.fileprovider",
-                                        file,
-                                    )
-                                } else {
-                                    android.net.Uri.fromFile(file)
-                                }
-                                
-                                val installIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                    android.content.Intent(android.content.Intent.ACTION_INSTALL_PACKAGE).apply {
-                                        setDataAndType(uri, "application/vnd.android.package-archive")
-                                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        putExtra(android.content.Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-                                        putExtra(android.content.Intent.EXTRA_RETURN_RESULT, true)
-                                    }
-                                } else {
-                                    android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                        setDataAndType(uri, "application/vnd.android.package-archive")
-                                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                }
-                                
-                                context.startActivity(installIntent)
-                            }
+                            apkDownloader.installDownloadedApk(context, updateInfo.latestVersion)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.tertiary,
@@ -367,6 +341,12 @@ fun UpdateDialog(
                     }
                 }
                 
+                if (isDownloading) {
+                    OutlinedButton(onClick = { apkDownloader.cancelDownload(context) }) {
+                        Text("Cancel download")
+                    }
+                }
+
                 // Later/Cancel button
                 if (!isDownloading) {
                     OutlinedButton(
@@ -379,4 +359,3 @@ fun UpdateDialog(
         },
     )
 }
-
