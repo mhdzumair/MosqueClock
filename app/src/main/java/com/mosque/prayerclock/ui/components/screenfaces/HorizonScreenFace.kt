@@ -544,6 +544,7 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
             val countdown = getCountdownData(
                 targetTime,
                 data.currentTime,
+                rollToNextDay = prayer.type == PrayerType.FAJR,
             )
             val showInlineCountdown = data.isCountdownVisibleForWeight &&
                 countdown.totalSeconds >= 0 && countdown.totalMinutes <= 60

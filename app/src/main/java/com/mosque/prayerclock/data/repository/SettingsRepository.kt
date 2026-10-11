@@ -379,6 +379,7 @@ class SettingsRepository
 
         suspend fun updateScreenFaceId(faceId: String, recommendedThemeId: String? = null) {
             dataStore.edit { preferences ->
+                if (preferences[PreferencesKeys.SCREEN_FACE_ID] == faceId) return@edit
                 preferences[PreferencesKeys.SCREEN_FACE_ID] = faceId
                 recommendedThemeId?.let { preferences[PreferencesKeys.COLOR_THEME] = it }
             }

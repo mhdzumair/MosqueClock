@@ -146,6 +146,16 @@ fun resolveDisplayNextPrayer(
     nextDayFajr: PrayerTimesWithIqamah? = null,
 ): PrayerInfo {
     LocalInlineCountdownPrayer.current?.let { return it }
+    return resolveTimetableNextPrayer(rows, nextPrayer, currentTime, nextDayFajr)
+}
+
+/** Timetable selection also guards against a stale next-prayer hint after resuming. */
+fun resolveTimetableNextPrayer(
+    rows: List<PrayerInfo>,
+    nextPrayer: PrayerType?,
+    currentTime: Instant,
+    nextDayFajr: PrayerTimesWithIqamah? = null,
+): PrayerInfo {
     val now = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
     val nowMinutes = now.hour * 60 + now.minute
     rows.firstOrNull { it.type == nextPrayer }?.let { matched ->
@@ -320,7 +330,7 @@ fun inlineCountdown(
             TimeUtils.compareTimeStrings(prayer.azanTime, now) <= 0 && TimeUtils.compareTimeStrings(now, it) < 0
         } == true
     val target = if (isIqamah) prayer.iqamahTime ?: prayer.azanTime else prayer.azanTime
-    val countdown = getCountdownData(target, data.currentTime)
+    val countdown = getCountdownData(target, data.currentTime, rollToNextDay = prayer.type == PrayerType.FAJR)
     return InlineCountdown(isIqamah, target, countdown.totalMinutes, countdown.seconds)
 }
 

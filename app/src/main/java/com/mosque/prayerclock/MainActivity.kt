@@ -92,6 +92,9 @@ class MainActivity : ComponentActivity() {
             val viewModel: MainViewModel = hiltViewModel()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
 
+            val settingsLoaded by viewModel.settingsLoaded.collectAsStateWithLifecycle()
+            if (!settingsLoaded) return@setContent
+
             // Get the selected color theme
             val selectedColorTheme = AppColorThemes.getThemeById(settings.colorTheme)
 
@@ -332,6 +335,7 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
             composable("settings") {
                 SettingsScreen(
                     onNavigateBack = returnToMain,
+                    viewModel = settingsViewModel,
                 )
             }
         }

@@ -306,9 +306,9 @@ private fun resolveSimpleNextPrayer(
     val now = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
     val nowMinutes = now.hour * 60 + now.minute
     rows.firstOrNull { it.type == nextPrayer }?.let { matched ->
-        if (isPrayerUpcomingOrActive(matched.type, matched.azanTime, matched.iqamahTime, nowMinutes)) {
-            return matched
-        }
+        // The view model recalculates this each second, including dua and Friday bayan.
+        // Keep that active prayer for overlays even after its iqamah has passed.
+        if (matched.type != PrayerType.FAJR || nextDayFajr == null) return matched
     }
     rows.firstOrNull {
         isPrayerUpcomingOrActive(it.type, it.azanTime, it.iqamahTime, nowMinutes)
@@ -339,7 +339,7 @@ private fun computeScreenValues(
     val shouldShowIqamah = isAfterAzan && isBeforeIqamah && iqamahTime != null
 
     val targetTime = if (shouldShowIqamah) iqamahTime ?: azanTime else azanTime
-    val countdownData = getCountdownData(targetTime, currentTime)
+    val countdownData = getCountdownData(targetTime, currentTime, rollToNextDay = prayerType == PrayerType.FAJR)
 
     val isCurrentPrayer = if (iqamahTime != null) {
         val bufferTime = TimeUtils.addMinutesToTime(iqamahTime, settings.duaDisplayDurationMinutes)

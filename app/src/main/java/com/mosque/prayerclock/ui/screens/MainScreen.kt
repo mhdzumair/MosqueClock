@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,9 @@ fun MainScreen(
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+
+    val settingsLoaded by viewModel.settingsLoaded.collectAsStateWithLifecycle()
+    if (!settingsLoaded) return
 
     // Monitor prayer-related settings changes — drives viewModel.loadPrayerTimes()
     val data = rememberScreenDisplayData(viewModel)

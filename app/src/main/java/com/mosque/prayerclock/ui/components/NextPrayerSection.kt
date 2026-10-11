@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mosque.prayerclock.ui.components.screenfaces.shared.LocalInlineCountdownPrayer
+import com.mosque.prayerclock.ui.components.screenfaces.shared.resolveDisplayNextPrayer
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
@@ -47,6 +47,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.min
 
@@ -76,14 +77,9 @@ fun NextPrayerSection(
 ) {
     val prayerInfoList = createPrayerInfoList(prayerTimes, currentTime)
 
-    // If next prayer is Fajr and we have next day times, use tomorrow's Fajr
-    val nextPrayerInfo = LocalInlineCountdownPrayer.current ?:
-        if (nextPrayer == PrayerType.FAJR && nextDayFajr != null) {
-            val tomorrowPrayerInfoList = createPrayerInfoList(nextDayFajr)
-            tomorrowPrayerInfoList.find { it.type == PrayerType.FAJR }
-        } else {
-            prayerInfoList.find { it.type == nextPrayer }
-        }
+    val nextPrayerInfo = resolveDisplayNextPrayer(
+        prayerInfoList, nextPrayer, currentTime, nextDayFajr,
+    )
 
     // Use passed current time instead of recalculating
     val now = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
@@ -91,19 +87,15 @@ fun NextPrayerSection(
         "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
 
     // Calculate if we should show Iqamah time (for display purposes)
-    val isAfterAzan =
-        nextPrayerInfo?.let { prayer ->
-            TimeUtils.compareTimeStrings(prayer.azanTime, currentTimeString) <= 0
-        }
-            ?: false
+    val isAfterAzan = TimeUtils.compareTimeStrings(nextPrayerInfo.azanTime, currentTimeString) <= 0
 
     val isBeforeIqamah =
-        nextPrayerInfo?.iqamahTime?.let { iqamahTime ->
+        nextPrayerInfo.iqamahTime?.let { iqamahTime ->
             TimeUtils.compareTimeStrings(currentTimeString, iqamahTime) < 0
         }
             ?: false
 
-    val shouldShowIqamah = isAfterAzan && isBeforeIqamah && nextPrayerInfo?.iqamahTime != null
+    val shouldShowIqamah = isAfterAzan && isBeforeIqamah && nextPrayerInfo.iqamahTime != null
 
     // Track prayer transition to trigger ViewModel update
     val previousIsCurrentPrayer = remember { mutableStateOf(isCurrentPrayer) }
@@ -123,7 +115,7 @@ fun NextPrayerSection(
             } else {
                 nextPrayerInfo.azanTime
             }
-        val countdownData = getCountdownData(targetTime, currentTime)
+        val countdownData = getCountdownData(targetTime, currentTime, rollToNextDay = nextPrayerInfo.type == PrayerType.FAJR)
 
         Card(
             modifier = modifier.fillMaxWidth().padding(1.dp),
@@ -418,10 +410,11 @@ fun FlipClockCountdown(
 fun getCountdownData(
     prayerTime: String,
     currentTime: Instant,
+    rollToNextDay: Boolean = false,
 ): CountdownData {
     try {
         val now = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
-        val parts = prayerTime.split(":")
+        val parts = TimeUtils.normalizeClockTime(prayerTime).split(":")
         val prayerHour = parts[0].toInt()
         val prayerMinute = parts[1].toInt()
 
@@ -432,7 +425,11 @@ fun getCountdownData(
                 LocalTime(prayerHour, prayerMinute, 0), // Set seconds to 0 for consistency
             )
 
-        val prayerInstant = prayerDateTime.toInstant(TimeZone.currentSystemDefault())
+        val zone = TimeZone.currentSystemDefault()
+        val targetDateTime = if (rollToNextDay && prayerDateTime < now) {
+            LocalDateTime(now.date.plus(1, kotlinx.datetime.DateTimeUnit.DAY), prayerDateTime.time)
+        } else prayerDateTime
+        val prayerInstant = targetDateTime.toInstant(zone)
         val duration = prayerInstant - currentTime
 
         if (duration.isNegative()) {

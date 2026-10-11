@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import com.mosque.prayerclock.utils.calculateNextPrayer
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -55,27 +57,36 @@ class MainViewModel
         // Add unique identifier to track ViewModel instances
         private val viewModelId = System.currentTimeMillis().toString().takeLast(4)
 
-        val settings =
-            settingsRepository
-                .getSettings()
-                .stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.Lazily,
-                    initialValue = AppSettings(),
-                )
+        private val _settingsLoaded = MutableStateFlow(false)
+        val settingsLoaded: StateFlow<Boolean> = _settingsLoaded.asStateFlow()
+
+        private val _settings = MutableStateFlow(AppSettings())
+        val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
         private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Loading)
         // Calculate displayed iqamah times from persisted settings, including changes
         // made while prayer times are loading or while the settings screen is open.
         val uiState: StateFlow<MainUiState> =
-            combine(_uiState, settingsRepository.getSettings()) { state, currentSettings ->
+            combine(_uiState, settingsRepository.getSettings(), flow {
+                while (true) {
+                    val now = Clock.System.now()
+                    val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+                    if (lastLoadedDate != null && lastLoadedDate != today) loadPrayerTimes()
+                    emit(now)
+                    delay(1000)
+                }
+            }) { state, currentSettings, currentTime ->
                 when (state) {
                     is MainUiState.Success -> {
                         val prayerTimes = state.prayerTimes.prayerTimes.withIqamahTimes(currentSettings)
+                        val nextPrayer = calculateNextPrayer(prayerTimes, currentSettings, currentTime)
+                        val nextDayFajr = if (nextPrayer == PrayerType.FAJR && isAllPrayersCompleted(prayerTimes)) {
+                            state.nextDayFajr?.prayerTimes?.withIqamahTimes(currentSettings)
+                        } else null
                         state.copy(
                             prayerTimes = prayerTimes,
-                            nextPrayer = calculateNextPrayer(prayerTimes, currentSettings),
-                            nextDayFajr = state.nextDayFajr?.prayerTimes?.withIqamahTimes(currentSettings),
+                            nextPrayer = nextPrayer,
+                            nextDayFajr = nextDayFajr,
                         )
                     }
                     else -> state
@@ -94,6 +105,7 @@ class MainViewModel
         // Cache tomorrow's prayer times to avoid repeated fetching after Isha
         private var cachedTomorrowPrayerTimes: PrayerTimes? = null
         private var cachedTomorrowDate: String? = null
+        private var lastTomorrowAttempt: kotlinx.datetime.Instant? = null
 
         // Network status tracking for auto-refresh after connectivity restored
         private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Unavailable)
@@ -108,7 +120,28 @@ class MainViewModel
         val hijriRefreshTrigger = _hijriRefreshTrigger.asSharedFlow()
 
         init {
-            // ViewModel initialized
+            viewModelScope.launch {
+                settingsRepository.getSettings().collect {
+                    _settings.value = it
+                    _settingsLoaded.value = true
+                }
+            }
+            // Fetch tomorrow separately so a slow request cannot stop prayer transitions.
+            viewModelScope.launch {
+                uiState.collect { state ->
+                    if (state is MainUiState.Success && state.nextPrayer == PrayerType.FAJR &&
+                        state.nextDayFajr == null && isAllPrayersCompleted(state.prayerTimes)
+                    ) {
+                        val tomorrow = getTomorrowPrayerTimesOptimized(settings.value)
+                        val latest = _uiState.value
+                        if (tomorrow != null && latest is MainUiState.Success &&
+                            latest.prayerTimes.id == state.prayerTimes.id
+                        ) {
+                            _uiState.value = latest.copy(nextDayFajr = tomorrow)
+                        }
+                    }
+                }
+            }
         }
 
         /**
@@ -186,6 +219,7 @@ class MainViewModel
                 // Also clear tomorrow's cache
                 cachedTomorrowPrayerTimes = null
                 cachedTomorrowDate = null
+                lastTomorrowAttempt = null
 
                 // Reset loading flag to allow new load
                 isLoadingPrayerTimes = false
@@ -212,7 +246,7 @@ class MainViewModel
         fun updateNextPrayer() {
             val currentState = uiState.value
             if (currentState is MainUiState.Success) {
-                val newNextPrayer = calculateNextPrayer(currentState.prayerTimes)
+                val newNextPrayer = calculateNextPrayer(currentState.prayerTimes, settings.value)
                 if (newNextPrayer != currentState.nextPrayer) {
                     _uiState.value = currentState.copy(nextPrayer = newNextPrayer)
                 }
@@ -223,6 +257,9 @@ class MainViewModel
             if (isLoadingPrayerTimes) return
 
             isLoadingPrayerTimes = true
+            cachedTomorrowPrayerTimes = null
+            cachedTomorrowDate = null
+            lastTomorrowAttempt = null
 
             viewModelScope.launch(Dispatchers.IO) {
                 // Wait for saved settings instead of using the StateFlow's startup defaults.
@@ -248,19 +285,10 @@ class MainViewModel
 
                             val nextPrayer = calculateNextPrayer(prayerTimesWithIqamah, currentSettings)
 
-                            // If next prayer is Fajr and all today's prayers are done, get tomorrow's times
-                            val nextDayFajr =
-                                if (nextPrayer == PrayerType.FAJR && isAllPrayersCompleted(prayerTimesWithIqamah)) {
-                                    getTomorrowPrayerTimesOptimized(currentSettings)
-                                } else {
-                                    null
-                                }
-
                             _uiState.value =
                                 MainUiState.Success(
                                     prayerTimes = prayerTimesWithIqamah,
                                     nextPrayer = nextPrayer,
-                                    nextDayFajr = nextDayFajr,
                                 )
 
                             Log.d("MainViewModel", "Prayer times loaded successfully for date: $lastLoadedDate")
@@ -340,75 +368,6 @@ class MainViewModel
             super.onCleared()
         }
 
-        private fun calculateNextPrayer(
-            prayerTimes: PrayerTimesWithIqamah,
-            currentSettings: AppSettings = settings.value,
-        ): PrayerType? {
-            val now =
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-            val currentTime =
-                "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
-            val isFriday = now.dayOfWeek == DayOfWeek.FRIDAY
-
-            // Check if we're in the 5-minute buffer after any Iqamah time
-            val prayers =
-                listOf(
-                    PrayerType.FAJR to Pair(prayerTimes.fajrAzan, prayerTimes.fajrIqamah),
-                    PrayerType.SUNRISE to Pair(prayerTimes.sunrise, null), // Sunrise has no Iqamah
-                    PrayerType.DHUHR to
-                        Pair(
-                            prayerTimes.dhuhrAzan,
-                            if (isFriday) null else prayerTimes.dhuhrIqamah,
-                        ), // No Iqamah on Friday
-                    PrayerType.ASR to Pair(prayerTimes.asrAzan, prayerTimes.asrIqamah),
-                    PrayerType.MAGHRIB to
-                        Pair(prayerTimes.maghribAzan, prayerTimes.maghribIqamah),
-                    PrayerType.ISHA to Pair(prayerTimes.ishaAzan, prayerTimes.ishaIqamah),
-                )
-
-            // Active salah window (azan → iqamah + dua). Sunrise is informational only — never a salah period.
-            for ((prayerType, times) in prayers) {
-                if (prayerType == PrayerType.SUNRISE) continue
-
-                val azanTime = times.first
-                val iqamahTime = times.second?.takeIf { it.isNotBlank() }
-
-                if (iqamahTime != null) {
-                    val bufferTime = TimeUtils.addMinutesToTime(iqamahTime, currentSettings.duaDisplayDurationMinutes)
-
-                    if (TimeUtils.compareTimeStrings(azanTime, currentTime) <= 0 &&
-                        TimeUtils.compareTimeStrings(currentTime, bufferTime) < 0
-                    ) {
-                        return prayerType
-                    }
-                } else if (prayerType == PrayerType.DHUHR && isFriday) {
-                    val bayanEndTime = TimeUtils.addMinutesToTime(azanTime, currentSettings.jummahDurationMinutes)
-                    if (TimeUtils.compareTimeStrings(azanTime, currentTime) <= 0 &&
-                        TimeUtils.compareTimeStrings(currentTime, bayanEndTime) < 0
-                    ) {
-                        return prayerType
-                    }
-                }
-            }
-
-            // Next upcoming event — skip sunrise once it has passed
-            val nextTodayPrayer =
-                prayers
-                    .firstOrNull { (type, times) ->
-                        if (type == PrayerType.SUNRISE &&
-                            TimeUtils.compareTimeStrings(times.first, currentTime) <= 0
-                        ) {
-                            false
-                        } else {
-                            TimeUtils.compareTimeStrings(currentTime, times.first) < 0
-                        }
-                    }
-                    ?.first
-
-            // If no more prayers today, next prayer is Fajr of tomorrow
-            return nextTodayPrayer ?: PrayerType.FAJR
-        }
-
         private fun isAllPrayersCompleted(prayerTimes: PrayerTimesWithIqamah): Boolean {
             val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             val currentTime = "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
@@ -437,6 +396,9 @@ class MainViewModel
                 return cachedTimes.withIqamahTimes(settings)
             }
 
+            val now = Clock.System.now()
+            if (lastTomorrowAttempt?.let { (now - it).inWholeSeconds in 0..59 } == true) return null
+            lastTomorrowAttempt = now
             return try {
                 // Fetch tomorrow's prayer times
                 val result = prayerTimesRepository.getTomorrowPrayerTimesFromSettings()
