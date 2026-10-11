@@ -237,10 +237,15 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
         settingsNavigationPending = false
     }
     val openSettings = {
-        if (currentRoute == "main" && !settingsNavigationPending) {
+        if (navController.currentDestination?.route == "main" && !settingsNavigationPending) {
             settingsNavigationPending = true
             navController.navigate("settings") { launchSingleTop = true }
         }
+    }
+    val returnToMain: () -> Unit = {
+        // A second click can reach the outgoing Settings screen during its transition.
+        // Pop to the clock explicitly so repeated callbacks can never remove it.
+        navController.popBackStack("main", inclusive = false)
     }
     
     // Auto-update state
@@ -288,8 +293,8 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
 
     // Handle back button properly for TV
     BackHandler(enabled = true) {
-        when (currentRoute) {
-            "settings" -> navController.popBackStack()
+        when (navController.currentDestination?.route) {
+            "settings" -> returnToMain()
             "main" -> showExitDialog = true
             else -> showExitDialog = true
         }
@@ -313,23 +318,6 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
                             false
                         }
                     }
-                    Key.Back -> {
-                        if (keyEvent.type == KeyEventType.KeyDown) {
-                            true
-                        } else {
-                            when (currentRoute) {
-                                "settings" -> {
-                                    navController.popBackStack()
-                                    true
-                                }
-                                "main" -> {
-                                    showExitDialog = true
-                                    true
-                                }
-                                else -> false
-                            }
-                        }
-                    }
                     else -> false
                 }
             },
@@ -341,7 +329,7 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
 
             composable("settings") {
                 SettingsScreen(
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = returnToMain,
                 )
             }
         }
