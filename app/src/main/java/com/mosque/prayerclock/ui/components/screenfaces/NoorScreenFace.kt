@@ -114,7 +114,7 @@ object NoorScreenFace : ScreenFace {
         NoorGround(Modifier.fillMaxSize())
         val s = rememberTvTextScale(maxWidth, maxHeight)
         Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = s.heightDp(.02f))) {
-            NoorHeader(data, Modifier.fillMaxWidth().height(s.heightDp(.155f)))
+            NoorHeader(data, Modifier.fillMaxWidth().height(s.heightDp(.125f)))
             when (val state = data.mainState) {
                 is MainUiState.Success -> {
                     val rows = prayerRows(state.prayerTimes, data.currentTime)
@@ -137,7 +137,7 @@ object NoorScreenFace : ScreenFace {
                             next,
                             Modifier.weight(.46f).fillMaxWidth().clickable(onClick = cb.onOpenSettings),
                         )
-                        NoorTable(data, rows, next.type, Modifier.weight(.44f).fillMaxWidth())
+                        NoorTable(data, rows, next.type, Modifier.weight(.54f).fillMaxWidth())
                     }
                 }
 
@@ -227,28 +227,32 @@ object NoorScreenFace : ScreenFace {
     BoxWithConstraints(modifier) {
         val s = rememberTvTextScale(maxWidth, maxHeight)
         Row(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().padding(vertical = s.heightDp(.025f)),
+            horizontalArrangement = Arrangement.spacedBy(s.widthDp(.018f)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.CenterStart,
+                    .weight(.54f)
+                    .fillMaxHeight()
+                    .background(c.surfaceCard.copy(alpha = .75f))
+                    .border(1.dp, c.azanTime.copy(alpha = .22f))
+                    .padding(horizontal = s.widthDp(.01f)),
+                contentAlignment = Alignment.Center,
             ) {
                 if (analog) {
                     NoorDial(
                         data,
                         Modifier
-                            .fillMaxHeight(.9f)
-                            .fillMaxWidth(.92f),
+                            .fillMaxHeight(.96f)
+                            .fillMaxWidth(.98f),
                     )
                 } else {
                     NoorMatrixClock(
                         clock = data.clock,
                         color = c.azanTime,
                         maxHeightFraction = .95f,
-                        modifier = Modifier.fillMaxHeight().fillMaxWidth(.92f),
+                        modifier = Modifier.fillMaxHeight().fillMaxWidth(.98f),
                         shadow = Shadow(c.azanTime.copy(alpha = .5f), blurRadius = 18f),
                         amLabel = localizedStringResource(R.string.am),
                         pmLabel = localizedStringResource(R.string.pm),
@@ -257,50 +261,52 @@ object NoorScreenFace : ScreenFace {
             }
             Box(
                 Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.CenterEnd,
+                    .weight(.46f)
+                    .fillMaxHeight()
+                    .background(c.surfaceCard.copy(alpha = .75f))
+                    .border(1.dp, c.azanTime.copy(alpha = .22f))
+                    .padding(horizontal = s.widthDp(.025f)),
+                contentAlignment = Alignment.CenterStart,
             ) {
-            Column(
-                Modifier
-                    .fillMaxWidth(.88f),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                TvAutoSizeText(
-                    localizedStringResource(R.string.next_prayer).uppercase(),
-                    c.textSecondary,
-                    s.height(.08f),
-                    s.height(.04f),
-                    fontFamily = FontFamily.Monospace,
-                )
-                TvAutoSizeText(
-                    next.name,
-                    c.azanTime,
-                    s.height(.24f),
-                    s.height(.11f),
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                )
-                TvAutoSizeText(
-                    TimeUtils.formatTimeBasedOnPreference(next.azanTime, data.settings.show24HourFormat),
-                    c.primaryAccent,
-                    s.height(.22f),
-                    s.height(.10f),
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                )
-                next.iqamahTime?.let { time ->
+                Column(
+                    Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(s.heightDp(.012f)),
+                ) {
                     TvAutoSizeText(
-                        "${localizedStringResource(R.string.iqamah_letter)} " +
-                            TimeUtils.formatTimeBasedOnPreference(time, data.settings.show24HourFormat),
-                        c.textSecondary, s.height(.075f), s.height(.04f),
+                        localizedStringResource(R.string.next_prayer).uppercase(),
+                        c.textSecondary,
+                        s.height(.08f),
+                        s.height(.04f),
                         fontFamily = FontFamily.Monospace,
-                        maxLines = 1,
                     )
+                    TvAutoSizeText(
+                        next.name,
+                        c.azanTime,
+                        s.height(.25f),
+                        s.height(.11f),
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                    )
+                    TvAutoSizeText(
+                        TimeUtils.formatTimeBasedOnPreference(next.azanTime, data.settings.show24HourFormat),
+                        c.primaryAccent,
+                        s.height(.23f),
+                        s.height(.10f),
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    next.iqamahTime?.let { time ->
+                        TvAutoSizeText(
+                            "${localizedStringResource(R.string.iqamah_letter)} " +
+                                TimeUtils.formatTimeBasedOnPreference(time, data.settings.show24HourFormat),
+                            c.textSecondary, s.height(.085f), s.height(.04f),
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1,
+                        )
+                    }
                 }
-            }
             }
         }
     }
@@ -409,19 +415,6 @@ object NoorScreenFace : ScreenFace {
                     textAlign = TextAlign.Center,
                 )
             }
-            if (clock.showSeconds) {
-                TvAutoSizeText(
-                    "%02d %s".format(clock.second, localizedStringResource(R.string.countdown_label_seconds)),
-                    c.textSecondary,
-                    s.height(.07f),
-                    s.height(.035f),
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = s.height(.008f),
-                    textAlign = TextAlign.Center,
-                    lineHeightRatio = 1.02f,
-                    maxLines = 1,
-                )
-            }
         }
     }
 }
@@ -439,31 +432,34 @@ object NoorScreenFace : ScreenFace {
         }
     BoxWithConstraints(modifier) {
         val s = rememberTvTextScale(maxWidth, maxHeight)
+        // Reserve a compact heading, then share the remaining height equally between prayers.
+        // Each cell fits its text to that row rather than to the height of the entire table.
+        val columnWeights = listOf(.36f, .32f, .32f)
         Column(Modifier.fillMaxSize()) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = s.heightDp(.006f), bottom = s.heightDp(.006f)),
+                    .height(s.heightDp(.13f)),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 listOf(
                     localizedStringResource(R.string.prayer),
                     localizedStringResource(R.string.azan),
                     localizedStringResource(R.string.iqamah_letter),
-                ).forEach {
-                    TvAutoSizeText(
-                        it.uppercase(),
+                ).forEachIndexed { index, label ->
+                    NoorTableCell(
+                        label.uppercase(),
                         c.textSecondary,
-                        s.height(.12f),
-                        s.height(.07f),
-                        Modifier.weight(1f),
-                        FontFamily.Monospace,
-                        textAlign = TextAlign.Center,
-                        lineHeightRatio = 1.05f,
-                        maxLines = 1,
+                        Modifier.weight(columnWeights[index]).fillMaxHeight(),
+                        fontWeight = FontWeight.Normal,
+                        heightFraction = .72f,
                     )
                 }
             }
+            Box(
+                Modifier.fillMaxWidth().height(s.heightDp(.004f))
+                    .background(c.azanTime.copy(alpha = .32f)),
+            )
             scheduleRows.forEach { p ->
                 Row(
                     Modifier
@@ -478,43 +474,51 @@ object NoorScreenFace : ScreenFace {
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TvAutoSizeText(
+                    NoorTableCell(
                         p.name,
                         if (p.type == next) c.primaryAccent else c.azanTime,
-                        s.height(.24f),
-                        s.height(.12f),
-                        Modifier.weight(1f),
-                        FontFamily.Monospace,
-                        FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
+                        Modifier.weight(columnWeights[0]).fillMaxHeight(),
                     )
-                    TvAutoSizeText(
+                    NoorTableCell(
                         TimeUtils.formatTimeWithoutPeriod(p.azanTime, data.settings.show24HourFormat),
                         c.azanTime,
-                        s.height(.24f),
-                        s.height(.12f),
-                        Modifier.weight(1f),
-                        FontFamily.Monospace,
-                        FontWeight.Bold,
-                        textAlign = TextAlign.Center,
+                        Modifier.weight(columnWeights[1]).fillMaxHeight(),
                     )
-                    TvAutoSizeText(
+                    NoorTableCell(
                         p.iqamahTime
                             ?.let {
                                 TimeUtils.formatTimeWithoutPeriod(it, data.settings.show24HourFormat)
                             }.orEmpty(),
                         c.textSecondary,
-                        s.height(.24f),
-                        s.height(.12f),
-                        Modifier.weight(1f),
-                        FontFamily.Monospace,
-                        FontWeight.Bold,
-                        textAlign = TextAlign.Center,
+                        Modifier.weight(columnWeights[2]).fillMaxHeight(),
                     )
                 }
             }
         }
+    }
+}
+
+@Composable private fun NoorTableCell(
+    text: String,
+    color: Color,
+    modifier: Modifier,
+    fontWeight: FontWeight = FontWeight.Bold,
+    heightFraction: Float = .82f,
+) {
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val s = rememberTvTextScale(maxWidth, maxHeight)
+        TvAutoSizeText(
+            text,
+            color,
+            s.height(heightFraction),
+            s.height(.40f),
+            Modifier.fillMaxWidth(.94f),
+            fontFamily = FontFamily.Monospace,
+            fontWeight = fontWeight,
+            textAlign = TextAlign.Center,
+            lineHeightRatio = 1.08f,
+            maxLines = 1,
+        )
     }
 }
 
