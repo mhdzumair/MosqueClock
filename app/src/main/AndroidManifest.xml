@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -79,7 +80,7 @@
 
     <uses-feature
         android:name="android.software.leanback"
-        android:required="true" />
+        android:required="false" />
 
     <uses-feature
         android:name="android.hardware.touchscreen"
@@ -158,7 +159,12 @@
             android:name=".service.PrayerNotificationService"
             android:enabled="true"
             android:exported="false"
-            android:stopWithTask="false" />
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Continuous prayer time display and monitoring for user-configured Azan and Iqamah sound reminders" />
+        </service>
         
         <!-- FileProvider for sharing APK files (Android N+) -->
         <provider

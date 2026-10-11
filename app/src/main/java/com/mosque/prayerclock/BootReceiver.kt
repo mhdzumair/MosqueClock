@@ -5,10 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.mosque.prayerclock.service.PrayerNotificationService
+import com.mosque.prayerclock.utils.DeviceUtils
 
 /**
- * BroadcastReceiver that handles device boot completion and starts the app automatically. This
- * enables the mosque clock app to launch when the Android TV device starts up.
+ * Launches the display on TVs after boot, and only the background prayer service on mobile.
  */
 class BootReceiver : BroadcastReceiver() {
     companion object {
@@ -20,8 +21,18 @@ class BootReceiver : BroadcastReceiver() {
         intent: Intent?,
     ) {
         Log.i(TAG, "onReceive: boot received ${intent?.action}")
-        val serviceIntent = Intent(context, AppStartService::class.java)
+        if (intent?.action !in setOf(
+                Intent.ACTION_BOOT_COMPLETED,
+                "android.intent.action.QUICKBOOT_POWERON",
+                "com.htc.intent.action.QUICKBOOT_POWERON",
+            )) return
+        val serviceClass = if (DeviceUtils.isTelevision(context)) {
+            AppStartService::class.java
+        } else {
+            PrayerNotificationService::class.java
+        }
+        val serviceIntent = Intent(context, serviceClass)
         ContextCompat.startForegroundService(context, serviceIntent)
-        Log.i(TAG, "Started AppStartService from BootReceiver")
+        Log.i(TAG, "Started ${serviceClass.simpleName} from BootReceiver")
     }
 }

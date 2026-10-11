@@ -183,4 +183,15 @@
         <item>සෙනසුරාදා</item>
         <item>ඉරිදා</item>
     </string-array>
+
+    <!-- Mobile prayer timetable notification -->
+    <string name="show_prayer_times_notification">දැනුම්දීමේ යාච්ඤා වේලාවන් පෙන්වන්න</string>
+    <string name="prayer_times_notification_description">ෆජ්ර්, හිරු උදාව, දුහර්, අසර්, මග්රිබ් සහ ඉෂා යන දෛනික වේලාවන් හයම පෙන්වයි. අදාන් වේලාවන් පමණක් පෙන්වයි; ඉකාමත් වේලාවන් පෙන්වන්නේ නැත.</string>
+    <string name="prayer_service_notification_note">මෙය අක්‍රිය කළද, පසුබිමේ යාච්ඤා මතක් කිරීම් ක්‍රියාත්මක වන විට මූලික සේවා දැනුම්දීමක් පවතී.</string>
+    <string name="prayer_times_notification_permission">යාච්ඤා වේලාවන් සහ මතක් කිරීම් බැලීමට Android සැකසුම්වල දැනුම්දීම්වලට අවසර දෙන්න.</string>
+    <string name="prayer_notification_settings">දැනුම්දීම් සැකසුම්</string>
+    <string name="prayer_times_notification_title">අද යාච්ඤා වේලාවන්</string>
+    <string name="prayer_times_notification_unavailable">අද වේලාවන් ලබාගත නොහැක. ස්වයංක්‍රීයව නැවත උත්සාහ කරයි.</string>
+    <string name="prayer_service_running">යාච්ඤා මතක් කිරීම් පසුබිමේ ක්‍රියාත්මක වේ</string>
+    <string name="prayer_times_notification_channel">යාච්ඤා වේලාවන් සහ පසුබිම් මතක් කිරීම්</string>
 </resources>

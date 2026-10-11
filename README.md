@@ -26,6 +26,24 @@ select faces, languages, or alternate palettes with `FACE_GALLERY_FACES`,
 
 ## 🌟 Features
 
+### Mobile notifications
+
+On phones and tablets, restarting the device starts the prayer reminder service without
+opening the app. In Settings, enable **Show prayer times in notification** and allow
+Android notification permission. Expand the ongoing notification to see Fajr, Sunrise,
+Dhuhr, Asr, Maghrib and Isha, with Azan times only. It follows the selected language
+and 12/24-hour format, refreshes daily, and also works when sounds are disabled.
+Multi Language uses English for the notification. The option is off by default.
+
+Turning this option off replaces the timetable with a basic background reminder status;
+Android requires a notification while the foreground service runs. Tapping the notification
+opens the app. Closing the app on mobile leaves the reminder service running.
+
+The prayer service declares the `specialUse` foreground service type for ongoing timetable
+display and reminder monitoring. For Play Store distribution, declare this use case in
+Play Console under **Policy → App content → Foreground service permissions**, as required
+by [Android's foreground service documentation](https://developer.android.com/develop/background-work/services/fgs/service-types#special-use).
+
 ### 🕌 Prayer Times Display
 - **Multiple Prayer Time Sources**: 
   - **Direct ACJU Scraping**: Real-time web scraping from ACJU.lk with PDF parsing

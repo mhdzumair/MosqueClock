@@ -63,6 +63,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,6 +92,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
+import androidx.core.app.NotificationManagerCompat
+import android.content.pm.PackageManager
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.BuildConfig
@@ -108,9 +112,11 @@ import com.mosque.prayerclock.data.service.ApkDownloader
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.ui.components.MarkdownText
+import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
 import com.mosque.prayerclock.ui.theme.AppColorThemes
 import com.mosque.prayerclock.utils.LauncherHelper
+import com.mosque.prayerclock.utils.DeviceUtils
 import com.mosque.prayerclock.viewmodel.CacheStats
 import com.mosque.prayerclock.viewmodel.PrefetchState
 import com.mosque.prayerclock.viewmodel.SettingsViewModel
@@ -126,6 +132,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // Handle back button to navigate back to main screen, not exit app
     BackHandler { onNavigateBack() }
@@ -291,6 +298,15 @@ fun SettingsScreen(
                     )
                 }
 
+                if (!DeviceUtils.isTelevision(context)) {
+                    item {
+                        PrayerTimesNotificationSetting(
+                            enabled = settings.showPrayerTimesNotification,
+                            onEnabledChange = viewModel::updateShowPrayerTimesNotification,
+                        )
+                    }
+                }
+
                 // Enhanced Azan Sound Settings
                 item {
                     AzanSoundSettings(
@@ -337,6 +353,64 @@ fun SettingsScreen(
                         autoUpdateCheckEnabled = settings.autoUpdateCheckEnabled,
                         onAutoUpdateCheckEnabledChange = viewModel::updateAutoUpdateCheckEnabled,
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrayerTimesNotificationSetting(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        onEnabledChange(granted)
+        if (!granted) {
+            Toast.makeText(context, context.getString(R.string.prayer_times_notification_permission), Toast.LENGTH_LONG).show()
+        }
+    }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    localizedStringResource(R.string.show_prayer_times_notification),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { checked ->
+                        if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            onEnabledChange(checked)
+                        }
+                    },
+                )
+            }
+            Text(
+                localizedStringResource(R.string.prayer_times_notification_description),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                localizedStringResource(R.string.prayer_service_notification_note),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                Text(
+                    localizedStringResource(R.string.prayer_times_notification_permission),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TextButton(onClick = {
+                    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    } else {
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+                    }
+                    context.startActivity(intent)
+                }) {
+                    Text(localizedStringResource(R.string.prayer_notification_settings))
                 }
             }
         }

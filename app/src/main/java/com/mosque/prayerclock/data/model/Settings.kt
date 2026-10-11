@@ -39,6 +39,7 @@ data class AppSettings(
     val selectedZone: Int = 1, // For MosqueClock backend zones
     val selectedRegion: String = "Colombo", // For third-party prayer time services
     val soundEnabled: Boolean = true, // Enable/disable beep countdown sound (master toggle)
+    val showPrayerTimesNotification: Boolean = false,
     // Enable/disable full-screen countdown at 10 minutes before Azan/Iqamah
     val fullScreenCountdownEnabled: Boolean = true,
     val weatherApiKey: String = "", // WeatherAPI.com API key

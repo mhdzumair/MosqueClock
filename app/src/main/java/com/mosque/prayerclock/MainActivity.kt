@@ -10,6 +10,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -47,6 +48,7 @@ import com.mosque.prayerclock.data.service.ApkDownloader
 import com.mosque.prayerclock.data.service.UpdateChecker
 import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.service.PrayerNotificationService
+import com.mosque.prayerclock.utils.DeviceUtils
 import com.mosque.prayerclock.ui.LocalizedApp
 import com.mosque.prayerclock.ui.components.UpdateDialog
 import com.mosque.prayerclock.ui.localizedStringResource
@@ -81,7 +83,7 @@ class MainActivity : ComponentActivity() {
         configureDisplaySettings()
 
         // Request overlay permission for auto-start functionality
-        requestOverlayPermission()
+        if (DeviceUtils.isTelevision(this)) requestOverlayPermission()
 
         // Start prayer notification service for sound alerts
         startPrayerNotificationService()
@@ -118,7 +120,7 @@ class MainActivity : ComponentActivity() {
                     MosqueClockApp(
                         onExitApp = {
                             finish()
-                            exitProcess(0)
+                            if (DeviceUtils.isTelevision(this)) exitProcess(0)
                         },
                     )
                 }
@@ -199,7 +201,7 @@ class MainActivity : ComponentActivity() {
     private fun startPrayerNotificationService() {
         try {
             val serviceIntent = Intent(this, PrayerNotificationService::class.java)
-            startService(serviceIntent)
+            ContextCompat.startForegroundService(this, serviceIntent)
             android.util.Log.d("MainActivity", "Prayer notification service started")
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error starting prayer notification service", e)

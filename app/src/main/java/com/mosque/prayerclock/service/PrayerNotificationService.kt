@@ -9,12 +9,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.mosque.prayerclock.R
+import com.mosque.prayerclock.SplashActivity
+import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.utils.DeviceUtils
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.PrayerTimes
 import com.mosque.prayerclock.data.model.PrayerType
@@ -30,6 +34,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -37,6 +42,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
+import java.util.Locale
 
 @AndroidEntryPoint
 class PrayerNotificationService : Service() {
@@ -49,6 +55,8 @@ class PrayerNotificationService : Service() {
         // Notification constants
         private const val NOTIFICATION_CHANNEL_ID = "prayer_notification_channel"
         private const val NOTIFICATION_ID = 1001
+        private const val SERVICE_CHANNEL_ID = "prayer_times_service"
+        private const val SERVICE_NOTIFICATION_ID = 1002
         const val ACTION_STOP_SOUND = "com.mosque.prayerclock.STOP_SOUND"
     }
 
@@ -69,9 +77,11 @@ class PrayerNotificationService : Service() {
     // Caching to reduce expensive operations
     private var cachedSettings: AppSettings? = null
     private var cachedPrayerTimes: PrayerTimes? = null
-    private var lastSettingsUpdate = 0L
     private var lastPrayerTimesUpdate = 0L
     private val cacheValidityMs = 60_000L // Cache for 1 minute
+    private var cachedPrayerDate: String? = null
+    private var lastServiceNotification: List<String>? = null
+    private var lastServiceNotificationUpdate = 0L
 
     // Smart polling state
     private var isInCountdownMode = false
@@ -103,14 +113,8 @@ class PrayerNotificationService : Service() {
             }
         }
 
-    override fun onStartCommand(
-        intent: Intent?,
-        flags: Int,
-        startId: Int,
-    ): Int {
-        super.onStartCommand(intent, flags, startId)
-
-        Log.d(TAG, "Prayer notification service started")
+    override fun onCreate() {
+        super.onCreate()
 
         // Initialize SoundManager manually
         soundManager = SoundManager(applicationContext)
@@ -118,6 +122,8 @@ class PrayerNotificationService : Service() {
         // Initialize NotificationManager
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
+        // Promote immediately, before loading settings or making network requests at boot.
+        startForeground(SERVICE_NOTIFICATION_ID, createServiceNotification(null, null))
 
         // Initialize WakeLock
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -140,7 +146,10 @@ class PrayerNotificationService : Service() {
         }
 
         startPrayerMonitoring()
+    }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "Prayer notification service started")
         return START_STICKY
     }
 
@@ -158,6 +167,7 @@ class PrayerNotificationService : Service() {
         }
         
         serviceScope.cancel()
+        cancelNotification()
     }
 
     override fun onBind(intent: Intent): IBinder? = null
@@ -166,14 +176,7 @@ class PrayerNotificationService : Service() {
      * Get settings with caching to reduce database queries
      */
     private suspend fun getCachedSettings(): AppSettings {
-        val currentTime = System.currentTimeMillis()
-
-        if (cachedSettings == null || currentTime - lastSettingsUpdate > cacheValidityMs) {
-            cachedSettings = settingsRepository.getSettings().first()
-            lastSettingsUpdate = currentTime
-        }
-
-        return cachedSettings!!
+        return cachedSettings ?: settingsRepository.getSettings().first()
     }
 
     /**
@@ -181,6 +184,13 @@ class PrayerNotificationService : Service() {
      */
     private suspend fun getCachedPrayerTimes(): PrayerTimes? {
         val currentTime = System.currentTimeMillis()
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+        if (cachedPrayerDate != today) {
+            cachedPrayerDate = today
+            cachedPrayerTimes = null
+            lastPrayerTimesUpdate = 0L
+            updateServiceNotification()
+        }
 
         if (cachedPrayerTimes == null || currentTime - lastPrayerTimesUpdate > cacheValidityMs) {
             prayerTimesRepository.getTodayPrayerTimesFromSettings().collect { result ->
@@ -202,65 +212,158 @@ class PrayerNotificationService : Service() {
 
         monitoringJob =
             serviceScope.launch {
-                // Monitoring loop with smart polling
-                while (isActive) {
-                    try {
-                        val settings = getCachedSettings()
+                settingsRepository.getSettings().collectLatest { settings ->
+                    val previousSettings = cachedSettings
+                    cachedSettings = settings
+                    if (previousSettings == null || prayerSourceKey(previousSettings) != prayerSourceKey(settings)) {
+                        cachedPrayerTimes = null
+                        lastPrayerTimesUpdate = 0L
+                        if (previousSettings != null) prayerTimesRepository.invalidatePrayerTimesCache()
+                    }
+                    updateServiceNotification()
+                    // Monitoring loop with smart polling
+                    while (isActive) {
+                        try {
+                            if (settings.soundEnabled || shouldShowPrayerTimes(settings)) {
+                                getCachedPrayerTimes()
+                                updateServiceNotification()
+                            }
 
-                        if (settings.soundEnabled) {
-                            val now = Clock.System.now()
-                            val currentDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
-                            val prayerTimes = getCachedPrayerTimes()
+                            if (settings.soundEnabled) {
+                                val now = Clock.System.now()
+                                val currentDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
+                                val prayerTimes = cachedPrayerTimes
 
-                            if (prayerTimes != null) {
-                                val isApproachingPrayer = isApproachingAnyPrayerTime(currentDateTime, prayerTimes)
+                                if (prayerTimes != null) {
+                                    val isApproachingPrayer = isApproachingAnyPrayerTime(currentDateTime, prayerTimes)
 
-                                if (isApproachingPrayer && !isInCountdownMode) {
-                                    Log.i(TAG, "Prayer approaching - high-frequency mode")
-                                    isInCountdownMode = true
-                                    countdownStartTime = System.currentTimeMillis()
-                                } else if (!isApproachingPrayer && isInCountdownMode) {
-                                    isInCountdownMode = false
-                                }
-
-                                // Check prayer times every second when in countdown mode
-                                if (isInCountdownMode) {
-                                    val currentSecond =
-                                        currentDateTime.hour * 3600 + currentDateTime.minute * 60 +
-                                            currentDateTime.second
-
-                                    if (currentSecond != lastCheckedSecond) {
-                                        lastCheckedSecond = currentSecond
-                                        checkPrayerTime(currentDateTime, settings, prayerTimes)
+                                    if (isApproachingPrayer && !isInCountdownMode) {
+                                        Log.i(TAG, "Prayer approaching - high-frequency mode")
+                                        isInCountdownMode = true
+                                        countdownStartTime = System.currentTimeMillis()
+                                    } else if (!isApproachingPrayer && isInCountdownMode) {
+                                        isInCountdownMode = false
                                     }
+
+                                    // Check prayer times every second when in countdown mode
+                                    if (isInCountdownMode) {
+                                        val currentSecond =
+                                            currentDateTime.hour * 3600 + currentDateTime.minute * 60 +
+                                                currentDateTime.second
+
+                                        if (currentSecond != lastCheckedSecond) {
+                                            lastCheckedSecond = currentSecond
+                                            checkPrayerTime(currentDateTime, settings, prayerTimes)
+                                        }
+                                    }
+                                } else {
+                                    Log.w(TAG, "Prayer times unavailable")
                                 }
                             } else {
-                                Log.w(TAG, "Prayer times unavailable")
+                                isInCountdownMode = false
                             }
-                        } else {
-                            isInCountdownMode = false
+
+                            // Smart delay with millisecond precision
+                            val delayMs =
+                                if (isInCountdownMode) {
+                                    // Precise delay to next second boundary
+                                    val currentMillis = System.currentTimeMillis()
+                                    val millisToNextSecond = 1000 - (currentMillis % 1000)
+                                    millisToNextSecond + 10 // Small buffer
+                                } else {
+                                    CHECK_INTERVAL_MS
+                                }
+
+                            delay(delayMs)
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e // Re-throw to properly cancel
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error in monitoring: ${e.message}")
+                            delay(CHECK_INTERVAL_MS)
                         }
-
-                        // Smart delay with millisecond precision
-                        val delayMs =
-                            if (isInCountdownMode) {
-                                // Precise delay to next second boundary
-                                val currentMillis = System.currentTimeMillis()
-                                val millisToNextSecond = 1000 - (currentMillis % 1000)
-                                millisToNextSecond + 10 // Small buffer
-                            } else {
-                                CHECK_INTERVAL_MS
-                            }
-
-                        delay(delayMs)
-                    } catch (e: kotlinx.coroutines.CancellationException) {
-                        throw e // Re-throw to properly cancel
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error in monitoring: ${e.message}")
-                        delay(CHECK_INTERVAL_MS)
                     }
                 }
             }
+    }
+
+    private fun prayerSourceKey(settings: AppSettings): List<Any> = listOf(
+        settings.prayerServiceType, settings.city, settings.country, settings.latitude, settings.longitude,
+        settings.selectedZone, settings.selectedRegion, settings.mosqueClockBackendUrl, settings.mosqueClockBackendApiKey,
+        settings.manualFajrAzan, settings.manualSunrise, settings.manualDhuhrAzan,
+        settings.manualAsrAzan, settings.manualMaghribAzan, settings.manualIshaAzan,
+    )
+
+    private fun shouldShowPrayerTimes(settings: AppSettings): Boolean =
+        settings.showPrayerTimesNotification && !DeviceUtils.isTelevision(this)
+
+    private fun notificationContext(settings: AppSettings?): Context {
+        val language = settings?.language?.takeUnless { it == Language.MULTI } ?: Language.ENGLISH
+        val configuration = Configuration(resources.configuration)
+        configuration.setLocale(Locale(language.code))
+        return createConfigurationContext(configuration)
+    }
+
+    private fun createServiceNotification(settings: AppSettings?, times: PrayerTimes?): Notification {
+        val context = notificationContext(settings)
+        val showTimes = settings != null && shouldShowPrayerTimes(settings)
+        val title = context.getString(if (showTimes) R.string.prayer_times_notification_title else R.string.app_name)
+        val rows = if (showTimes && times != null) {
+            listOf(
+                R.string.fajr to times.fajrAzan,
+                R.string.sunrise to times.sunrise,
+                R.string.dhuhr to times.dhuhrAzan,
+                R.string.asr to times.asrAzan,
+                R.string.maghrib to times.maghribAzan,
+                R.string.isha to times.ishaAzan,
+            ).map { (name, time) ->
+                "${context.getString(name)}  ${TimeUtils.formatTimeBasedOnPreference(time, settings!!.show24HourFormat)}"
+            }
+        } else {
+            emptyList()
+        }
+        val text = if (rows.isNotEmpty()) rows.joinToString(" · ") else context.getString(
+            if (showTimes) R.string.prayer_times_notification_unavailable else R.string.prayer_service_running,
+        )
+        val openApp = PendingIntent.getActivity(
+            this, 1, Intent(this, SplashActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val builder = NotificationCompat.Builder(this, SERVICE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_prayer_notification)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setContentIntent(openApp)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setShowWhen(false)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+        if (rows.isNotEmpty()) {
+            val style = NotificationCompat.InboxStyle()
+            style.setBigContentTitle(title)
+            rows.forEach { style.addLine(it) }
+            style.setSummaryText(times!!.date)
+            builder.setStyle(style)
+        }
+        return builder.build()
+    }
+
+    private fun updateServiceNotification() {
+        val settings = cachedSettings
+        val key = listOf(
+            settings?.language.toString(), settings?.showPrayerTimesNotification.toString(),
+            settings?.show24HourFormat.toString(), cachedPrayerTimes.toString(),
+        )
+        val now = System.currentTimeMillis()
+        // Repost occasionally if notification permission was restored or Android allowed dismissal.
+        if (key != lastServiceNotification || now - lastServiceNotificationUpdate >= cacheValidityMs) {
+            notificationManager.notify(SERVICE_NOTIFICATION_ID, createServiceNotification(settings, cachedPrayerTimes))
+            lastServiceNotification = key
+            lastServiceNotificationUpdate = now
+        }
     }
 
     /**
@@ -552,6 +655,12 @@ class PrayerNotificationService : Service() {
                     setShowBadge(true)
                 }
             notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(
+                NotificationChannel(SERVICE_CHANNEL_ID, getString(R.string.prayer_times_notification_channel), NotificationManager.IMPORTANCE_LOW).apply {
+                    description = getString(R.string.prayer_times_notification_description)
+                    setShowBadge(false)
+                },
+            )
         }
     }
 

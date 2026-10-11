@@ -69,6 +69,7 @@ class SettingsRepository
             val SELECTED_ZONE = intPreferencesKey("selected_zone")
             val SELECTED_REGION = stringPreferencesKey("selected_region")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
+            val SHOW_PRAYER_TIMES_NOTIFICATION = booleanPreferencesKey("show_prayer_times_notification")
             val FULL_SCREEN_COUNTDOWN_ENABLED = booleanPreferencesKey("full_screen_countdown_enabled")
             val COLOR_THEME = stringPreferencesKey("color_theme")
             val SCREEN_FACE_ID = stringPreferencesKey("screen_face_id")
@@ -175,6 +176,7 @@ class SettingsRepository
                     selectedZone = preferences[PreferencesKeys.SELECTED_ZONE] ?: 1,
                     selectedRegion = preferences[PreferencesKeys.SELECTED_REGION] ?: "Colombo",
                     soundEnabled = preferences[PreferencesKeys.SOUND_ENABLED] ?: true,
+                    showPrayerTimesNotification = preferences[PreferencesKeys.SHOW_PRAYER_TIMES_NOTIFICATION] ?: false,
                     fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: true,
                     weatherApiKey = preferences[PreferencesKeys.WEATHER_API_KEY] ?: "",
                     openWeatherMapApiKey = preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] ?: "",
@@ -349,6 +351,10 @@ class SettingsRepository
 
         suspend fun updateSoundEnabled(soundEnabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SOUND_ENABLED] = soundEnabled }
+        }
+
+        suspend fun updateShowPrayerTimesNotification(enabled: Boolean) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.SHOW_PRAYER_TIMES_NOTIFICATION] = enabled }
         }
 
         suspend fun updateFullScreenCountdownEnabled(enabled: Boolean) {

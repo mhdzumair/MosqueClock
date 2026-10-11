@@ -299,7 +299,11 @@ object PermissionsHelper {
         permissions.add(
             PermissionStatus(
                 name = "Auto-Start on Boot",
-                description = "Launch app automatically when device starts",
+                description = if (DeviceUtils.isTelevision(context)) {
+                    "Launch app automatically when device starts"
+                } else {
+                    "Start background prayer reminders when the phone restarts"
+                },
                 isGranted = hasBootPermission(context),
                 isRequired = false,
                 permissionType = PermissionType.RUNTIME,

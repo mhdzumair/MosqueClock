@@ -198,6 +198,12 @@ class SettingsViewModel
             }
         }
 
+        fun updateShowPrayerTimesNotification(enabled: Boolean) {
+            viewModelScope.launch {
+                settingsRepository.updateShowPrayerTimesNotification(enabled)
+            }
+        }
+
         fun updateFullScreenCountdownEnabled(enabled: Boolean) {
             viewModelScope.launch {
                 settingsRepository.updateFullScreenCountdownEnabled(enabled)

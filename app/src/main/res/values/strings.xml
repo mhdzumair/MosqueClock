@@ -310,4 +310,15 @@
         <item>Saturday</item>
         <item>Sunday</item>
     </string-array>
+
+    <!-- Mobile prayer timetable notification -->
+    <string name="show_prayer_times_notification">Show prayer times in notification</string>
+    <string name="prayer_times_notification_description">Keep all six daily times visible: Fajr, Sunrise, Dhuhr, Asr, Maghrib and Isha. Only Azan times are shown, without Iqamah times.</string>
+    <string name="prayer_service_notification_note">When this is off, a basic service notification remains while background prayer reminders run.</string>
+    <string name="prayer_times_notification_permission">Allow notifications in Android settings to see prayer times and reminders.</string>
+    <string name="prayer_notification_settings">Notification settings</string>
+    <string name="prayer_times_notification_title">Today’s prayer times</string>
+    <string name="prayer_times_notification_unavailable">Today’s times are unavailable. Retrying automatically.</string>
+    <string name="prayer_service_running">Prayer reminders are running in the background</string>
+    <string name="prayer_times_notification_channel">Prayer times and background reminders</string>
 </resources>
