@@ -21,6 +21,7 @@ import com.mosque.prayerclock.data.model.WeatherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Provider
 import javax.inject.Singleton
 
@@ -30,6 +31,7 @@ class SettingsRepository
     constructor(
         private val dataStore: DataStore<Preferences>,
         private val prayerTimesCacheInvalidatorProvider: Provider<PrayerTimesCacheInvalidator>,
+        @Named("defaultScreenFaceId") private val defaultScreenFaceId: String = "classic",
     ) {
         private object PreferencesKeys {
             val LANGUAGE = stringPreferencesKey("language")
@@ -132,7 +134,7 @@ class SettingsRepository
                         preferences[PreferencesKeys.SHOW_24_HOUR_FORMAT]
                             ?: false,
                     colorTheme = preferences[PreferencesKeys.COLOR_THEME] ?: "classic_mosque",
-                    screenFaceId = preferences[PreferencesKeys.SCREEN_FACE_ID] ?: "classic",
+                    screenFaceId = preferences[PreferencesKeys.SCREEN_FACE_ID] ?: defaultScreenFaceId,
                     manualFajrAzan = preferences[PreferencesKeys.MANUAL_FAJR_AZAN] ?: "05:30",
                     manualSunrise = preferences[PreferencesKeys.MANUAL_SUNRISE] ?: "06:15",
                     manualDhuhrAzan = preferences[PreferencesKeys.MANUAL_DHUHR_AZAN] ?: "12:15",

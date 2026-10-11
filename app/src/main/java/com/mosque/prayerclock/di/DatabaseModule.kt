@@ -8,18 +8,25 @@ import androidx.room.Room
 import com.mosque.prayerclock.data.database.AppDatabase
 import com.mosque.prayerclock.data.database.HijriDateDao
 import com.mosque.prayerclock.data.database.PrayerTimesDao
+import com.mosque.prayerclock.utils.DeviceUtils
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import javax.inject.Named
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+    @Provides
+    @Named("defaultScreenFaceId")
+    fun provideDefaultScreenFaceId(@ApplicationContext context: Context): String =
+        if (DeviceUtils.isTelevision(context)) "classic" else "mobile"
+
     @Provides
     @Singleton
     fun provideAppDatabase(

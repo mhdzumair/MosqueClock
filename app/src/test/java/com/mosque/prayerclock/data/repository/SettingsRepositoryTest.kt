@@ -16,6 +16,31 @@ import org.junit.Test
 
 class SettingsRepositoryTest {
     @Test
+    fun `device default applies only when no face has been selected`() = runBlocking {
+        for (defaultFace in listOf("mobile", "classic")) {
+            val directory = Files.createTempDirectory("clock-default").toFile()
+            val job = Job()
+            try {
+                val repository = SettingsRepository(
+                    PreferenceDataStoreFactory.create(scope = CoroutineScope(Dispatchers.IO + job)) {
+                        directory.resolve("settings.preferences_pb")
+                    },
+                    Provider<PrayerTimesCacheInvalidator> { error("Unexpected cache invalidation") },
+                    defaultScreenFaceId = defaultFace,
+                )
+                assertEquals(defaultFace, repository.getSettings().first().screenFaceId)
+                repository.updateScreenFaceId("mihrab")
+                assertEquals("mihrab", repository.getSettings().first().screenFaceId)
+                repository.updateScreenFaceId("classic")
+                assertEquals("classic", repository.getSettings().first().screenFaceId)
+            } finally {
+                job.cancelAndJoin()
+                directory.deleteRecursively()
+            }
+        }
+    }
+
+    @Test
     fun `every face and its palette survive storage reopening`() = runBlocking {
         val directory = Files.createTempDirectory("clock-settings").toFile()
         val file = directory.resolve("settings.preferences_pb")
