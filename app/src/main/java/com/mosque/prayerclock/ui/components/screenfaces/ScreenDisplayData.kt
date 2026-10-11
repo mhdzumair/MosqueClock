@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.PrayerTimes
+import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
 import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.data.model.WeatherInfo
@@ -42,7 +43,7 @@ data class FullScreenCountdownData(
     val kind: CountdownKind,
 )
 
-enum class CountdownKind { AZAN, IQAMAH, FRIDAY_NIGHT_BAYAN }
+enum class CountdownKind { AZAN, IQAMAH, FRIDAY_NIGHT_BAYAN, ISHRAQ }
 
 data class JummahData(
     val hoursRemaining: Long,
@@ -69,6 +70,8 @@ data class ScreenDisplayData(
     val shouldShowDua: Boolean,
     val jummahData: JummahData?,
     val errorMessage: String?,
+    // Optional countdown event, separate from the daily timetable.
+    val inlineCountdownPrayer: PrayerInfo? = null,
 ) {
     companion object {
         val PREVIEW: ScreenDisplayData by lazy {
@@ -162,8 +165,44 @@ fun rememberScreenDisplayData(viewModel: MainViewModel): ScreenDisplayData {
     )
 
     val prayerNames = rememberLocalizedPrayerNames()
+    val ishraqName = localizedStringResource(R.string.ishraq)
+    val ishraqCountdownPrayer = (uiState as? MainUiState.Success)?.let { state ->
+        val now = globalCurrentTime.toLocalDateTime(TimeZone.currentSystemDefault())
+        val nowSeconds = now.hour * 3600 + now.minute * 60 + now.second
+        val sunriseSeconds = minutesOfDay(state.prayerTimes.sunrise) * 60
+        val targetSeconds = sunriseSeconds + settings.ishraqMinutesAfterSunrise * 60
+        if (settings.ishraqCountdownEnabled && nowSeconds >= sunriseSeconds && nowSeconds < targetSeconds) {
+            PrayerInfo(
+                type = PrayerType.SUNRISE,
+                azanTime = TimeUtils.addMinutesToTime(state.prayerTimes.sunrise, settings.ishraqMinutesAfterSunrise),
+                iqamahTime = null,
+                name = ishraqName,
+            )
+        } else null
+    }
 
-    val computed = when (val state = uiState) {
+    val computed = if (ishraqCountdownPrayer != null) {
+        val countdown = getCountdownData(ishraqCountdownPrayer.azanTime, globalCurrentTime)
+        val fullscreen = settings.fullScreenCountdownEnabled && countdown.totalSeconds in 0..600
+        ComputedScreenValues(
+            isCountdownVisibleForWeight = true,
+            currentTime = globalCurrentTime,
+            isCurrentPrayer = false,
+            shouldShowFullScreenCountdown = fullscreen,
+            fullScreenCountdownData = if (fullscreen) FullScreenCountdownData(
+                prayerName = ishraqName,
+                prayerType = PrayerType.SUNRISE,
+                isIqamah = false,
+                minutes = countdown.minutes,
+                seconds = countdown.seconds,
+                azanTime = ishraqCountdownPrayer.azanTime,
+                totalDurationSeconds = minOf(settings.ishraqMinutesAfterSunrise, 10) * 60L,
+                kind = CountdownKind.ISHRAQ,
+            ) else null,
+            shouldShowDua = false,
+            jummahData = null,
+        )
+    } else when (val state = uiState) {
         is MainUiState.Success -> {
             val currentTime = globalCurrentTime
             val prayerInfoList = createPrayerInfoListSimple(state.prayerTimes, currentTime, prayerNames)
@@ -171,7 +210,7 @@ fun rememberScreenDisplayData(viewModel: MainViewModel): ScreenDisplayData {
                 resolveSimpleNextPrayer(prayerInfoList, state.nextPrayer, currentTime, state.nextDayFajr)
             val nextPrayerInfo = resolvedNext
 
-            remember(nextPrayerInfo?.azanTime, nextPrayerInfo?.iqamahTime, currentTime) {
+            remember(nextPrayerInfo, currentTime, settings) {
                 if (nextPrayerInfo != null) {
                     computeScreenValues(nextPrayerInfo.azanTime, nextPrayerInfo.iqamahTime,
                         nextPrayerInfo.name, nextPrayerInfo.type, currentTime, settings)
@@ -202,6 +241,7 @@ fun rememberScreenDisplayData(viewModel: MainViewModel): ScreenDisplayData {
         shouldShowDua = computed.shouldShowDua,
         jummahData = computed.jummahData,
         errorMessage = errorMessage,
+        inlineCountdownPrayer = ishraqCountdownPrayer,
     )
 }
 

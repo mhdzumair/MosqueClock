@@ -70,6 +70,8 @@ class SettingsRepository
             val SELECTED_REGION = stringPreferencesKey("selected_region")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
             val SHOW_PRAYER_TIMES_NOTIFICATION = booleanPreferencesKey("show_prayer_times_notification")
+            val ISHRAQ_COUNTDOWN_ENABLED = booleanPreferencesKey("ishraq_countdown_enabled")
+            val ISHRAQ_MINUTES_AFTER_SUNRISE = intPreferencesKey("ishraq_minutes_after_sunrise")
             val FULL_SCREEN_COUNTDOWN_ENABLED = booleanPreferencesKey("full_screen_countdown_enabled")
             val COLOR_THEME = stringPreferencesKey("color_theme")
             val SCREEN_FACE_ID = stringPreferencesKey("screen_face_id")
@@ -177,6 +179,8 @@ class SettingsRepository
                     selectedRegion = preferences[PreferencesKeys.SELECTED_REGION] ?: "Colombo",
                     soundEnabled = preferences[PreferencesKeys.SOUND_ENABLED] ?: true,
                     showPrayerTimesNotification = preferences[PreferencesKeys.SHOW_PRAYER_TIMES_NOTIFICATION] ?: false,
+                    ishraqCountdownEnabled = preferences[PreferencesKeys.ISHRAQ_COUNTDOWN_ENABLED] ?: false,
+                    ishraqMinutesAfterSunrise = (preferences[PreferencesKeys.ISHRAQ_MINUTES_AFTER_SUNRISE] ?: 20).coerceIn(1..60),
                     fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: true,
                     weatherApiKey = preferences[PreferencesKeys.WEATHER_API_KEY] ?: "",
                     openWeatherMapApiKey = preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] ?: "",
@@ -355,6 +359,14 @@ class SettingsRepository
 
         suspend fun updateShowPrayerTimesNotification(enabled: Boolean) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SHOW_PRAYER_TIMES_NOTIFICATION] = enabled }
+        }
+
+        suspend fun updateIshraqCountdownEnabled(enabled: Boolean) {
+            dataStore.edit { it[PreferencesKeys.ISHRAQ_COUNTDOWN_ENABLED] = enabled }
+        }
+
+        suspend fun updateIshraqMinutesAfterSunrise(minutes: Int) {
+            dataStore.edit { it[PreferencesKeys.ISHRAQ_MINUTES_AFTER_SUNRISE] = minutes.coerceIn(1..60) }
         }
 
         suspend fun updateFullScreenCountdownEnabled(enabled: Boolean) {

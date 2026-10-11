@@ -334,6 +334,10 @@ fun SettingsScreen(
                 }
 
                 item {
+                    IshraqCountdownSettings(settings, viewModel)
+                }
+
+                item {
                     FullScreenCountdownSettings(
                         fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
                         onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
@@ -2251,6 +2255,35 @@ private fun SelectableSettingsRow(
                 },
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         )
+    }
+}
+
+@Composable
+private fun IshraqCountdownSettings(settings: AppSettings, viewModel: SettingsViewModel) {
+    SettingsCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.ishraq_countdown_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.ishraq_countdown_description), style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(
+                    checked = settings.ishraqCountdownEnabled,
+                    onCheckedChange = viewModel::updateIshraqCountdownEnabled,
+                )
+            }
+            if (settings.ishraqCountdownEnabled) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.ishraq_offset_label), Modifier.weight(1f))
+                    NumberPickerField(
+                        value = settings.ishraqMinutesAfterSunrise,
+                        onValueChange = viewModel::updateIshraqMinutesAfterSunrise,
+                        modifier = Modifier.width(160.dp),
+                        range = 1..60,
+                    )
+                }
+            }
+        }
     }
 }
 

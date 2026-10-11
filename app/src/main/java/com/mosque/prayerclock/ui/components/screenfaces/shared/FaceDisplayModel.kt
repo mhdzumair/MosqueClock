@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -133,13 +134,18 @@ fun isPrayerUpcomingOrActive(
     return false
 }
 
+/** Shared countdown event supplied by ScreenFace.Render, without adding timetable rows. */
+internal val LocalInlineCountdownPrayer = staticCompositionLocalOf<PrayerInfo?> { null }
+
 /** Prayer to display as "next" — skips events whose time has already passed. */
+@Composable
 fun resolveDisplayNextPrayer(
     rows: List<PrayerInfo>,
     nextPrayer: PrayerType?,
     currentTime: Instant,
     nextDayFajr: PrayerTimesWithIqamah? = null,
 ): PrayerInfo {
+    LocalInlineCountdownPrayer.current?.let { return it }
     val now = currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
     val nowMinutes = now.hour * 60 + now.minute
     rows.firstOrNull { it.type == nextPrayer }?.let { matched ->
@@ -315,7 +321,7 @@ fun inlineCountdown(
         } == true
     val target = if (isIqamah) prayer.iqamahTime ?: prayer.azanTime else prayer.azanTime
     val countdown = getCountdownData(target, data.currentTime)
-    return InlineCountdown(isIqamah, target, countdown.minutes, countdown.seconds)
+    return InlineCountdown(isIqamah, target, countdown.totalMinutes, countdown.seconds)
 }
 
 fun minutesBetween(

@@ -42,6 +42,8 @@ data class AppSettings(
     val showPrayerTimesNotification: Boolean = false,
     // Enable/disable full-screen countdown at 10 minutes before Azan/Iqamah
     val fullScreenCountdownEnabled: Boolean = true,
+    val ishraqCountdownEnabled: Boolean = false,
+    val ishraqMinutesAfterSunrise: Int = 20,
     val weatherApiKey: String = "", // WeatherAPI.com API key
     val openWeatherMapApiKey: String = "", // OpenWeatherMap API key
     val mosqueClockBackendUrl: String = "", // MosqueClock backend URL

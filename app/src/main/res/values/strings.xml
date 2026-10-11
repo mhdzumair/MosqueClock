@@ -321,4 +321,8 @@
     <string name="prayer_times_notification_unavailable">Today’s times are unavailable. Retrying automatically.</string>
     <string name="prayer_service_running">Prayer reminders are running in the background</string>
     <string name="prayer_times_notification_channel">Prayer times and background reminders</string>
+    <string name="ishraq">Ishraq Prayer</string>
+    <string name="ishraq_countdown_title">Ishraq Prayer countdown</string>
+    <string name="ishraq_countdown_description">Show a countdown after sunrise, inline or fullscreen.</string>
+    <string name="ishraq_offset_label">Minutes after sunrise</string>
 </resources>

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mosque.prayerclock.ui.components.screenfaces.shared.LocalInlineCountdownPrayer
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
@@ -76,7 +77,7 @@ fun NextPrayerSection(
     val prayerInfoList = createPrayerInfoList(prayerTimes, currentTime)
 
     // If next prayer is Fajr and we have next day times, use tomorrow's Fajr
-    val nextPrayerInfo =
+    val nextPrayerInfo = LocalInlineCountdownPrayer.current ?:
         if (nextPrayer == PrayerType.FAJR && nextDayFajr != null) {
             val tomorrowPrayerInfoList = createPrayerInfoList(nextDayFajr)
             tomorrowPrayerInfoList.find { it.type == PrayerType.FAJR }

@@ -3,6 +3,8 @@ package com.mosque.prayerclock.ui.components.screenfaces
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.mosque.prayerclock.ui.components.screenfaces.shared.LocalInlineCountdownPrayer
 import androidx.compose.ui.Modifier
 import com.mosque.prayerclock.ui.components.DuaForJoiningSaff
 import com.mosque.prayerclock.ui.components.FullScreenCountdown
@@ -71,7 +73,9 @@ fun ScreenFace.Render(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        Dashboard(data, callbacks, Modifier.fillMaxSize())
+        CompositionLocalProvider(LocalInlineCountdownPrayer provides data.inlineCountdownPrayer) {
+            Dashboard(data, callbacks, Modifier.fillMaxSize())
+        }
         data.fullScreenCountdownData
             ?.takeIf { data.shouldShowFullScreenCountdown }
             ?.let {

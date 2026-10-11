@@ -236,4 +236,8 @@
     <string name="prayer_times_notification_unavailable">இன்றைய நேரங்கள் கிடைக்கவில்லை. தானாக மீண்டும் முயற்சிக்கிறது.</string>
     <string name="prayer_service_running">தொழுகை நினைவூட்டல்கள் பின்னணியில் இயங்குகின்றன</string>
     <string name="prayer_times_notification_channel">தொழுகை நேரங்கள் மற்றும் பின்னணி நினைவூட்டல்கள்</string>
+    <string name="ishraq">இஷ்ராக் தொழுகை</string>
+    <string name="ishraq_countdown_title">இஷ்ராக் தொழுகை கவுண்ட்டவுன்</string>
+    <string name="ishraq_countdown_description">சூரிய உதயத்திற்குப் பிறகு கவுண்ட்டவுனை வழக்கமான காட்சி அல்லது முழுத்திரையில் காட்டவும்.</string>
+    <string name="ishraq_offset_label">சூரிய உதயத்திற்குப் பிறகு நிமிடங்கள்</string>
 </resources>

@@ -546,7 +546,7 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
                 data.currentTime,
             )
             val showInlineCountdown = data.isCountdownVisibleForWeight &&
-                countdown.totalSeconds >= 0 && countdown.totalMinutes < 60
+                countdown.totalSeconds >= 0 && countdown.totalMinutes <= 60
             BoxWithConstraints(modifier.padding(horizontal = 12.dp)) {
                 val scale = rememberTvTextScale(maxWidth, maxHeight)
                 val titleSize = scale.height(0.085f)
@@ -608,7 +608,7 @@ private fun HorizonNextPrayer(data: ScreenDisplayData, modifier: Modifier) {
                             Spacer(Modifier.width(12.dp))
                         }
                         TvAutoSizeText(
-                            text = "%02d:%02d".format(countdown.minutes, countdown.seconds),
+                            text = "%02d:%02d".format(countdown.totalMinutes, countdown.seconds),
                             color = MaterialTheme.colorScheme.onBackground,
                             maxFontSize = countdownSize,
                             minFontSize = countdownSize * 0.7f,

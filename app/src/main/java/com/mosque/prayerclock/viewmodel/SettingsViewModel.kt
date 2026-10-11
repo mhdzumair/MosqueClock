@@ -204,6 +204,14 @@ class SettingsViewModel
             }
         }
 
+        fun updateIshraqCountdownEnabled(enabled: Boolean) {
+            viewModelScope.launch { settingsRepository.updateIshraqCountdownEnabled(enabled) }
+        }
+
+        fun updateIshraqMinutesAfterSunrise(minutes: Int) {
+            viewModelScope.launch { settingsRepository.updateIshraqMinutesAfterSunrise(minutes) }
+        }
+
         fun updateFullScreenCountdownEnabled(enabled: Boolean) {
             viewModelScope.launch {
                 settingsRepository.updateFullScreenCountdownEnabled(enabled)
