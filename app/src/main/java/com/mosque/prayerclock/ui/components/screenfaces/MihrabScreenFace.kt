@@ -40,8 +40,6 @@ import com.mosque.prayerclock.ui.theme.AppFonts
 import com.mosque.prayerclock.ui.theme.LocalColorTheme
 import com.mosque.prayerclock.utils.TimeUtils
 import com.mosque.prayerclock.viewmodel.MainUiState
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlin.math.sqrt
 import kotlin.math.PI
 import kotlin.math.cos
@@ -73,7 +71,6 @@ private val MihrabTerracotta = Color(0xFFD97742)
 
 private const val MihrabDigitalAspect = 700f / 470f
 private const val MihrabAnalogAspect = 780f / 900f
-private const val MihrabHourAspect = 760f / 480f
 private const val MihrabBayanAspect = 880f / 520f
 private const val MihrabCountdownAspect = 1020f / 640f
 private val MihrabCrownOverhead = 36.dp
@@ -222,11 +219,7 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
                             .clickable(onClick = cb.onOpenSettings),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (data.isCountdownVisibleForWeight) {
-                            MihrabHour(data, next, Modifier.fillMaxSize())
-                        } else {
-                            MihrabPrimary(data, next, Modifier.fillMaxSize())
-                        }
+                        MihrabPrimary(data, next, Modifier.fillMaxSize())
                     }
                     MihrabPrayerBand(
                         data,
@@ -461,13 +454,7 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
     modifier: Modifier = Modifier,
 ) {
     val c = LocalColorTheme.current
-    val local = data.currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
-    val now = "%02d:%02d".format(local.hour, local.minute)
-    val isIqamahTarget =
-        next.iqamahTime?.let {
-            TimeUtils.compareTimeStrings(next.azanTime, now) <= 0 &&
-                TimeUtils.compareTimeStrings(now, it) < 0
-        } == true
+    val event = inlineCountdown(data, next)
     Column(
         modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -483,7 +470,7 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
             maxLines = 1,
         )
         TvAutoSizeText(
-            prayerWithEventLabel(next, isIqamahTarget),
+            prayerWithEventLabel(next, event.isIqamah),
             c.primaryAccent,
             s.height(.14f),
             s.height(.07f),
@@ -493,7 +480,7 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
             maxLines = 2,
         )
         TvAutoSizeText(
-            TimeUtils.formatTimeBasedOnPreference(next.azanTime, data.settings.show24HourFormat),
+            TimeUtils.formatTimeBasedOnPreference(event.targetTime, data.settings.show24HourFormat),
             c.textPrimary,
             s.height(.13f),
             s.height(.065f),
@@ -626,7 +613,9 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
                     }
                 }
             }
-            if (analog) {
+            if (data.isCountdownVisibleForWeight) {
+                MihrabCountdownPanel(data, next, s, Modifier.weight(1f).height(archHeight))
+            } else if (analog) {
                 MihrabAnalogSidePanel(
                     data,
                     next,
@@ -833,116 +822,71 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
     }
 }
 
-@Composable private fun MihrabHour(
+@Composable private fun MihrabCountdownPanel(
     data: ScreenDisplayData,
     p: PrayerInfo,
+    s: TvTextScale,
     modifier: Modifier,
 ) {
     val c = LocalColorTheme.current
     val cd = inlineCountdown(data, p)
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val s = rememberTvTextScale(maxWidth, maxHeight)
-        val archHeight = mihrabArchBodyHeight(maxHeight, 0.94f)
-        Row(
-            Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(s.widthDp(.04f), Alignment.CenterHorizontally),
-        ) {
-            MihrabArchFrame(
-                height = archHeight,
-                aspectRatio = MihrabHourAspect,
-                alert = true,
-                contentTopFraction = .32f,
-            ) {
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    TvAutoSizeText(
-                        prayerCountdownHeading(p, cd.isIqamah),
-                        if (cd.isIqamah) c.uiTertiary else MihrabAlertFrameTop,
-                        s.height(.058f),
-                        s.height(.03f),
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = s.height(.012f),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                    )
-                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        TvAutoSizeText(
-                            "%02d:%02d".format(cd.minutes, cd.seconds),
-                            c.textPrimary,
-                            s.height(.50f),
-                            s.height(.13f),
-                            Modifier.padding(top = s.heightDp(.004f)),
-                            fontFamily = AppFonts.Display,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                        )
-                    }
-                    MihrabDiamond(
-                        16.dp,
-                        MihrabTerracotta,
-                        Modifier.padding(top = s.heightDp(.008f)),
-                    )
-                }
-            }
-            Column(
-                Modifier.weight(.85f).fillMaxHeight(.85f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
+    Column(
+        modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        TvAutoSizeText(
+            prayerCountdownHeading(p, cd.isIqamah),
+            if (cd.isIqamah) c.uiTertiary else MihrabAlertFrameTop,
+            s.height(.058f),
+            s.height(.03f),
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = s.height(.012f),
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+        )
+        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            TvAutoSizeText(
+                "%02d:%02d".format(cd.minutes, cd.seconds),
+                c.textPrimary,
+                s.height(.50f),
+                s.height(.13f),
+                Modifier.padding(top = s.heightDp(.004f)),
+                fontFamily = AppFonts.Display,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        }
+        MihrabDiamond(
+            16.dp,
+            MihrabTerracotta,
+            Modifier.padding(vertical = s.heightDp(.012f)),
+        )
+        if (p.type != PrayerType.SUNRISE) {
+            TvAutoSizeText(
+                "${localizedStringResource(R.string.azan)} ${
+                    TimeUtils.formatTimeBasedOnPreference(p.azanTime, data.settings.show24HourFormat)
+                }",
+                c.primaryAccent,
+                s.height(.068f),
+                s.height(.034f),
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+            p.iqamahTime?.let {
                 TvAutoSizeText(
-                    localizedStringResource(R.string.now_label),
+                    "${localizedStringResource(R.string.iqamah)} ${
+                        TimeUtils.formatTimeBasedOnPreference(it, data.settings.show24HourFormat)
+                    }",
                     c.textSecondary,
-                    s.height(.048f),
-                    s.height(.024f),
-                    letterSpacing = s.height(.014f),
+                    s.height(.058f),
+                    s.height(.03f),
+                    Modifier.padding(top = s.heightDp(.004f)),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                 )
-                FacePanelClock(
-                    data.clock, c.textPrimary, c.textSecondary,
-                    Modifier.weight(1f).fillMaxWidth(),
-                    fontFamily = AppFonts.Display,
-                    fontWeight = FontWeight.SemiBold,
-                    secondaryScale = .36f,
-                    horizontalArrangement = Arrangement.Center,
-                    amLabel = localizedStringResource(R.string.am),
-                    pmLabel = localizedStringResource(R.string.pm),
-                )
-                Row(
-                    Modifier.padding(vertical = s.heightDp(.012f)),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Box(Modifier.width(120.dp).height(2.dp).background(c.uiTertiary.copy(alpha = .35f)))
-                    Box(Modifier.width(120.dp).height(2.dp).background(c.uiTertiary.copy(alpha = .35f)))
-                }
-                if (p.type != PrayerType.SUNRISE) {
-                    TvAutoSizeText(
-                        "${localizedStringResource(R.string.azan)} ${
-                            TimeUtils.formatTimeBasedOnPreference(p.azanTime, data.settings.show24HourFormat)
-                        }",
-                        c.primaryAccent,
-                        s.height(.068f),
-                        s.height(.034f),
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                    )
-                    p.iqamahTime?.let {
-                        TvAutoSizeText(
-                            "${localizedStringResource(R.string.iqamah)} ${
-                                TimeUtils.formatTimeBasedOnPreference(it, data.settings.show24HourFormat)
-                            }",
-                            c.textSecondary,
-                            s.height(.058f),
-                            s.height(.03f),
-                            Modifier.padding(top = s.heightDp(.004f)),
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                        )
-                    }
-                }
             }
         }
     }
