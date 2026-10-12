@@ -77,11 +77,12 @@ capture() {
         --es theme "$theme" \
         --ez show24Hour "${FACE_PREVIEW_SHOW_24_HOUR:-false}" \
         --ez showSeconds "${FACE_PREVIEW_SHOW_SECONDS:-true}" \
+        --ez showAzan "${FACE_PREVIEW_SHOW_AZAN:-true}" \
         --ez showWeather "${FACE_PREVIEW_SHOW_WEATHER:-true}" >/dev/null
     case "$scenario" in
-        digital|analog|azan-hour|iqamah-hour|after-isha)
+        digital|analog|azan-hour|iqamah-hour|after-isha|sunrise-hour|ishraq-hour)
             if [[ "$face" == *mobile ]]; then expected_text="1448"; else expected_text="Dickwella Jummah Mosque"; fi ;;
-        countdown|iqamah-countdown|friday-night-bayan) expected_text="03" ;;
+        countdown|iqamah-countdown|friday-night-bayan|sunrise-countdown|ishraq-countdown) expected_text="03" ;;
         dua) expected_text="اللَّهُمَّ" ;;
         bayan) expected_text="42:44" ;;
     esac

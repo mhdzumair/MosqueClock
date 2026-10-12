@@ -200,12 +200,13 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
     ) {
         MihrabLattice(Modifier.fillMaxSize())
         val s = rememberTvTextScale(maxWidth, maxHeight)
-        Column(Modifier.fillMaxSize()) {
+        // Keep dashboard content inside the same proportional side margin as Ufuq.
+        Column(Modifier.fillMaxSize().padding(horizontal = s.widthDp(.025f))) {
             MihrabCompactHeader(
                 data,
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(vertical = 8.dp),
             )
             when (val state = data.mainState) {
                 is MainUiState.Success -> {
@@ -215,7 +216,6 @@ private fun khatimDialMetrics(minDimensionPx: Float): KhatimDialMetrics {
                         Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
                             .clickable(onClick = cb.onOpenSettings),
                         contentAlignment = Alignment.Center,
                     ) {

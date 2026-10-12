@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.offset
@@ -122,7 +123,8 @@ object UfuqScreenFace : ScreenFace {
             when (val state = data.mainState) {
                 is MainUiState.Success -> {
                     val rows = prayerRows(state.prayerTimes, data.currentTime)
-                    val next = resolveDisplayNextPrayer(rows, state.nextPrayer, data.currentTime, state.nextDayFajr)
+                    val next = data.inlineCountdownPrayer
+                        ?: resolveDisplayNextPrayer(rows, state.nextPrayer, data.currentTime, state.nextDayFajr)
                     if (data.isCountdownVisibleForWeight) {
                         UfuqAzanHour(
                             data,
@@ -133,9 +135,13 @@ object UfuqScreenFace : ScreenFace {
                         UfuqPrimary(
                             data,
                             next,
-                            Modifier.weight(.55f).fillMaxWidth().clickable(onClick = callbacks.onOpenSettings),
+                            Modifier.weight(.50f).fillMaxWidth().clickable(onClick = callbacks.onOpenSettings),
                         )
-                        UfuqRail(data, rows, next.type, Modifier.weight(.20f).fillMaxWidth())
+                        UfuqRail(
+                            data, rows, next.type,
+                            timelineHeight = s.heightDp(.048f),
+                            modifier = Modifier.weight(.25f).fillMaxWidth(),
+                        )
                     }
                 }
 
@@ -241,8 +247,8 @@ object UfuqScreenFace : ScreenFace {
                 TvAutoSizeText(
                     h.condition,
                     c.textSecondary,
-                    s.height(.075f),
-                    s.height(.045f),
+                    s.height(.095f),
+                    s.height(.06f),
                     textAlign = TextAlign.Start,
                     maxLines = 1,
                 )
@@ -250,11 +256,12 @@ object UfuqScreenFace : ScreenFace {
         }
         UfuqWeatherDetails(
             h,
-            c.textSecondary,
+            c.textPrimary.copy(alpha = .85f),
             c.textPrimary,
-            s.height(.085f),
-            s.height(.05f),
-            Modifier.width(s.widthDp(.19f)),
+            s.height(.12f),
+            s.height(.075f),
+            s.heightDp(.14f),
+            Modifier.width(s.widthDp(.225f)),
         )
     }
 }
@@ -288,16 +295,17 @@ object UfuqScreenFace : ScreenFace {
     valueColor: Color,
     maxSize: TextUnit,
     minSize: TextUnit,
+    iconSize: Dp,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(Modifier.fillMaxWidth()) {
-            UfuqWeatherMetric(Icons.Filled.Thermostat, h.feelsLike, labelColor, valueColor, maxSize, minSize, Modifier.weight(1f))
-            UfuqWeatherMetric(Icons.Filled.WaterDrop, h.humidity, labelColor, valueColor, maxSize, minSize, Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            UfuqWeatherMetric(Icons.Filled.Thermostat, h.feelsLike, labelColor, valueColor, maxSize, minSize, iconSize, Modifier.weight(1f))
+            UfuqWeatherMetric(Icons.Filled.WaterDrop, h.humidity, labelColor, valueColor, maxSize, minSize, iconSize, Modifier.weight(1f))
         }
-        Row(Modifier.fillMaxWidth()) {
-            UfuqWeatherMetric(Icons.Filled.Air, h.wind, labelColor, valueColor, maxSize, minSize, Modifier.weight(1f))
-            UfuqWeatherMetric(Icons.Filled.WbSunny, "UV ${h.uv}", labelColor, valueColor, maxSize, minSize, Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            UfuqWeatherMetric(Icons.Filled.Air, h.wind, labelColor, valueColor, maxSize, minSize, iconSize, Modifier.weight(1f))
+            UfuqWeatherMetric(Icons.Filled.WbSunny, "UV ${h.uv}", labelColor, valueColor, maxSize, minSize, iconSize, Modifier.weight(1f))
         }
     }
 }
@@ -309,10 +317,11 @@ object UfuqScreenFace : ScreenFace {
     valueColor: Color,
     maxSize: TextUnit,
     minSize: TextUnit,
+    iconSize: Dp,
     modifier: Modifier = Modifier,
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(iconSize))
         TvAutoSizeText(value, valueColor, maxSize, minSize, Modifier.weight(1f).padding(start = 4.dp), maxLines = 1)
     }
 }
@@ -335,28 +344,16 @@ object UfuqScreenFace : ScreenFace {
             if (analog) {
                 UfuqDial(data, Modifier.weight(.92f).fillMaxHeight(.94f))
             } else {
-                BoxWithConstraints(
-                    Modifier.weight(1.55f).fillMaxHeight(),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    val clockS = rememberTvTextScale(maxWidth, maxHeight)
-                    Column(Modifier.fillMaxSize()) {
-                        FacePanelClock(
-                            clock = data.clock,
-                            primaryColor = c.textPrimary,
-                            mutedColor = c.textSecondary,
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            fontWeight = FontWeight.Medium,
-                            secondaryScale = .32f,
-                            amLabel = localizedStringResource(R.string.am),
-                            pmLabel = localizedStringResource(R.string.pm),
-                        )
-                        Spacer(Modifier.height(clockS.heightDp(.018f)))
-                        Box(
-                            Modifier.fillMaxWidth().height(clockS.heightDp(.008f)).background(c.primaryAccent),
-                        )
-                    }
-                }
+                FacePanelClock(
+                    clock = data.clock,
+                    primaryColor = c.textPrimary,
+                    mutedColor = c.textSecondary,
+                    modifier = Modifier.weight(1.55f).fillMaxHeight(),
+                    fontWeight = FontWeight.Medium,
+                    secondaryScale = .32f,
+                    amLabel = localizedStringResource(R.string.am),
+                    pmLabel = localizedStringResource(R.string.pm),
+                )
             }
             Column(
                 Modifier.weight(1f).fillMaxHeight().padding(start = s.widthDp(.028f)),
@@ -706,24 +703,27 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
                     maxHeightFraction = .90f,
                     modifier = Modifier.weight(1.15f),
                 )
-                if (next.type != PrayerType.SUNRISE) {
-                    UfuqSideClockPanel(
-                        data = data,
-                        activeLabelRes = if (cd.isIqamah) R.string.iqamah else R.string.azan,
-                        activeTime = TimeUtils.formatTimeBasedOnPreference(
-                            activeTime,
-                            data.settings.show24HourFormat,
-                        ),
-                        referenceLabelRes = if (cd.isIqamah) R.string.azan else R.string.iqamah_letter,
-                        referenceTime = referenceTime?.let {
-                            TimeUtils.formatTimeBasedOnPreference(it, data.settings.show24HourFormat)
-                        },
-                        s = s,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = s.widthDp(.04f), bottom = s.heightDp(.03f)),
-                    )
-                }
+                UfuqSideClockPanel(
+                    data = data,
+                    activeLabelRes = when {
+                        next.type == PrayerType.SUNRISE && data.inlineCountdownPrayer != null -> R.string.ishraq
+                        next.type == PrayerType.SUNRISE -> R.string.sunrise
+                        cd.isIqamah -> R.string.iqamah
+                        else -> R.string.azan
+                    },
+                    activeTime = TimeUtils.formatTimeBasedOnPreference(
+                        activeTime,
+                        data.settings.show24HourFormat,
+                    ),
+                    referenceLabelRes = if (cd.isIqamah) R.string.azan else R.string.iqamah_letter,
+                    referenceTime = referenceTime?.let {
+                        TimeUtils.formatTimeBasedOnPreference(it, data.settings.show24HourFormat)
+                    },
+                    s = s,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = s.widthDp(.04f), bottom = s.heightDp(.03f)),
+                )
             }
             Column(Modifier.padding(top = s.heightDp(.05f))) {
                 AnimatedFaceSunProgress(
@@ -732,32 +732,6 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
                     c.primaryAccent,
                     Modifier.fillMaxWidth().height(s.heightDp(.048f)),
                 )
-                Row(
-                    Modifier.fillMaxWidth().padding(top = s.heightDp(.035f)),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    TvAutoSizeText(
-                        data.clock.formattedTime,
-                        c.textSecondary,
-                        s.height(.065f),
-                        s.height(.03f),
-                        Modifier.weight(1f),
-                        fontFamily = AppFonts.Display,
-                    )
-                    if (next.type != PrayerType.SUNRISE) {
-                        TvAutoSizeText(
-                            "${localizedStringResource(if (cd.isIqamah) R.string.iqamah else R.string.azan)} " +
-                                TimeUtils.formatTimeBasedOnPreference(cd.targetTime, data.settings.show24HourFormat),
-                            c.primaryAccent,
-                            s.height(.065f),
-                            s.height(.03f),
-                            Modifier.weight(1f),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                        )
-                    }
-                }
             }
         }
     }
@@ -767,11 +741,11 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
     data: ScreenDisplayData,
     rows: List<PrayerInfo>,
     next: PrayerType?,
+    timelineHeight: Dp,
     modifier: Modifier,
 ) {
     val c = LocalColorTheme.current
     val now = data.currentTime.toLocalDateTime(TimeZone.currentSystemDefault())
-    val nowTimeString = "%02d:%02d".format(now.hour, now.minute)
 
     // The columns are evenly spaced (1/n each) but the prayers themselves are not evenly spaced in
     // time — Zuhr..Asr is hours longer than Fajr..Sunrise. A single linear fraction across the whole
@@ -814,7 +788,7 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
                     if (hasIqamahTimes) (marker * .96f / .90f).coerceIn(0f, 1f) else marker,
                     c.surfaceTertiary,
                     c.primaryAccent,
-                    Modifier.weight(1f).height(s.heightDp(.048f)),
+                    Modifier.weight(1f).height(timelineHeight),
                 )
                 if (hasIqamahTimes) {
                     AnimatedContent(
@@ -840,71 +814,41 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
             Row(Modifier.fillMaxWidth()) {
                 rows.forEach { p ->
                     val selected = p.type == next
-                    val isPast = !selected && TimeUtils.compareTimeStrings(p.azanTime, nowTimeString) < 0
                     val nameColor = if (selected) c.primaryAccent else c.textSecondary
-                    Column(Modifier.weight(1f).padding(horizontal = 4.dp), verticalArrangement = Arrangement.Top) {
+                    Column(
+                        Modifier.weight(1f).padding(horizontal = 4.dp),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         TvAutoSizeText(
                             p.name,
                             nameColor,
-                            s.height(.20f),
+                            s.height(.16f),
                             s.height(.09f),
+                            Modifier.fillMaxWidth().height(s.heightDp(.36f)),
                             fontWeight = if (selected) FontWeight.Bold else null,
+                            textAlign = TextAlign.Center,
                             maxLines = 2,
                         )
-                        if (p.type != PrayerType.SUNRISE && p.iqamahTime != null) {
-                            AnimatedContent(
-                                targetState = data.globalShowAzan,
-                                transitionSpec = {
-                                    fadeIn(animationSpec = tween(800)) togetherWith fadeOut(animationSpec = tween(800))
-                                },
-                                label = "ufuq_rail_prayer_mode",
-                            ) { showAzan ->
-                                TvAutoSizeText(
-                                    localizedStringResource(
-                                        if (showAzan) R.string.azan_letter else R.string.iqamah_letter,
-                                    ),
-                                    (if (showAzan) c.azanTime else c.iqamahTime).copy(
-                                        alpha = if (isPast) .55f else .85f,
-                                    ),
-                                    s.height(.12f),
-                                    s.height(.06f),
-                                    maxLines = 1,
-                                )
-                            }
-                        }
                         AnimatedContent(
                             targetState = data.globalShowAzan,
                             transitionSpec = {
                                 fadeIn(animationSpec = tween(800)) togetherWith fadeOut(animationSpec = tween(800))
                             },
                             label = "ufuq_rail_time",
+                            modifier = Modifier.fillMaxWidth(),
                         ) { showAzan ->
                             val columnShowingAzan = showAzan || p.iqamahTime == null
                             val time = if (columnShowingAzan) p.azanTime else p.iqamahTime ?: p.azanTime
-                            val color = when {
-                                p.type == PrayerType.SUNRISE -> when {
-                                    selected -> c.nextSunriseTime
-                                    isPast -> c.textSecondary
-                                    else -> c.sunriseTime
-                                }
-                                columnShowingAzan -> when {
-                                    selected -> c.nextAzanTime
-                                    isPast -> c.textSecondary
-                                    else -> c.azanTime
-                                }
-                                else -> when {
-                                    selected -> c.nextIqamahTime
-                                    isPast -> c.textSecondary
-                                    else -> c.iqamahTime
-                                }
-                            }
+                            val color = if (columnShowingAzan) c.azanTime else c.iqamahTime
                             TvAutoSizeText(
                                 TimeUtils.formatTimeBasedOnPreference(time, data.settings.show24HourFormat),
                                 color,
-                                s.height(.24f),
-                                s.height(.11f),
+                                s.height(.32f),
+                                s.height(.14f),
                                 fontFamily = AppFonts.Display,
                                 fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -946,23 +890,26 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
                     maxHeightFraction = .90f,
                     modifier = Modifier.weight(1.15f),
                 )
-                if (value.prayerType != PrayerType.SUNRISE) {
-                    UfuqSideClockPanel(
-                        data = data,
-                        activeLabelRes = if (value.kind == CountdownKind.FRIDAY_NIGHT_BAYAN) R.string.friday_night_bayan
-                            else if (value.isIqamah) R.string.iqamah else R.string.azan,
-                        activeTime = TimeUtils.formatTimeBasedOnPreference(
-                            value.targetTime,
-                            data.settings.show24HourFormat,
-                        ),
-                        referenceLabelRes = null,
-                        referenceTime = null,
-                        s = s,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = s.widthDp(.04f), bottom = s.heightDp(.03f)),
-                    )
-                }
+                UfuqSideClockPanel(
+                    data = data,
+                    activeLabelRes = when {
+                        value.kind == CountdownKind.FRIDAY_NIGHT_BAYAN -> R.string.friday_night_bayan
+                        value.kind == CountdownKind.ISHRAQ -> R.string.ishraq
+                        value.prayerType == PrayerType.SUNRISE -> R.string.sunrise
+                        value.isIqamah -> R.string.iqamah
+                        else -> R.string.azan
+                    },
+                    activeTime = TimeUtils.formatTimeBasedOnPreference(
+                        value.targetTime,
+                        data.settings.show24HourFormat,
+                    ),
+                    referenceLabelRes = null,
+                    referenceTime = null,
+                    s = s,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = s.widthDp(.04f), bottom = s.heightDp(.03f)),
+                )
             }
             Spacer(Modifier.height(s.heightDp(.02f)))
             AnimatedFaceSunProgress(
@@ -971,33 +918,6 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
                 c.primaryAccent,
                 Modifier.fillMaxWidth().height(s.heightDp(.048f)),
             )
-            Row(
-                Modifier.fillMaxWidth().padding(top = s.heightDp(.018f)),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                TvAutoSizeText(
-                    data.clock.formattedTime,
-                    c.textSecondary,
-                    s.height(.065f),
-                    s.height(.03f),
-                    Modifier.weight(1f),
-                    fontFamily = AppFonts.Display,
-                )
-                if (value.prayerType != PrayerType.SUNRISE) {
-                    TvAutoSizeText(
-                        "${localizedStringResource(if (value.kind == CountdownKind.FRIDAY_NIGHT_BAYAN) R.string.friday_night_bayan else if (value.isIqamah) R.string.iqamah else R.string.azan)} " +
-                            TimeUtils.formatTimeBasedOnPreference(value.targetTime, data.settings.show24HourFormat),
-                        c.primaryAccent,
-                        s.height(.12f),
-                        s.height(.065f),
-                        Modifier.weight(1f),
-                        fontFamily = AppFonts.Display,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                    )
-                }
-            }
         }
     }
 }
@@ -1106,6 +1026,7 @@ private fun ufuqPolar(center: Offset, length: Float, degrees: Float): Offset {
                 s.height(.17f),
                 s.height(.075f),
                 fontFamily = AppFonts.Arabic,
+                textAlign = TextAlign.Right,
                 maxLines = 2,
             )
             TvAutoSizeText(

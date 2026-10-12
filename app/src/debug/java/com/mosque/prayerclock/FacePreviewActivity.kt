@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.data.model.PrayerInfo
 import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.ui.LocalizedApp
 import com.mosque.prayerclock.ui.components.clockfaces.ClockDisplayData
@@ -73,6 +74,7 @@ class FacePreviewActivity : ComponentActivity() {
                         show24Hour = intent.getBooleanExtra("show24Hour", false),
                         showSeconds = intent.getBooleanExtra("showSeconds", true),
                         showWeather = intent.getBooleanExtra("showWeather", true),
+                        showAzan = intent.getBooleanExtra("showAzan", true),
                         mosqueName = intent.getStringExtra("mosqueName") ?: "Dickwella Jummah Mosque",
                         clockType = when (intent.getStringExtra("clockType")) {
                             "analog" -> ClockType.ANALOG
@@ -95,6 +97,7 @@ private fun FacePreview(
     show24Hour: Boolean,
     showSeconds: Boolean,
     showWeather: Boolean,
+    showAzan: Boolean,
     mosqueName: String,
     clockType: ClockType,
 ) {
@@ -107,6 +110,10 @@ private fun FacePreview(
             "after-isha" -> Triple(20, 43, 6)
             "countdown" -> Triple(19, 29, 14)
             "iqamah-countdown", "friday-night-bayan" -> Triple(19, 39, 14)
+            "sunrise-hour" -> Triple(5, 45, 0)
+            "ishraq-hour" -> Triple(6, 20, 0)
+            "sunrise-countdown" -> Triple(6, 11, 14)
+            "ishraq-countdown" -> Triple(6, 31, 14)
             else -> Triple(12, 36, 25)
         }
     val period = localizedStringResource(if (previewHour < 12) R.string.am else R.string.pm)
@@ -139,6 +146,7 @@ private fun FacePreview(
         )
     val base =
         ScreenDisplayData.PREVIEW.copy(
+            globalShowAzan = showAzan,
             settings =
                 AppSettings(
                     language = language,
@@ -155,6 +163,7 @@ private fun FacePreview(
                 (ScreenDisplayData.PREVIEW.mainState as MainUiState.Success).copy(
                     nextPrayer = when (scenario) {
                         "azan-hour", "iqamah-hour" -> PrayerType.DHUHR
+                        "sunrise-hour", "ishraq-hour" -> PrayerType.SUNRISE
                         "after-isha" -> PrayerType.FAJR
                         else -> PrayerType.ASR
                     },
@@ -175,24 +184,50 @@ private fun FacePreview(
                     "countdown" -> Instant.parse("2026-08-22T13:59:14Z")
                     "iqamah-countdown" -> Instant.parse("2026-08-22T14:09:14Z")
                     "friday-night-bayan" -> Instant.parse("2026-08-20T14:09:14Z")
+                    "sunrise-hour" -> Instant.parse("2026-08-22T00:15:00Z")
+                    "ishraq-hour" -> Instant.parse("2026-08-22T00:50:00Z")
+                    "sunrise-countdown" -> Instant.parse("2026-08-22T00:41:14Z")
+                    "ishraq-countdown" -> Instant.parse("2026-08-22T01:01:14Z")
                     else -> Instant.parse("2026-08-22T07:06:25Z")
                 },
-            isCountdownVisibleForWeight = scenario == "azan-hour" || scenario == "iqamah-hour",
-            shouldShowFullScreenCountdown = scenario in listOf("countdown", "iqamah-countdown", "friday-night-bayan"),
+            inlineCountdownPrayer = if (scenario == "ishraq-hour") {
+                PrayerInfo(
+                    type = PrayerType.SUNRISE,
+                    azanTime = "06:35",
+                    iqamahTime = null,
+                    name = localizedStringResource(R.string.ishraq),
+                )
+            } else null,
+            isCountdownVisibleForWeight = scenario in listOf("azan-hour", "iqamah-hour", "sunrise-hour", "ishraq-hour"),
+            shouldShowFullScreenCountdown = scenario in listOf("countdown", "iqamah-countdown", "friday-night-bayan", "sunrise-countdown", "ishraq-countdown"),
             fullScreenCountdownData =
-                if (scenario in listOf("countdown", "iqamah-countdown", "friday-night-bayan")) {
+                if (scenario in listOf("countdown", "iqamah-countdown", "friday-night-bayan", "sunrise-countdown", "ishraq-countdown")) {
                     FullScreenCountdownData(
-                        prayerName = localizedStringResource(R.string.isha),
-                        prayerType = PrayerType.ISHA,
-                        isIqamah = scenario != "countdown",
+                        prayerName = localizedStringResource(when (scenario) {
+                            "sunrise-countdown" -> R.string.sunrise
+                            "ishraq-countdown" -> R.string.ishraq
+                            else -> R.string.isha
+                        }),
+                        prayerType = if (scenario in listOf("sunrise-countdown", "ishraq-countdown")) PrayerType.SUNRISE else PrayerType.ISHA,
+                        isIqamah = scenario in listOf("iqamah-countdown", "friday-night-bayan"),
                         minutes = 3,
                         seconds = 46,
-                        azanTime = "19:33",
-                        targetTime = if (scenario == "countdown") "19:33" else "19:43",
+                        azanTime = when (scenario) {
+                            "sunrise-countdown" -> "06:15"
+                            "ishraq-countdown" -> "06:35"
+                            else -> "19:33"
+                        },
+                        targetTime = when (scenario) {
+                            "sunrise-countdown" -> "06:15"
+                            "ishraq-countdown" -> "06:35"
+                            "countdown" -> "19:33"
+                            else -> "19:43"
+                        },
                         totalDurationSeconds = 10 * 60,
                         kind = when (scenario) {
                             "friday-night-bayan" -> CountdownKind.FRIDAY_NIGHT_BAYAN
                             "iqamah-countdown" -> CountdownKind.IQAMAH
+                            "ishraq-countdown" -> CountdownKind.ISHRAQ
                             else -> CountdownKind.AZAN
                         },
                     )
