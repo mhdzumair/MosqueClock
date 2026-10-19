@@ -81,7 +81,7 @@ capture() {
         --ez showAzan "${FACE_PREVIEW_SHOW_AZAN:-true}" \
         --ez showWeather "${FACE_PREVIEW_SHOW_WEATHER:-true}" >/dev/null
     case "$scenario" in
-        digital|analog|azan-hour|iqamah-hour|after-isha|sunrise-hour|ishraq-hour)
+        digital|analog|azan-hour|iqamah-hour|after-isha|sunrise-hour|ishraq-hour|loading|error|error-analog)
             if [[ "$face" == "horizon_mobile" ]]; then
                 expected_text="Dickwella Jummah Mosque"
             elif [[ "$face" == *mobile ]]; then

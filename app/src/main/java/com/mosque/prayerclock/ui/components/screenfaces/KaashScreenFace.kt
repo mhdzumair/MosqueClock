@@ -1,5 +1,7 @@
 package com.mosque.prayerclock.ui.components.screenfaces
 
+import com.mosque.prayerclock.ui.components.screenfaces.shared.PrayerDataUnavailable
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -125,11 +127,7 @@ object KaashScreenFace : ScreenFace {
                     KaashPrayerTiles(data, rows, next.type, Modifier.weight(.25f).fillMaxWidth())
                 }
 
-                else -> {
-                    KaashTile(Modifier.fillMaxSize()) {
-                        TvAutoSizeText(data.errorMessage ?: "…", c.textPrimary, s.height(.08f))
-                    }
-                }
+                else -> PrayerDataUnavailable(data, cb, Modifier.fillMaxSize())
             }
         }
     }

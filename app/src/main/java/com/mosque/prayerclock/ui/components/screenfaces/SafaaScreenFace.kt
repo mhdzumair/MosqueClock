@@ -1,5 +1,7 @@
 package com.mosque.prayerclock.ui.components.screenfaces
 
+import com.mosque.prayerclock.ui.components.screenfaces.shared.PrayerDataUnavailable
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,16 +103,7 @@ object SafaaScreenFace : ScreenFace {
                     }
                 }
 
-                else -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        TvAutoSizeText(
-                            data.errorMessage ?: "…",
-                            c.textPrimary,
-                            s.height(.08f),
-                            fontFamily = FontFamily.Serif,
-                        )
-                    }
-                }
+                else -> PrayerDataUnavailable(data, callbacks, Modifier.fillMaxSize())
             }
         }
     }

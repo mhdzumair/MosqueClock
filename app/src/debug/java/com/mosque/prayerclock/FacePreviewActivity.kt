@@ -83,7 +83,7 @@ class FacePreviewActivity : ComponentActivity() {
                             "analog" -> ClockType.ANALOG
                             "digital" -> ClockType.DIGITAL
                             "both" -> ClockType.BOTH
-                            else -> if (scenario == "analog") ClockType.ANALOG else ClockType.DIGITAL
+                            else -> if (scenario in listOf("analog", "error-analog")) ClockType.ANALOG else ClockType.DIGITAL
                         },
                     )
                 }
@@ -164,8 +164,10 @@ private fun FacePreview(
                     screenFaceId = face.id,
                 ),
             clock = clock,
-            mainState =
-                (ScreenDisplayData.PREVIEW.mainState as MainUiState.Success).copy(
+            mainState = when (scenario) {
+                "loading" -> MainUiState.Loading
+                "error", "error-analog" -> MainUiState.Error(localizedStringResource(R.string.error_no_data))
+                else -> (ScreenDisplayData.PREVIEW.mainState as MainUiState.Success).copy(
                     // Fixed debug fixtures make Shafi/Hanafi screenshot comparisons repeatable.
                     // Production schedules use the selected provider's published Asr times.
                     prayerTimes = (ScreenDisplayData.PREVIEW.mainState as MainUiState.Success).prayerTimes.prayerTimes
@@ -184,7 +186,8 @@ private fun FacePreview(
                             fajrIqamah = "04:50",
                         )
                     } else null,
-                ),
+                )
+            },
             // Keep the deterministic instant synchronized with the time rendered by the clock.
             currentTime =
                 when (scenario) {

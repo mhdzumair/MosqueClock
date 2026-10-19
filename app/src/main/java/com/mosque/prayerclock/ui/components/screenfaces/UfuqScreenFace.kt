@@ -1,5 +1,7 @@
 package com.mosque.prayerclock.ui.components.screenfaces
 
+import com.mosque.prayerclock.ui.components.screenfaces.shared.PrayerDataUnavailable
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -145,11 +147,7 @@ object UfuqScreenFace : ScreenFace {
                     }
                 }
 
-                else -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        TvAutoSizeText(data.errorMessage ?: "…", c.textPrimary, s.height(.08f))
-                    }
-                }
+                else -> PrayerDataUnavailable(data, callbacks, Modifier.fillMaxSize())
             }
         }
     }
