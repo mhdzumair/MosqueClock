@@ -82,7 +82,13 @@ capture() {
         --ez showWeather "${FACE_PREVIEW_SHOW_WEATHER:-true}" >/dev/null
     case "$scenario" in
         digital|analog|azan-hour|iqamah-hour|after-isha|sunrise-hour|ishraq-hour)
-            if [[ "$face" == *mobile ]]; then expected_text="1448"; else expected_text="Dickwella Jummah Mosque"; fi ;;
+            if [[ "$face" == "horizon_mobile" ]]; then
+                expected_text="Dickwella Jummah Mosque"
+            elif [[ "$face" == *mobile ]]; then
+                expected_text="1448"
+            else
+                expected_text="Dickwella Jummah Mosque"
+            fi ;;
         countdown|iqamah-countdown|friday-night-bayan|sunrise-countdown|ishraq-countdown) expected_text="03" ;;
         dua) expected_text="اللَّهُمَّ" ;;
         bayan) expected_text="42:44" ;;
@@ -118,6 +124,19 @@ capture() {
     fi
     adb exec-out screencap -p > "$output_file"
     echo "$output_file"
+    if [[ "${FACE_PREVIEW_CAPTURE_SCROLL:-false}" == "true" && "$face" == "horizon_mobile" ]]; then
+        local screen_size screen_width screen_height
+        screen_size="$(adb shell wm size | awk '/size:/ {size=$NF} END {print size}')"
+        screen_width="${screen_size%x*}"
+        screen_height="${screen_size#*x}"
+        for _ in 1 2 3; do
+            adb shell input swipe "$((screen_width / 2))" "$((screen_height * 4 / 5))" \
+                "$((screen_width / 2))" "$((screen_height / 5))" 300
+        done
+        sleep "$settle_seconds"
+        adb exec-out screencap -p > "${output_file%.png}-scrolled.png"
+        echo "${output_file%.png}-scrolled.png"
+    fi
 }
 
 IFS=',' read -r -a resolutions <<< "$resolution_matrix"

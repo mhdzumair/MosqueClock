@@ -4,6 +4,10 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import com.mosque.prayerclock.utils.DeviceUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOutCubic
@@ -57,17 +61,29 @@ class SplashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // Optimize for faster startup and TV wake-up
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        val isTv = DeviceUtils.isTelevision(this)
+        WindowCompat.setDecorFitsSystemWindows(window, !isTv)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            if (isTv) {
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                hide(WindowInsetsCompat.Type.systemBars())
+            } else {
+                show(WindowInsetsCompat.Type.systemBars())
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        }
+        window.statusBarColor = android.graphics.Color.BLACK
+        window.navigationBarColor = android.graphics.Color.BLACK
 
         // Configure window flags to wake up display immediately
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (isTv) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // Use modern approach for showing over lock screen
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        if (isTv && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-        } else {
+        } else if (isTv) {
             // Fallback for older versions
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)

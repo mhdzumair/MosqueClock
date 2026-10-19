@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="settings_section_prayers">தொழுகைகள்</string>
+    <string name="settings_section_display">காட்சி</string>
+    <string name="settings_section_alerts">நினைவூட்டல்கள்</string>
+    <string name="settings_section_app">செயலி</string>
     <string name="app_name">பள்ளிவாசல் தொழுகை கடிகாரம்</string>
     
     <!-- Prayer Names -->

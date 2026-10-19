@@ -20,6 +20,8 @@ import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.ui.components.PrayerTimeCard
 import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceCallbacks
 import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
+import com.mosque.prayerclock.ui.components.screenfaces.HorizonMobileScreenFace
+import com.mosque.prayerclock.utils.DeviceUtils
 import com.mosque.prayerclock.ui.components.screenfaces.Render
 import com.mosque.prayerclock.ui.components.screenfaces.rememberScreenDisplayData
 import com.mosque.prayerclock.ui.localizedStringResource
@@ -71,7 +73,11 @@ fun MainScreen(
         }
     }
 
-    val face = ScreenFaceRegistry.get(data.settings.screenFaceId)
+    val face = if (DeviceUtils.isTelevision(context)) {
+        ScreenFaceRegistry.get(data.settings.screenFaceId)
+    } else {
+        HorizonMobileScreenFace
+    }
     val callbacks = ScreenFaceCallbacks(
         onOpenSettings = onOpenSettings,
         onPrayerTransition = { viewModel.updateNextPrayer() },

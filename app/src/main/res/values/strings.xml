@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="settings_section_prayers">Prayers</string>
+    <string name="settings_section_display">Display</string>
+    <string name="settings_section_alerts">Reminders</string>
+    <string name="settings_section_app">App</string>
     <string name="app_name">Mosque Prayer Clock</string>
     
     <!-- Prayer Names -->

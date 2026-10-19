@@ -5,19 +5,25 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import android.view.WindowManager
+import android.view.ContextThemeWrapper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.core.content.ContextCompat
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,7 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +56,7 @@ import com.mosque.prayerclock.data.service.UpdateInfo
 import com.mosque.prayerclock.service.PrayerNotificationService
 import com.mosque.prayerclock.utils.DeviceUtils
 import com.mosque.prayerclock.ui.LocalizedApp
+import com.mosque.prayerclock.ui.LocalLocalizedContext
 import com.mosque.prayerclock.ui.components.UpdateDialog
 import com.mosque.prayerclock.ui.localizedStringResource
 import com.mosque.prayerclock.ui.screens.MainScreen
@@ -68,9 +75,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Edge-to-edge immersive display — without this, some TV/box devices reserve space for
-        // system bars, which shows up as a black gutter around the mosque display.
-        hideSystemBars()
+        // TVs use an immersive display; handheld devices retain their system navigation.
+        configureSystemBars()
 
         // Check if app was started from boot
         val startedFromBoot = intent.getBooleanExtra("started_from_boot", false)
@@ -133,17 +139,25 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemBars()
+        if (hasFocus) configureSystemBars()
     }
 
-    @Suppress("DEPRECATION")
-    private fun hideSystemBars() {
-        window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+    private fun configureSystemBars() {
+        val isTv = DeviceUtils.isTelevision(this)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            if (isTv) {
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                hide(WindowInsetsCompat.Type.systemBars())
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                show(WindowInsetsCompat.Type.systemBars())
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+                window.statusBarColor = android.graphics.Color.BLACK
+                window.navigationBarColor = android.graphics.Color.BLACK
+            }
+        }
     }
 
     private fun requestOverlayPermission() {
@@ -177,6 +191,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun configureDisplaySettings() {
+        if (!DeviceUtils.isTelevision(this)) return
         try {
             // Keep screen on and prevent sleep
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -231,6 +246,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MosqueClockApp(onExitApp: () -> Unit = {}) {
+    val isTv = DeviceUtils.isTelevision(LocalContext.current)
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -300,14 +316,16 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
     BackHandler(enabled = true) {
         when (navController.currentDestination?.route) {
             "settings" -> returnToMain()
-            "main" -> showExitDialog = true
-            else -> showExitDialog = true
+            "main" -> if (isTv) showExitDialog = true else onExitApp()
+            else -> onExitApp()
         }
     }
 
     Box(
         modifier =
-            Modifier.fillMaxSize().onPreviewKeyEvent { keyEvent ->
+            Modifier.fillMaxSize()
+                .then(if (isTv) Modifier else Modifier.safeDrawingPadding().imePadding())
+                .onPreviewKeyEvent { keyEvent ->
                 when (keyEvent.key) {
                     Key.Menu, Key.DirectionCenter -> {
                         // Consume both halves of the key sequence that opens Settings. Otherwise
@@ -315,7 +333,7 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
                         if (consumeSettingsOpenKey) {
                             if (keyEvent.type == KeyEventType.KeyUp) consumeSettingsOpenKey = false
                             true
-                        } else if (currentRoute == "main" && keyEvent.type == KeyEventType.KeyDown) {
+                        } else if (isTv && currentRoute == "main" && keyEvent.type == KeyEventType.KeyDown) {
                             consumeSettingsOpenKey = true
                             openSettings()
                             true
@@ -327,16 +345,34 @@ fun MosqueClockApp(onExitApp: () -> Unit = {}) {
                 }
             },
     ) {
-        NavHost(navController = navController, startDestination = "main") {
+        NavHost(
+            navController = navController,
+            startDestination = "main",
+            enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 8 } },
+            exitTransition = { fadeOut(tween(180)) },
+            popEnterTransition = { fadeIn(tween(220)) },
+            popExitTransition = { fadeOut(tween(180)) + slideOutHorizontally(tween(220)) { it / 8 } },
+        ) {
             composable("main") {
                 MainScreen(onOpenSettings = openSettings)
             }
 
             composable("settings") {
-                SettingsScreen(
-                    onNavigateBack = returnToMain,
-                    viewModel = settingsViewModel,
-                )
+                val baseContext = LocalContext.current
+                val localizedContext = LocalLocalizedContext.current
+                // Keep the Activity as the base context so file pickers and permission
+                // launchers can still find their ActivityResultRegistryOwner.
+                val settingsContext = remember(baseContext, localizedContext) {
+                    ContextThemeWrapper(baseContext, 0).apply {
+                        applyOverrideConfiguration(localizedContext.resources.configuration)
+                    }
+                }
+                CompositionLocalProvider(LocalContext provides settingsContext) {
+                    SettingsScreen(
+                        onNavigateBack = returnToMain,
+                        viewModel = settingsViewModel,
+                    )
+                }
             }
         }
 

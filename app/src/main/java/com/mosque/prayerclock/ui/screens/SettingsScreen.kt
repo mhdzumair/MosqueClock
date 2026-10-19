@@ -32,6 +32,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.key
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -129,6 +138,13 @@ import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 
+private enum class MobileSettingsSection(val label: Int) {
+    PRAYERS(R.string.settings_section_prayers),
+    DISPLAY(R.string.settings_section_display),
+    ALERTS(R.string.settings_section_alerts),
+    APP(R.string.settings_section_app),
+}
+
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
@@ -136,6 +152,17 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val isTv = DeviceUtils.isTelevision(context)
+    val focusManager = LocalFocusManager.current
+    var selectedSection by rememberSaveable { mutableStateOf(MobileSettingsSection.PRAYERS) }
+
+    fun LazyListScope.section(
+        section: MobileSettingsSection,
+        key: String,
+        content: @Composable () -> Unit,
+    ) {
+        if (isTv || selectedSection == section) item(key = key) { content() }
+    }
 
     // Handle back button to navigate back to main screen, not exit app
     BackHandler { onNavigateBack() }
@@ -155,213 +182,235 @@ fun SettingsScreen(
                 ),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier.align(Alignment.TopCenter)
+                .then(if (isTv) Modifier else Modifier.widthIn(max = 720.dp)).fillMaxSize()
+                .padding(horizontal = if (isTv) 24.dp else 8.dp),
         ) {
             SettingsHeader(onNavigateBack = onNavigateBack)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item {
-                    SystemSettingsAccess()
+            if (!isTv) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MobileSettingsSection.entries.forEach { section ->
+                        FilterChip(
+                            selected = selectedSection == section,
+                            onClick = {
+                                focusManager.clearFocus()
+                                selectedSection = section
+                            },
+                            label = { Text(localizedStringResource(section.label)) },
+                        )
+                    }
                 }
+            }
 
-                item {
-                    MosqueNameSetting(
-                        mosqueName = settings.mosqueName,
-                        onMosqueNameChange = viewModel::updateMosqueName,
-                    )
-                }
+            key(selectedSection) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    section(MobileSettingsSection.APP, "system") {
+                        SystemSettingsAccess()
+                    }
 
-                item {
-                    LanguageSetting(
-                        selectedLanguage = settings.language,
-                        onLanguageChange = viewModel::updateLanguage,
-                    )
-                }
+                    section(MobileSettingsSection.PRAYERS, "mosque") {
+                        MosqueNameSetting(
+                            mosqueName = settings.mosqueName,
+                            onMosqueNameChange = viewModel::updateMosqueName,
+                        )
+                    }
 
-                item {
-                    PrayerServiceSettings(
-                        selectedServiceType = settings.prayerServiceType,
-                        selectedZone = settings.selectedZone,
-                        selectedMazhab = settings.mazhab,
-                        onMazhabChange = viewModel::updateMazhab,
-                        selectedRegion = settings.selectedRegion,
-                        backendUrl = settings.mosqueClockBackendUrl,
-                        backendApiKey = settings.mosqueClockBackendApiKey,
-                        onServiceTypeChange = viewModel::updatePrayerServiceType,
-                        onZoneChange = viewModel::updateSelectedZone,
-                        onRegionChange = viewModel::updateSelectedRegion,
-                        onBackendUrlChange = viewModel::updateMosqueClockBackendUrl,
-                        onBackendApiKeyChange = viewModel::updateMosqueClockBackendApiKey,
-                    )
-                }
+                    section(MobileSettingsSection.PRAYERS, "language") {
+                        LanguageSetting(
+                            selectedLanguage = settings.language,
+                            onLanguageChange = viewModel::updateLanguage,
+                        )
+                    }
 
-                // Show offline data download for ACJU Direct scraping
-                if (settings.prayerServiceType == PrayerServiceType.ACJU_DIRECT) {
-                    item {
-                        OfflineDataSettings(
-                            zone = settings.selectedZone,
+                    section(MobileSettingsSection.PRAYERS, "service") {
+                        PrayerServiceSettings(
+                            selectedServiceType = settings.prayerServiceType,
+                            selectedZone = settings.selectedZone,
+                            selectedMazhab = settings.mazhab,
+                            onMazhabChange = viewModel::updateMazhab,
+                            selectedRegion = settings.selectedRegion,
+                            backendUrl = settings.mosqueClockBackendUrl,
+                            backendApiKey = settings.mosqueClockBackendApiKey,
+                            onServiceTypeChange = viewModel::updatePrayerServiceType,
+                            onZoneChange = viewModel::updateSelectedZone,
+                            onRegionChange = viewModel::updateSelectedRegion,
+                            onBackendUrlChange = viewModel::updateMosqueClockBackendUrl,
+                            onBackendApiKeyChange = viewModel::updateMosqueClockBackendApiKey,
+                        )
+                    }
+
+                    // Show offline data download for ACJU Direct scraping
+                    if (settings.prayerServiceType == PrayerServiceType.ACJU_DIRECT) {
+                        section(MobileSettingsSection.PRAYERS, "offline") {
+                            OfflineDataSettings(
+                                zone = settings.selectedZone,
+                                viewModel = viewModel,
+                            )
+                        }
+                    }
+
+                    if (settings.prayerServiceType == PrayerServiceType.MANUAL) {
+                        section(MobileSettingsSection.PRAYERS, "manual") {
+                            ManualPrayerTimesSettings(
+                                settings = settings,
+                                onUpdateManualTime = viewModel::updateManualTime,
+                            )
+                        }
+                    }
+
+                    // Place Iqamah Gaps and Prayer Time setup right after Prayer Service
+                    section(MobileSettingsSection.PRAYERS, "iqamah") {
+                        IqamahGapSettings(
+                            settings = settings,
+                            onUpdateIqamahGap = viewModel::updateIqamahGap,
+                        )
+                    }
+
+                    section(MobileSettingsSection.ALERTS, "bayan") {
+                        JummaNightBayanSettings(
+                            jummaNightBayanEnabled = settings.jummaNightBayanEnabled,
+                            jummaNightBayanMinutes = settings.jummaNightBayanMinutes,
+                            onJummaNightBayanEnabledChange = viewModel::updateJummaNightBayanEnabled,
+                            onJummaNightBayanMinutesChange = viewModel::updateJummaNightBayanMinutes,
+                        )
+                    }
+
+                    section(MobileSettingsSection.ALERTS, "prayer-display") {
+                        PrayerDisplaySettings(
+                            jummahDurationMinutes = settings.jummahDurationMinutes,
+                            duaDisplayDurationMinutes = settings.duaDisplayDurationMinutes,
+                            showJummahScreen = settings.showJummahScreen,
+                            onJummahDurationChange = viewModel::updateJummahDurationMinutes,
+                            onDuaDisplayDurationChange = viewModel::updateDuaDisplayDurationMinutes,
+                            onShowJummahScreenChange = viewModel::updateShowJummahScreen,
+                        )
+                    }
+
+                    section(MobileSettingsSection.DISPLAY, "weather") {
+                        WeatherSettings(
+                            showWeather = settings.showWeather,
+                            onToggleShowWeather = viewModel::updateShowWeather,
+                            weatherCity = settings.weatherCity,
+                            onWeatherCityChange = viewModel::updateWeatherCity,
+                            provider = settings.weatherProvider,
+                            onProviderChange = viewModel::updateWeatherProvider,
+                            weatherApiKey = settings.weatherApiKey,
+                            openWeatherMapApiKey = settings.openWeatherMapApiKey,
+                            onWeatherApiKeyChange = viewModel::updateWeatherApiKey,
+                            onOpenWeatherMapApiKeyChange = viewModel::updateOpenWeatherMapApiKey,
+                        )
+                    }
+
+                    // Hijri Date Settings
+                    section(MobileSettingsSection.DISPLAY, "hijri") {
+                        HijriDateSettings(
+                            hijriProvider = settings.hijriProvider,
+                            day = settings.manualHijriDay,
+                            month = settings.manualHijriMonth,
+                            year = settings.manualHijriYear,
+                            onHijriProviderChange = { viewModel.updateHijriProvider(it) },
+                            onManualChange = { d, m, y -> viewModel.updateHijriDate(d, m, y) },
+                        )
+                    }
+
+                    section(MobileSettingsSection.DISPLAY, "clock") {
+                        ClockTypeSetting(
+                            selectedClockType = settings.clockType,
+                            onClockTypeChange = viewModel::updateClockType,
+                        )
+                    }
+
+                    section(MobileSettingsSection.DISPLAY, "format") {
+                        ClockFormatSettings(
+                            showSeconds = settings.showSeconds,
+                            show24Hour = settings.show24HourFormat,
+                            onShowSecondsChange = viewModel::updateShowSeconds,
+                            onShow24HourChange = viewModel::updateShow24HourFormat,
+                        )
+                    }
+
+                    if (isTv) section(MobileSettingsSection.DISPLAY, "face") {
+                        ScreenFaceSettings(
+                            selectedFaceId = settings.screenFaceId,
+                            onFaceChange = viewModel::updateScreenFaceId,
+                        )
+                    }
+
+                    section(MobileSettingsSection.DISPLAY, "theme") {
+                        ColorThemeSettings(
+                            selectedThemeId = settings.colorTheme,
+                            onThemeChange = viewModel::updateColorTheme,
+                        )
+                    }
+
+                    if (!DeviceUtils.isTelevision(context)) {
+                        section(MobileSettingsSection.ALERTS, "notification") {
+                            PrayerTimesNotificationSetting(
+                                enabled = settings.showPrayerTimesNotification,
+                                onEnabledChange = viewModel::updateShowPrayerTimesNotification,
+                            )
+                        }
+                    }
+
+                    // Enhanced Azan Sound Settings
+                    section(MobileSettingsSection.ALERTS, "azan-sound") {
+                        AzanSoundSettings(
+                            azanSoundEnabled = settings.azanSoundEnabled,
+                            azanSoundType = settings.azanSoundType,
+                            azanSoundUri = settings.azanSoundUri,
+                            onAzanSoundEnabledChange = viewModel::updateAzanSoundEnabled,
+                            onAzanSoundTypeChange = viewModel::updateAzanSoundType,
+                            onAzanSoundUriChange = viewModel::updateAzanSoundUri,
+                        )
+                    }
+
+                    // Enhanced Iqamah Sound Settings
+                    section(MobileSettingsSection.ALERTS, "iqamah-sound") {
+                        IqamahSoundSettings(
+                            iqamahSoundEnabled = settings.iqamahSoundEnabled,
+                            iqamahSoundType = settings.iqamahSoundType,
+                            iqamahSoundUri = settings.iqamahSoundUri,
+                            onIqamahSoundEnabledChange = viewModel::updateIqamahSoundEnabled,
+                            onIqamahSoundTypeChange = viewModel::updateIqamahSoundType,
+                            onIqamahSoundUriChange = viewModel::updateIqamahSoundUri,
+                        )
+                    }
+
+                    section(MobileSettingsSection.ALERTS, "ishraq") {
+                        IshraqCountdownSettings(settings, viewModel)
+                    }
+
+                    section(MobileSettingsSection.ALERTS, "countdown") {
+                        FullScreenCountdownSettings(
+                            fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
+                            onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
+                        )
+                    }
+
+                    section(MobileSettingsSection.APP, "data") {
+                        DataManagementSettings(
                             viewModel = viewModel,
                         )
                     }
-                }
 
-                if (settings.prayerServiceType == PrayerServiceType.MANUAL) {
-                    item {
-                        ManualPrayerTimesSettings(
-                            settings = settings,
-                            onUpdateManualTime = viewModel::updateManualTime,
+                    section(MobileSettingsSection.APP, "permissions") {
+                        PermissionsStatus()
+                    }
+
+                    section(MobileSettingsSection.APP, "about") {
+                        AboutSettings(
+                            autoUpdateCheckEnabled = settings.autoUpdateCheckEnabled,
+                            onAutoUpdateCheckEnabledChange = viewModel::updateAutoUpdateCheckEnabled,
                         )
                     }
-                }
-
-                // Place Iqamah Gaps and Prayer Time setup right after Prayer Service
-                item {
-                    IqamahGapSettings(
-                        settings = settings,
-                        onUpdateIqamahGap = viewModel::updateIqamahGap,
-                    )
-                }
-
-                item {
-                    JummaNightBayanSettings(
-                        jummaNightBayanEnabled = settings.jummaNightBayanEnabled,
-                        jummaNightBayanMinutes = settings.jummaNightBayanMinutes,
-                        onJummaNightBayanEnabledChange = viewModel::updateJummaNightBayanEnabled,
-                        onJummaNightBayanMinutesChange = viewModel::updateJummaNightBayanMinutes,
-                    )
-                }
-
-                item {
-                    PrayerDisplaySettings(
-                        jummahDurationMinutes = settings.jummahDurationMinutes,
-                        duaDisplayDurationMinutes = settings.duaDisplayDurationMinutes,
-                        showJummahScreen = settings.showJummahScreen,
-                        onJummahDurationChange = viewModel::updateJummahDurationMinutes,
-                        onDuaDisplayDurationChange = viewModel::updateDuaDisplayDurationMinutes,
-                        onShowJummahScreenChange = viewModel::updateShowJummahScreen,
-                    )
-                }
-
-                item {
-                    WeatherSettings(
-                        showWeather = settings.showWeather,
-                        onToggleShowWeather = viewModel::updateShowWeather,
-                        weatherCity = settings.weatherCity,
-                        onWeatherCityChange = viewModel::updateWeatherCity,
-                        provider = settings.weatherProvider,
-                        onProviderChange = viewModel::updateWeatherProvider,
-                        weatherApiKey = settings.weatherApiKey,
-                        openWeatherMapApiKey = settings.openWeatherMapApiKey,
-                        onWeatherApiKeyChange = viewModel::updateWeatherApiKey,
-                        onOpenWeatherMapApiKeyChange = viewModel::updateOpenWeatherMapApiKey,
-                    )
-                }
-
-                // Hijri Date Settings
-                item {
-                    HijriDateSettings(
-                        hijriProvider = settings.hijriProvider,
-                        day = settings.manualHijriDay,
-                        month = settings.manualHijriMonth,
-                        year = settings.manualHijriYear,
-                        onHijriProviderChange = { viewModel.updateHijriProvider(it) },
-                        onManualChange = { d, m, y -> viewModel.updateHijriDate(d, m, y) },
-                    )
-                }
-
-                item {
-                    ClockTypeSetting(
-                        selectedClockType = settings.clockType,
-                        onClockTypeChange = viewModel::updateClockType,
-                    )
-                }
-
-                item {
-                    ClockFormatSettings(
-                        showSeconds = settings.showSeconds,
-                        show24Hour = settings.show24HourFormat,
-                        onShowSecondsChange = viewModel::updateShowSeconds,
-                        onShow24HourChange = viewModel::updateShow24HourFormat,
-                    )
-                }
-
-                item {
-                    ScreenFaceSettings(
-                        selectedFaceId = settings.screenFaceId,
-                        onFaceChange = viewModel::updateScreenFaceId,
-                    )
-                }
-
-                item {
-                    ColorThemeSettings(
-                        selectedThemeId = settings.colorTheme,
-                        onThemeChange = viewModel::updateColorTheme,
-                    )
-                }
-
-                if (!DeviceUtils.isTelevision(context)) {
-                    item {
-                        PrayerTimesNotificationSetting(
-                            enabled = settings.showPrayerTimesNotification,
-                            onEnabledChange = viewModel::updateShowPrayerTimesNotification,
-                        )
-                    }
-                }
-
-                // Enhanced Azan Sound Settings
-                item {
-                    AzanSoundSettings(
-                        azanSoundEnabled = settings.azanSoundEnabled,
-                        azanSoundType = settings.azanSoundType,
-                        azanSoundUri = settings.azanSoundUri,
-                        onAzanSoundEnabledChange = viewModel::updateAzanSoundEnabled,
-                        onAzanSoundTypeChange = viewModel::updateAzanSoundType,
-                        onAzanSoundUriChange = viewModel::updateAzanSoundUri,
-                    )
-                }
-
-                // Enhanced Iqamah Sound Settings
-                item {
-                    IqamahSoundSettings(
-                        iqamahSoundEnabled = settings.iqamahSoundEnabled,
-                        iqamahSoundType = settings.iqamahSoundType,
-                        iqamahSoundUri = settings.iqamahSoundUri,
-                        onIqamahSoundEnabledChange = viewModel::updateIqamahSoundEnabled,
-                        onIqamahSoundTypeChange = viewModel::updateIqamahSoundType,
-                        onIqamahSoundUriChange = viewModel::updateIqamahSoundUri,
-                    )
-                }
-
-                item {
-                    IshraqCountdownSettings(settings, viewModel)
-                }
-
-                item {
-                    FullScreenCountdownSettings(
-                        fullScreenCountdownEnabled = settings.fullScreenCountdownEnabled,
-                        onFullScreenCountdownEnabledChange = viewModel::updateFullScreenCountdownEnabled,
-                    )
-                }
-
-                item {
-                    DataManagementSettings(
-                        viewModel = viewModel,
-                    )
-                }
-
-                item {
-                    PermissionsStatus()
-                }
-
-                item {
-                    AboutSettings(
-                        autoUpdateCheckEnabled = settings.autoUpdateCheckEnabled,
-                        onAutoUpdateCheckEnabledChange = viewModel::updateAutoUpdateCheckEnabled,
-                    )
                 }
             }
         }
@@ -461,25 +510,29 @@ private fun LongPressIconButton(
 
 @Composable
 private fun SettingsHeader(onNavigateBack: () -> Unit) {
+    val isTv = DeviceUtils.isTelevision(LocalContext.current)
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Button(
+        if (isTv) Button(
             onClick = onNavigateBack,
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary,
                 ),
-        ) { Text(stringResource(R.string.back)) }
+        ) { Text(localizedStringResource(R.string.back)) }
+        else IconButton(onClick = onNavigateBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedStringResource(R.string.back), tint = MaterialTheme.colorScheme.onBackground)
+        }
 
         Spacer(modifier = Modifier.width(16.dp))
 
         Text(
-            text = stringResource(R.string.settings),
+            text = localizedStringResource(R.string.settings),
             style =
                 MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 32.sp,
+                    fontSize = if (isTv) 32.sp else 24.sp,
                     fontWeight = FontWeight.Bold,
                 ),
             color = MaterialTheme.colorScheme.primary,

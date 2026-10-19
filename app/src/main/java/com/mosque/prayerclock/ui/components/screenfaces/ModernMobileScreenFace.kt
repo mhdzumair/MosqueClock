@@ -2,6 +2,8 @@ package com.mosque.prayerclock.ui.components.screenfaces
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,6 +17,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mosque.prayerclock.R
 import com.mosque.prayerclock.data.model.PrayerInfo
+import com.mosque.prayerclock.data.model.ClockType
+import com.mosque.prayerclock.ui.components.AnalogClock
 import com.mosque.prayerclock.data.model.PrayerTimesWithIqamah
 import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.ui.components.NextPrayerSection
@@ -96,24 +106,41 @@ object HorizonMobileScreenFace : ScreenFace {
                     ),
                 ),
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                        .widthIn(max = 600.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = data.settings.mosqueName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = callbacks.onOpenSettings) {
+                            Icon(Icons.Default.Settings, contentDescription = localizedStringResource(R.string.settings), tint = MaterialTheme.colorScheme.onBackground)
+                        }
+                    }
                     // Compact time + date strip (no cards, clean text-only)
+                    if (data.settings.clockType == ClockType.ANALOG || data.settings.clockType == ClockType.BOTH) {
+                        AnalogClock(data = data.clock, modifier = Modifier.fillMaxWidth().height(240.dp))
+                    }
                     ModernTimeStrip(
                         clock = data.clock,
-                        modifier = Modifier.fillMaxWidth().weight(1.2f),
+                        modifier = Modifier.fillMaxWidth().height(144.dp),
                         onTap = callbacks.onOpenSettings,
                     )
 
                     // Next prayer countdown hero
                     when (val state = data.mainState) {
                         is MainUiState.Loading -> Box(
-                            modifier = Modifier.fillMaxWidth().weight(2f),
+                            modifier = Modifier.fillMaxWidth().height(200.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(
@@ -126,14 +153,14 @@ object HorizonMobileScreenFace : ScreenFace {
                             nextPrayer = state.nextPrayer,
                             nextDayFajr = state.nextDayFajr,
                             show24Hour = data.settings.show24HourFormat,
-                            modifier = Modifier.fillMaxWidth().weight(2f),
+                            modifier = Modifier.fillMaxWidth().height(200.dp),
                             onPrayerTransition = callbacks.onPrayerTransition,
                             showCountdown = data.isCountdownVisibleForWeight,
                             currentTime = data.currentTime,
                             isCurrentPrayer = data.isCurrentPrayerGlobal,
                         )
                         is MainUiState.Error -> Box(
-                            modifier = Modifier.fillMaxWidth().weight(2f),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -152,16 +179,16 @@ object HorizonMobileScreenFace : ScreenFace {
                             nextPrayer = state.nextPrayer,
                             show24Hour = data.settings.show24HourFormat,
                             currentTime = data.currentTime,
-                            modifier = Modifier.fillMaxWidth().weight(3.5f),
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        else -> Spacer(modifier = Modifier.weight(3.5f))
+                        else -> Unit
                     }
 
                     // Weather strip
                     if (data.settings.showWeather) {
                         when (val ws = data.weatherState) {
                             is WeatherUiState.Loading -> Box(
-                                modifier = Modifier.fillMaxWidth().weight(1.5f),
+                                modifier = Modifier.fillMaxWidth().height(144.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(
@@ -171,9 +198,9 @@ object HorizonMobileScreenFace : ScreenFace {
                             }
                             is WeatherUiState.Success -> WeatherCard(
                                 weatherInfo = ws.weatherInfo,
-                                modifier = Modifier.fillMaxWidth().weight(1.5f),
+                                modifier = Modifier.fillMaxWidth().height(144.dp),
                             )
-                            is WeatherUiState.Error -> Spacer(modifier = Modifier.weight(1.5f))
+                            is WeatherUiState.Error -> Unit
                         }
                     }
                 }
@@ -274,15 +301,20 @@ private fun ModernPrayerList(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .fillMaxWidth()
+                .padding(12.dp),
         ) {
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                Text(localizedStringResource(R.string.prayer), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(localizedStringResource(R.string.azan), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(localizedStringResource(R.string.iqamah), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             prayers.forEachIndexed { index, prayer ->
                 ModernPrayerRow(
                     prayer = prayer,
                     isNext = prayer.type == nextPrayer,
                     show24Hour = show24Hour,
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                 )
                 if (index < prayers.size - 1) {
                     HorizontalDivider(
@@ -315,78 +347,30 @@ private fun ModernPrayerRow(
                 color = if (isNext) prayerColor.copy(alpha = 0.09f) else Color.Transparent,
                 shape = RoundedCornerShape(8.dp),
             )
-            .padding(end = 10.dp, top = 2.dp, bottom = 2.dp),
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Left accent bar (4 dp wide, full row height, shown only for next prayer)
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .fillMaxHeight()
-                .padding(vertical = 5.dp)
-                .clip(RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp))
-                .background(if (isNext) prayerColor else Color.Transparent),
+        Text(
+            text = prayer.name,
+            modifier = Modifier.weight(1.2f).padding(horizontal = 4.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Prayer name — left-aligned, adaptive font size
-        BoxWithConstraints(modifier = Modifier.weight(1f)) {
-            val density = LocalDensity.current
-            val heightPx = with(density) { maxHeight.toPx() }
-            val fontSize = with(density) {
-                val raw = if (heightPx.isInfinite() || heightPx == 0f) 15f
-                          else (heightPx * 0.38f).toSp().value
-                raw.coerceIn(11f, 18f).sp
-            }
-            Text(
-                text = prayer.name,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = fontSize,
-                    fontWeight = if (isNext) FontWeight.Bold else FontWeight.SemiBold,
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
-
-        // Azan time — main, colored
-        BoxWithConstraints {
-            val density = LocalDensity.current
-            val heightPx = with(density) { maxHeight.toPx() }
-            val fontSize = with(density) {
-                val raw = if (heightPx.isInfinite() || heightPx == 0f) 16f
-                          else (heightPx * 0.38f).toSp().value
-                raw.coerceIn(12f, 19f).sp
-            }
-            Text(
-                text = TimeUtils.formatTimeBasedOnPreference(prayer.azanTime, show24Hour),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = fontSize,
-                    fontWeight = FontWeight.Bold,
-                ),
-                color = prayerColor,
-                maxLines = 1,
-            )
-        }
-
-        // Iqamah time — shown statically to the right (the key visual difference vs. classic faces)
-        if (prayer.iqamahTime != null) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = localizedStringResource(R.string.iqamah_letter),
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                )
-                Text(
-                    text = TimeUtils.formatTimeBasedOnPreference(prayer.iqamahTime, show24Hour),
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
-                    maxLines = 1,
-                )
-            }
-        }
+        Text(
+            text = TimeUtils.formatTimeBasedOnPreference(prayer.azanTime, show24Hour),
+            modifier = Modifier.weight(1f).padding(start = 4.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = prayerColor,
+            textAlign = TextAlign.End,
+        )
+        Text(
+            text = prayer.iqamahTime?.let { TimeUtils.formatTimeBasedOnPreference(it, show24Hour) } ?: "—",
+            modifier = Modifier.weight(1f).padding(start = 4.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+        )
     }
 }

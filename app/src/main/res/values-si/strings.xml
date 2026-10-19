@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="settings_section_prayers">නැමදුම්</string>
+    <string name="settings_section_display">දර්ශනය</string>
+    <string name="settings_section_alerts">සිහිකැඳවීම්</string>
+    <string name="settings_section_app">යෙදුම</string>
     <string name="app_name">පල්ලියේ යාඥා ඔරලෝසුව</string>
 
     <!-- Prayer Names -->
