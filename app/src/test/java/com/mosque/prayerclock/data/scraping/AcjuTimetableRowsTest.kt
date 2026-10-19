@@ -5,6 +5,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AcjuTimetableRowsTest {
+    @Test(expected = PdfParsingException::class)
+    fun `September timetable returned by October link is rejected`() {
+        AcjuTimetableRows.parse("19-Sep 4:40 AM 5:57 AM 11:57 AM 3:17 PM 5:55 PM 7:05 PM", 2026, expectedMonth = 10)
+    }
+
+    @Test
+    fun `requested October timetable passes month validation`() {
+        val text = javaClass.getResource("/acju/colombo-october-2026.txt")!!.readText()
+        assertEquals(31, AcjuTimetableRows.parse(text, 2026, expectedMonth = 10).size)
+    }
+
     @Test
     fun `Colombo October PDF retains Shafi Asr and reads both evening columns`() {
         // iText extraction from https://www.acju.lk/wp-content/uploads/2026/10/01.-Colombo-10.pdf

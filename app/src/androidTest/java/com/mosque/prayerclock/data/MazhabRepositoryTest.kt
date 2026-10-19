@@ -10,7 +10,6 @@ import com.mosque.prayerclock.data.database.AppDatabase
 import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerTimes
-import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.AlAdhanResponse
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.PrayerTimesApi
@@ -43,6 +42,71 @@ import retrofit2.Response
 
 @RunWith(AndroidJUnit4::class)
 class MazhabRepositoryTest {
+    @Test
+    fun acjuFailureDoesNotContactAnotherProvider() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        val settingsFile = File(context.cacheDir, "acju-failure-${System.nanoTime()}.preferences_pb")
+        val job = Job()
+        val requests = mutableListOf<String>()
+        try {
+            val settings = SettingsRepository(
+                PreferenceDataStoreFactory.create(scope = CoroutineScope(Dispatchers.IO + job)) { settingsFile },
+                Provider<PrayerTimesCacheInvalidator> { error("Unexpected invalidation") },
+            )
+            val client = OkHttpClient.Builder().addInterceptor {
+                requests.add(it.request().url.toString())
+                throw java.io.IOException("ACJU unavailable")
+            }.build()
+            val direct = DirectScrapingService(ACJUScraper(client), PdfParser(), HijriDateScraper(client, Gson()), database.prayerTimesDao())
+            val repository = PrayerTimesRepository(noNetwork<PrayerTimesApi>(), direct, database.prayerTimesDao(), settings)
+            val today = repository.getTodayPrayerTimesByDirectScraping(12).last()
+            val tomorrow = repository.getTomorrowPrayerTimesByDirectScraping(12).last()
+            assertTrue(today is NetworkResult.Error)
+            assertTrue(tomorrow is NetworkResult.Error)
+            assertEquals(2, requests.size)
+            assertTrue(requests.all { it == "https://www.acju.lk/prayer-times/" })
+            assertEquals(0, database.prayerTimesDao().getAllPrayerTimesCount())
+        } finally {
+            job.cancelAndJoin()
+            database.close()
+            settingsFile.delete()
+        }
+    }
+
+    @Test
+    fun newlyDownloadedOlderYearTimetableWorksOnFirstFetch() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val months = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+        val month = months[today.monthNumber - 1]
+        val pdfBytes = java.io.ByteArrayOutputStream().also { output ->
+            val document = com.itextpdf.text.Document()
+            com.itextpdf.text.pdf.PdfWriter.getInstance(document, output)
+            document.open()
+            document.add(com.itextpdf.text.Paragraph("Zone: 1 ${today.year - 1}"))
+            document.add(com.itextpdf.text.Paragraph("${today.dayOfMonth}-${month.take(3)} 4:40 AM 5:57 AM 11:57 AM 3:17 PM 4:15 PM 5:56 PM 7:05 PM"))
+            document.close()
+        }.toByteArray()
+        val html = """<details><div class="e-n-accordion-item-title-text">COLOMBO DISTRICT, GAMPAHA DISTRICT, KALUTARA DISTRICT</div><div><strong>$month</strong><a href="https://www.acju.lk/timetable.pdf">Download</a></div></details>"""
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val pdf = chain.request().url.encodedPath.endsWith(".pdf")
+            okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
+                .body(if (pdf) okhttp3.ResponseBody.create(null, pdfBytes) else okhttp3.ResponseBody.create(null, html)).build()
+        }.build()
+        try {
+            val direct = DirectScrapingService(ACJUScraper(client), PdfParser(), HijriDateScraper(client, Gson()), database.prayerTimesDao())
+            val result = direct.getTodayPrayerTimes(1)
+            assertEquals(today.toString(), result?.date)
+            assertEquals("15:17", result?.asrAzan)
+            assertEquals("16:15", result?.asrHanafiAzan)
+            assertEquals(today.toString(), database.prayerTimesDao().getPrayerTimesById("${today.toString().substring(5)}_ACJU_DIRECT:1")?.date)
+        } finally {
+            database.close()
+        }
+    }
+
     @Test
     fun existingDatabasesUpgradeWithoutLosingOtherProvidersOrHijriDates() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -114,7 +178,7 @@ class MazhabRepositoryTest {
                     "meta":{"latitude":6.9,"longitude":79.8}}}
                 """.trimIndent(), AlAdhanResponse::class.java))
             } as PrayerTimesApi
-            val repo = PrayerTimesRepository(api, noNetwork<MosqueClockApi>(), direct, database.prayerTimesDao(), settings)
+            val repo = PrayerTimesRepository(api, direct, database.prayerTimesDao(), settings)
             repository = repo
             settings.updatePrayerServiceType(PrayerServiceType.ACJU_DIRECT)
             val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date

@@ -62,9 +62,8 @@ to receive this fix. Live device checks are opt-in:
 
 ### 🕌 Prayer Times Display
 - **Multiple Prayer Time Sources**: 
-  - **Direct ACJU Scraping**: Real-time web scraping from ACJU.lk with PDF parsing
-  - **MosqueClock Backend API**: Custom backend with 13 Sri Lankan zones
-  - **PrayerTimes.co.uk API**: UK-based international prayer times service
+  - **ACJU**: Published Sri Lankan timetables with Shafi and Hanafi Asr times
+  - **Al-Adhan**: International prayer times with configurable mazhab
   - **Manual Entry**: Custom prayer times with configurable Iqamah gaps
 - **Web Scraping Technology**:
   - **PDF Parser**: iTextPDF integration for extracting prayer times from PDF documents
@@ -89,7 +88,6 @@ to receive this fix. Live device checks are opt-in:
 - **Multiple Weather Providers**:
   - **WeatherAPI.com**: Primary weather service with comprehensive data
   - **OpenWeatherMap**: Secondary provider for redundancy
-  - **MosqueClock Backend Weather**: Custom weather aggregation service
 - **Real-time Weather Data**: 
   - Temperature (Celsius/Fahrenheit)
   - Weather conditions with icons
@@ -159,7 +157,7 @@ to receive this fix. Live device checks are opt-in:
 ### 🚀 Performance Optimizations
 
 #### Intelligent Caching System
-- **Prayer Times Caching**: Provider-specific caching (MANUAL, ACJU_SCRAPING, PRAYERTIMES_UK, MOSQUE_CLOCK_API)
+- **Prayer Times Caching**: Separate caches for ACJU, Al-Adhan, and manual prayer times
 - **Web Scraping Cache**: Stores scraped PDF data to minimize repeated downloads
 - **Hijri Date Caching**: Smart database caching with calculation fallbacks
 - **Repository-level Cache**: In-memory caching for instant access
@@ -221,7 +219,6 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 4. Enter your API keys:
    - WeatherAPI.com: Get free key from https://www.weatherapi.com/
    - OpenWeatherMap: Get free key from https://openweathermap.org/api
-   - Backend URL & API Key: Configure if using MosqueClock backend
 
 ### Build Instructions
 
@@ -532,32 +529,14 @@ chmod +x setup_mosque_tv.sh
 ./mosque_tv_setup.sh
 ```
 
-### Backend Setup (Optional - Not needed since we are using ACJU direct scraping)
-
-The app includes a custom FastAPI backend for enhanced features:
-
-1. **Start Backend Services**
-   ```bash
-   cd backend
-   docker run -d -p 27017:27017 --name mongodb-prayer-times mongo:latest
-   uv sync
-   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-2. **Backend Features**
-   - Prayer times for 13 Sri Lankan zones
-   - Hijri calendar conversion
-   - Weather data integration
-   - Automatic ACJU data scraping
-
 ## ⚙️ Configuration
 
 ### Prayer Time Sources
 
-#### 1. MosqueClock API (Recommended)
-- **Zones**: 13 Sri Lankan zones with ACJU data
-- **Features**: Automatic scraping, MongoDB caching, apartment adjustments
-- **Endpoint**: `http://localhost:8000/api/v1/`
+#### 1. ACJU
+- **Zones**: 13 Sri Lankan prayer zones
+- **Timetables**: Downloads are selected by month heading or explicit filename month, then validated against the PDF's dates.
+- **Offline support**: Published timetables are cached locally. Failed downloads show an error and keep the clock and Settings accessible; there is no backend fallback.
 
 #### 2. Al-Adhan API
 - **Coverage**: International prayer times
@@ -572,7 +551,6 @@ The app includes a custom FastAPI backend for enhanced features:
 ### Weather Configuration
 - **WeatherAPI.com**: Primary provider, configure API key in Settings
 - **OpenWeatherMap**: Secondary provider, configure API key in Settings
-- **MosqueClock Weather**: Uses custom backend weather service
 - **City Coordinates**: Automatic mapping for Sri Lankan cities
 
 ### Default Settings
@@ -599,8 +577,8 @@ The app includes a custom FastAPI backend for enhanced features:
 - **Next Prayer**: Highlighted with countdown
 
 ### Settings Screen
-- **Prayer Service**: Choose between ACJU Direct, MosqueClock API, Al-Adhan API, or Manual
-- **Mazhab (Asr time)**: Choose Shafi (default) or Hanafi under Prayer Service when using ACJU Direct or Al-Adhan. The selection applies to Asr azan, iqamah, next-prayer calculations, and alerts. ACJU caches both published Asr times for switching offline; older timetables without a Hanafi column show an unavailable-time message when Hanafi is selected. Manual and MosqueClock API times remain controlled by their configured source.
+- **Prayer Service**: Choose ACJU, Al-Adhan, or Manual. Existing backend selections migrate to ACJU while retaining the zone and mazhab.
+- **Mazhab (Asr time)**: Choose Shafi (default) or Hanafi for ACJU or Al-Adhan. The selection applies to Asr azan, iqamah, next-prayer calculations, and alerts. ACJU caches both published Asr times for switching offline; older timetables without a Hanafi column show an unavailable-time message when Hanafi is selected. Manual times remain controlled by the user.
 - **Location**: Configure zones (MosqueClock) or regions (Al-Adhan)
 - **Manual Times**: Set custom prayer and Iqamah times
 - **Weather**: Enable/disable weather with provider selection
@@ -629,12 +607,6 @@ The app includes a custom FastAPI backend for enhanced features:
 - **Provider Context**: Separate caches per prayer time source
 
 ## 🌐 API Integration
-
-### MosqueClock Backend API
-- **Prayer Times**: `/api/v1/prayer-times/{zone}/`
-- **Today's Times**: `/api/v1/today/?zone={zone}`
-- **Hijri Calendar**: `/api/v1/today-both-calendars/`
-- **Weather**: `/api/v1/weather/current/city/{city}/`
 
 ### Al-Adhan API
 - **Prayer Times**: `/v1/timingsByCity`

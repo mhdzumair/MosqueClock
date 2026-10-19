@@ -1,6 +1,11 @@
 package com.mosque.prayerclock.data.repository
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.HijriProvider
 import com.mosque.prayerclock.data.cache.PrayerTimesCacheInvalidator
 import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
@@ -16,6 +21,33 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsRepositoryTest {
+    @Test
+    fun `legacy backend providers become ACJU while preserving zone and mazhab`() = runBlocking {
+        val directory = Files.createTempDirectory("legacy-backend").toFile()
+        val job = Job()
+        try {
+            val store = PreferenceDataStoreFactory.create(scope = CoroutineScope(Dispatchers.IO + job)) {
+                directory.resolve("settings.preferences_pb")
+            }
+            store.edit {
+                it[stringPreferencesKey("prayer_service_type")] = "MOSQUE_CLOCK_API"
+                it[stringPreferencesKey("hijri_provider")] = "MOSQUE_CLOCK_API"
+                it[intPreferencesKey("selected_zone")] = 12
+                it[stringPreferencesKey("mazhab")] = "HANAFI"
+            }
+            val repository = SettingsRepository(store, Provider<PrayerTimesCacheInvalidator> { error("Unexpected invalidation") })
+            val settings = repository.getSettings().first()
+            assertEquals(PrayerServiceType.ACJU_DIRECT, settings.prayerServiceType)
+            assertEquals(HijriProvider.ACJU_DIRECT, settings.hijriProvider)
+            assertEquals(12, settings.selectedZone)
+            assertEquals(Mazhab.HANAFI, settings.mazhab)
+            assertEquals(listOf("ACJU", "Al-Adhan", "Manual"), PrayerServiceType.entries.map { it.displayName })
+        } finally {
+            job.cancelAndJoin()
+            directory.deleteRecursively()
+        }
+    }
+
     @Test
     fun `mazhab defaults to Shafi persists both choices and invalidates prayer cache`() = runBlocking {
         val directory = Files.createTempDirectory("clock-mazhab").toFile()

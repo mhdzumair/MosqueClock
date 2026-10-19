@@ -6,13 +6,16 @@ internal object AcjuTimetableRows {
     private val datePattern = Regex("""\b(?:(\d{1,2})-([A-Za-z]{3})|([A-Za-z]{3})-(\d{1,2}))\b""")
     private val timePattern = Regex("""(?<![\d:])(\d{1,2}):([0-5]\d)\s*(AM|PM)?\b""", RegexOption.IGNORE_CASE)
 
-    fun parse(text: String, year: Int): List<DailyPrayerTime> {
+    fun parse(text: String, year: Int, expectedMonth: Int? = null): List<DailyPrayerTime> {
         val dates = datePattern.findAll(text).toList()
         return dates.mapIndexedNotNull { index, date ->
             val day = (date.groupValues[1].ifEmpty { date.groupValues[4] }).toInt()
             val month = date.groupValues[2].ifEmpty { date.groupValues[3] }
             val monthNumber = months.indexOfFirst { it.equals(month, ignoreCase = true) } + 1
             if (monthNumber == 0) return@mapIndexedNotNull null
+            if (expectedMonth != null && monthNumber != expectedMonth) {
+                throw PdfParsingException("Requested month $expectedMonth, but ACJU timetable contains month $monthNumber")
+            }
 
             // Stop at the next date so an incomplete row cannot consume tomorrow's times.
             val row = text.substring(date.range.last + 1, dates.getOrNull(index + 1)?.range?.first ?: text.length)

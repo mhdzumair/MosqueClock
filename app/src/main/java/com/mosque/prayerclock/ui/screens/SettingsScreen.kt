@@ -237,17 +237,13 @@ fun SettingsScreen(
                             selectedMazhab = settings.mazhab,
                             onMazhabChange = viewModel::updateMazhab,
                             selectedRegion = settings.selectedRegion,
-                            backendUrl = settings.mosqueClockBackendUrl,
-                            backendApiKey = settings.mosqueClockBackendApiKey,
                             onServiceTypeChange = viewModel::updatePrayerServiceType,
                             onZoneChange = viewModel::updateSelectedZone,
                             onRegionChange = viewModel::updateSelectedRegion,
-                            onBackendUrlChange = viewModel::updateMosqueClockBackendUrl,
-                            onBackendApiKeyChange = viewModel::updateMosqueClockBackendApiKey,
                         )
                     }
 
-                    // Show offline data download for ACJU Direct scraping
+                    // Show offline data download for ACJU scraping
                     if (settings.prayerServiceType == PrayerServiceType.ACJU_DIRECT) {
                         section(MobileSettingsSection.PRAYERS, "offline") {
                             OfflineDataSettings(
@@ -615,13 +611,9 @@ private fun PrayerServiceSettings(
     selectedMazhab: Mazhab,
     onMazhabChange: (Mazhab) -> Unit,
     selectedRegion: String,
-    backendUrl: String,
-    backendApiKey: String,
     onServiceTypeChange: (PrayerServiceType) -> Unit,
     onZoneChange: (Int) -> Unit,
     onRegionChange: (String) -> Unit,
-    onBackendUrlChange: (String) -> Unit,
-    onBackendApiKeyChange: (String) -> Unit,
 ) {
     SettingsCard {
         Column {
@@ -642,7 +634,7 @@ private fun PrayerServiceSettings(
             }
 
             Text(
-                text = "Choose between our backend or third-party service for prayer times",
+                text = "Choose ACJU, Al-Adhan, or manual prayer times",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -661,7 +653,6 @@ private fun PrayerServiceSettings(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Backend configuration for MosqueClock API
             if (selectedServiceType == PrayerServiceType.ACJU_DIRECT || selectedServiceType == PrayerServiceType.AL_ADHAN_API) {
                 Text(
                     text = stringResource(R.string.mazhab_asr_label),
@@ -683,61 +674,9 @@ private fun PrayerServiceSettings(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API) {
-                Text(
-                    text = "Backend Configuration",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = stringResource(R.string.backend_url_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "Example: http://192.168.1.100:8000/ or https://api.yourdomain.com/",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                ImprovedTextField(
-                    value = backendUrl,
-                    onValueChange = onBackendUrlChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = stringResource(R.string.backend_url_hint),
-                    keyboardType = KeyboardType.Uri,
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = stringResource(R.string.backend_api_key_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "Your backend authentication key",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                ImprovedTextField(
-                    value = backendApiKey,
-                    onValueChange = onBackendApiKeyChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = stringResource(R.string.backend_api_key_hint),
-                    keyboardType = KeyboardType.Text,
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // Zone selection for MosqueClock backend and ACJU Direct (both use Sri Lankan zones)
-            if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API ||
-                selectedServiceType == PrayerServiceType.ACJU_DIRECT
-            ) {
+            // ACJU uses the published Sri Lankan prayer zones.
+            if (selectedServiceType == PrayerServiceType.ACJU_DIRECT) {
                 ZoneSelection(
                     selectedZone = selectedZone,
                     onZoneChange = onZoneChange,

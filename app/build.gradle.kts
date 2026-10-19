@@ -23,12 +23,10 @@ android {
         // Generate universal APKs for all screen densities and ABIs
         vectorDrawables.useSupportLibrary = true
 
-        // API keys and backend configuration are now managed via in-app settings
+        // Weather API keys are managed via in-app settings.
         // No build-time configuration required - configure everything in Settings screen!
         buildConfigField("String", "WEATHER_API_KEY", "\"\"")
         buildConfigField("String", "OPENWEATHERMAP_API_KEY", "\"\"")
-        buildConfigField("String", "MOSQUE_CLOCK_API_URL", "\"http://10.0.2.2:8000/\"")
-        buildConfigField("String", "MOSQUE_CLOCK_API_KEY", "\"\"")
     }
 
     signingConfigs {

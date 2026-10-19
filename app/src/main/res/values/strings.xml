@@ -249,15 +249,11 @@
     
     <!-- API Configuration -->
     <string name="api_configuration" translatable="false">API Configuration</string>
-    <string name="api_configuration_description" translatable="false">Configure API keys and backend URL for services</string>
+    <string name="api_configuration_description" translatable="false">Configure weather API keys</string>
     <string name="weather_api_key_label" translatable="false">WeatherAPI.com Key</string>
     <string name="weather_api_key_hint" translatable="false">Enter WeatherAPI.com API key</string>
     <string name="openweathermap_api_key_label" translatable="false">OpenWeatherMap Key</string>
     <string name="openweathermap_api_key_hint" translatable="false">Enter OpenWeatherMap API key</string>
-    <string name="backend_url_label" translatable="false">Backend URL</string>
-    <string name="backend_url_hint" translatable="false">http://10.0.2.2:8000/</string>
-    <string name="backend_api_key_label" translatable="false">Backend API Key</string>
-    <string name="backend_api_key_hint" translatable="false">Enter backend API key</string>
     
     <!-- Color Theme -->
     <string name="color_theme_title">Color Theme</string>

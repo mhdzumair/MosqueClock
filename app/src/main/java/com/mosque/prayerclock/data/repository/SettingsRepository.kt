@@ -81,8 +81,6 @@ class SettingsRepository
             val SCREEN_FACE_ID = stringPreferencesKey("screen_face_id")
             val WEATHER_API_KEY = stringPreferencesKey("weather_api_key")
             val OPENWEATHERMAP_API_KEY = stringPreferencesKey("openweathermap_api_key")
-            val MOSQUE_CLOCK_BACKEND_URL = stringPreferencesKey("mosque_clock_backend_url")
-            val MOSQUE_CLOCK_BACKEND_API_KEY = stringPreferencesKey("mosque_clock_backend_api_key")
             val JUMMAH_DURATION_MINUTES = intPreferencesKey("jummah_duration_minutes")
             val DUA_DISPLAY_DURATION_MINUTES = intPreferencesKey("dua_display_duration_minutes")
             val SHOW_JUMMAH_SCREEN = booleanPreferencesKey("show_jummah_screen")
@@ -164,7 +162,8 @@ class SettingsRepository
                         }
                             ?: WeatherProvider.WEATHER_API,
                     hijriProvider =
-                        HijriProvider.values().find {
+                        if (preferences[PreferencesKeys.HIJRI_PROVIDER] == "MOSQUE_CLOCK_API") HijriProvider.ACJU_DIRECT
+                        else HijriProvider.values().find {
                             it.name == preferences[PreferencesKeys.HIJRI_PROVIDER]
                         }
                             ?: HijriProvider.MANUAL,
@@ -175,7 +174,8 @@ class SettingsRepository
                         preferences[PreferencesKeys.LAST_UPDATED_GREGORIAN_DATE]
                             ?: "2025-08-01",
                     prayerServiceType =
-                        PrayerServiceType.values().find {
+                        if (preferences[PreferencesKeys.PRAYER_SERVICE_TYPE] == "MOSQUE_CLOCK_API") PrayerServiceType.ACJU_DIRECT
+                        else PrayerServiceType.values().find {
                             it.name == preferences[PreferencesKeys.PRAYER_SERVICE_TYPE]
                         }
                             ?: PrayerServiceType.MANUAL,
@@ -189,8 +189,6 @@ class SettingsRepository
                     fullScreenCountdownEnabled = preferences[PreferencesKeys.FULL_SCREEN_COUNTDOWN_ENABLED] ?: true,
                     weatherApiKey = preferences[PreferencesKeys.WEATHER_API_KEY] ?: "",
                     openWeatherMapApiKey = preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] ?: "",
-                    mosqueClockBackendUrl = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_URL] ?: "",
-                    mosqueClockBackendApiKey = preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] ?: "",
                     jummahDurationMinutes = preferences[PreferencesKeys.JUMMAH_DURATION_MINUTES] ?: 60,
                     duaDisplayDurationMinutes = preferences[PreferencesKeys.DUA_DISPLAY_DURATION_MINUTES] ?: 5,
                     showJummahScreen = preferences[PreferencesKeys.SHOW_JUMMAH_SCREEN] ?: true,
@@ -403,13 +401,7 @@ class SettingsRepository
             dataStore.edit { preferences -> preferences[PreferencesKeys.OPENWEATHERMAP_API_KEY] = apiKey }
         }
 
-        suspend fun updateMosqueClockBackendUrl(url: String) {
-            dataStore.edit { preferences -> preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_URL] = url }
-        }
 
-        suspend fun updateMosqueClockBackendApiKey(apiKey: String) {
-            dataStore.edit { preferences -> preferences[PreferencesKeys.MOSQUE_CLOCK_BACKEND_API_KEY] = apiKey }
-        }
 
         suspend fun updateJummahDurationMinutes(minutes: Int) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.JUMMAH_DURATION_MINUTES] = minutes }

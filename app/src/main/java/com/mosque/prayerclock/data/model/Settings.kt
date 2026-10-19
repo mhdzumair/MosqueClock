@@ -36,7 +36,7 @@ data class AppSettings(
     val manualHijriYear: Int = 1447,
     val lastUpdatedGregorianDate: String = "2025-08-01", // Track when Hijri date was last set
     val prayerServiceType: PrayerServiceType = PrayerServiceType.ACJU_DIRECT,
-    val selectedZone: Int = 1, // For MosqueClock backend zones
+    val selectedZone: Int = 1, // ACJU's Sri Lankan prayer zones
     val mazhab: Mazhab = Mazhab.SHAFI,
     val selectedRegion: String = "Colombo", // For third-party prayer time services
     val soundEnabled: Boolean = true, // Enable/disable beep countdown sound (master toggle)
@@ -47,8 +47,6 @@ data class AppSettings(
     val ishraqMinutesAfterSunrise: Int = 20,
     val weatherApiKey: String = "", // WeatherAPI.com API key
     val openWeatherMapApiKey: String = "", // OpenWeatherMap API key
-    val mosqueClockBackendUrl: String = "", // MosqueClock backend URL
-    val mosqueClockBackendApiKey: String = "", // MosqueClock backend API key
     // Duration for Jummah (Friday) prayer in minutes (default: 60 minutes = 1 hour)
     val jummahDurationMinutes: Int = 60,
     // Duration to display Dua for Joining Saff after Iqamah in minutes (default: 5 minutes)
@@ -89,9 +87,8 @@ enum class WeatherProvider(
 enum class HijriProvider(
     val displayName: String,
 ) {
-    ACJU_DIRECT("ACJU Direct Scraping"),
-    MOSQUE_CLOCK_API("MosqueClock API"),
-    AL_ADHAN_API("Al-Adhan API"),
+    ACJU_DIRECT("ACJU"),
+    AL_ADHAN_API("Al-Adhan"),
     MANUAL("Manual Entry"),
 }
 
@@ -124,10 +121,9 @@ enum class Mazhab(val displayName: String, val alAdhanSchool: Int) {
 enum class PrayerServiceType(
     val displayName: String,
 ) {
-    ACJU_DIRECT("ACJU Direct Scraping"),
-    MOSQUE_CLOCK_API("MosqueClock API"),
-    AL_ADHAN_API("Al-Adhan API"),
-    MANUAL("Manual Prayer Times"),
+    ACJU_DIRECT("ACJU"),
+    AL_ADHAN_API("Al-Adhan"),
+    MANUAL("Manual"),
 }
 
 enum class SoundType(
@@ -192,7 +188,7 @@ object CityCoordinatesMap {
     fun getCoordinates(cityName: String): CityCoordinates? = cityCoordinates[cityName]
 }
 
-// Predefined zones for MosqueClock backend (all 13 Sri Lankan zones as per ACJU)
+// All 13 Sri Lankan prayer zones published by ACJU.
 object PrayerZones {
     val zones =
         listOf(

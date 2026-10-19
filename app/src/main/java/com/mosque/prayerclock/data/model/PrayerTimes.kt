@@ -12,7 +12,7 @@ data class PrayerTimes(
     @PrimaryKey
     val id: String, // Composite ID: "2025-09-27_AL_ADHAN_API:Colombo"
     val date: String,
-    val providerKey: String? = null, // "AL_ADHAN_API:Colombo", "MOSQUE_CLOCK_API:1", null for manual
+    val providerKey: String? = null, // "AL_ADHAN_API:Colombo:SHAFI", "ACJU_DIRECT:1", null for manual
     @SerializedName("fajr_azan")
     val fajrAzan: String,
     @SerializedName("dhuhr_azan")

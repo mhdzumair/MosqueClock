@@ -248,17 +248,7 @@ class SettingsViewModel
             }
         }
 
-        fun updateMosqueClockBackendUrl(url: String) {
-            viewModelScope.launch {
-                settingsRepository.updateMosqueClockBackendUrl(url)
-            }
-        }
 
-        fun updateMosqueClockBackendApiKey(apiKey: String) {
-            viewModelScope.launch {
-                settingsRepository.updateMosqueClockBackendApiKey(apiKey)
-            }
-        }
 
         fun updateJummahDurationMinutes(minutes: Int) {
             viewModelScope.launch {

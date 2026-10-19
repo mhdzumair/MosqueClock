@@ -11,7 +11,7 @@ data class HijriDateEntity(
     val hijriDay: Int,
     val hijriMonth: Int,
     val hijriYear: Int,
-    val provider: String, // "MOSQUE_CLOCK_API", "AL_ADHAN_API", "MANUAL", "ACJU_DIRECT"
+    val provider: String, // "AL_ADHAN_API", "MANUAL", "ACJU_DIRECT"
     val region: String? = null, // For AL_ADHAN_API, store the region used
     val createdAt: Long = System.currentTimeMillis(),
     val isCalculated: Boolean = false, // true if calculated from cached data, false if from API

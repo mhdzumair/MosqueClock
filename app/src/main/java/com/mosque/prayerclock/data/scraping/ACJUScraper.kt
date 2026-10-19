@@ -88,7 +88,7 @@ class ACJUScraper
                         return@withContext null
                     }
 
-                    val document = Jsoup.parse(html)
+                    val document = Jsoup.parse(html, ACJU_BASE_URL)
 
                     // Find the zone section
                     val zoneText = ZONE_MAPPINGS[zone]
@@ -124,18 +124,11 @@ class ACJUScraper
 
                     Log.d(TAG, "Found details parent, looking for PDF links...")
 
-                    // Find all PDF links within this details section
-                    val pdfLinks = detailsParent.select("a[href$=.pdf]")
-                    Log.d(TAG, "Found ${pdfLinks.size} PDF links")
-
-                    if (pdfLinks.size < month) {
-                        Log.e(TAG, "Not enough PDF links found. Expected at least $month, found ${pdfLinks.size}")
+                    val pdfUrl = AcjuPdfLinks.selectMonthPdf(detailsParent, month)
+                    if (pdfUrl == null) {
+                        Log.e(TAG, "No unambiguous PDF found for zone $zone, month $month")
                         return@withContext null
                     }
-
-                    // Get the PDF for the specified month (month-1 because list is 0-indexed)
-                    val pdfLink = pdfLinks[month - 1]
-                    val pdfUrl = pdfLink.attr("abs:href")
                     
                     // Extract year from PDF URL for logging purposes
                     // Note: Prayer times are year-agnostic (cyclical), so we accept PDFs from any year
@@ -234,7 +227,7 @@ class ACJUScraper
                     Log.d(TAG, "📝 Extracted ${text.length} characters from PDF")
 
                     Log.d(TAG, "🔍 Parsing prayer times from extracted text...")
-                    val parsedData = pdfParser.parsePrayerTimes(text)
+                    val parsedData = pdfParser.parsePrayerTimes(text, expectedMonth = month)
 
                     Log.d(TAG, "✅ Successfully scraped and parsed prayer times for zone $zone, month $month")
                     Log.d(TAG, "📊 Parsed ${parsedData.prayerTimes.size} daily prayer time entries")

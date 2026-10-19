@@ -5,7 +5,6 @@ import com.mosque.prayerclock.BuildConfig
 import com.mosque.prayerclock.data.model.CityCoordinatesMap
 import com.mosque.prayerclock.data.model.WeatherInfo
 import com.mosque.prayerclock.data.model.WeatherProvider
-import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.WeatherApi
 import com.mosque.prayerclock.data.network.toWeatherInfo
@@ -33,7 +32,6 @@ class WeatherRepository
     @Inject
     constructor(
         private val weatherApi: WeatherApi, // Primary weather provider (WeatherAPI.com)
-        private val mosqueClockApi: MosqueClockApi, // MosqueClock API (for backend fallback)
         private val openWeatherMapService: OpenWeatherMapService, // Secondary weather provider
         // For runtime API key
         private val settingsRepository: com.mosque.prayerclock.data.repository.SettingsRepository,
@@ -121,73 +119,6 @@ class WeatherRepository
                             else -> "Failed to fetch weather data: ${e.message}"
                         }
                     emit(NetworkResult.Error(errorMessage))
-                }
-            }
-
-        // New methods using MosqueClock API for accurate Sri Lankan weather
-
-        fun getCurrentWeatherByCity(cityName: String): Flow<NetworkResult<WeatherInfo>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    Log.d("WeatherRepository", "Fetching weather for city: $cityName")
-                    val response = mosqueClockApi.getCurrentWeatherByCity(cityName)
-                    if (response.isSuccessful && response.body() != null) {
-                        val weatherData = response.body()!!
-                        Log.d("WeatherRepository", "Raw weather data received: $weatherData")
-                        Log.d(
-                            "WeatherRepository",
-                            "Weather main: ${weatherData.weatherMain}, Description: ${weatherData.weatherDescription}, Icon: ${weatherData.weatherIcon}",
-                        )
-                        val weatherInfo = weatherData.toWeatherInfo()
-                        Log.d(
-                            "WeatherRepository",
-                            "Converted weather info - Icon: ${weatherInfo.icon}, Description: ${weatherInfo.description}",
-                        )
-                        emit(NetworkResult.Success(weatherInfo))
-                    } else {
-                        Log.e(
-                            "WeatherRepository",
-                            "API call failed with code: ${response.code()}, message: ${response.message()}",
-                        )
-                        emit(NetworkResult.Error("Failed to fetch weather data", response.code()))
-                    }
-                } catch (e: Exception) {
-                    Log.e("WeatherRepository", "Exception in getCurrentWeatherByCity: ${e.message}", e)
-                    val errorMessage =
-                        when {
-                            e.message?.contains("CertificateException") == true ||
-                                e.message?.contains("Trust anchor") == true ->
-                                "SSL Certificate error with MosqueClock API. Please switch to OpenWeather provider in settings."
-                            e.message?.contains("UnknownHostException") == true ->
-                                "Cannot connect to MosqueClock API. Please check your network or switch to OpenWeather provider."
-                            e.message?.contains("ConnectException") == true ->
-                                "MosqueClock API server is not running. Please switch to OpenWeather provider."
-                            else -> "Failed to fetch weather data from MosqueClock API: ${e.message}"
-                        }
-                    emit(NetworkResult.Error(errorMessage))
-                }
-            }
-
-        fun getCurrentWeatherByCoordinates(
-            latitude: Double,
-            longitude: Double,
-        ): Flow<NetworkResult<WeatherInfo>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    val response = mosqueClockApi.getCurrentWeatherByCoordinates(latitude, longitude)
-                    if (response.isSuccessful && response.body() != null) {
-                        val weatherData = response.body()!!
-                        val weatherInfo = weatherData.toWeatherInfo()
-                        emit(NetworkResult.Success(weatherInfo))
-                    } else {
-                        emit(NetworkResult.Error("Failed to fetch weather data", response.code()))
-                    }
-                } catch (e: Exception) {
-                    emit(NetworkResult.Error("Failed to fetch weather data: ${e.message}"))
                 }
             }
 

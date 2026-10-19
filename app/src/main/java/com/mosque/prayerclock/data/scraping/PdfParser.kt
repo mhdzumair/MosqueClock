@@ -55,7 +55,7 @@ class PdfParser
         /**
          * Parse prayer times from extracted PDF text
          */
-        fun parsePrayerTimes(text: String): PrayerTimesData {
+        fun parsePrayerTimes(text: String, expectedMonth: Int? = null): PrayerTimesData {
             try {
                 Log.d(TAG, "📋 Starting to parse prayer times from text (${text.length} chars)")
                 Log.d(TAG, "📋 First 500 chars of text: ${text.take(500)}")
@@ -65,7 +65,7 @@ class PdfParser
                 Log.d(TAG, "📋 Extracted metadata: Zone=${metadata.zone}, Month=${metadata.month}, Year=${metadata.year}")
 
                 // Extract prayer times data
-                val prayerTimes = extractPrayerTimes(text, metadata.year)
+                val prayerTimes = AcjuTimetableRows.parse(text, metadata.year, expectedMonth)
 
                 // Apartment adjustments (standard for all zones)
                 val apartmentAdjustments =
@@ -187,13 +187,6 @@ class PdfParser
                     ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
 
             return Pair(month, year)
-        }
-
-        private fun extractPrayerTimes(
-            text: String,
-            year: Int,
-        ): List<DailyPrayerTime> {
-            return AcjuTimetableRows.parse(text, year)
         }
 
         /**

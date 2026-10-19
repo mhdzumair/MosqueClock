@@ -8,12 +8,11 @@ import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerTimes
 import com.mosque.prayerclock.data.network.AlAdhanData
-import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.NetworkResult
 import com.mosque.prayerclock.data.network.PrayerTimesApi
-import com.mosque.prayerclock.data.network.toPrayerTimes
 import com.mosque.prayerclock.data.scraping.DirectScrapingService
 import com.mosque.prayerclock.utils.TimeUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
@@ -35,7 +34,6 @@ class PrayerTimesRepository
     @Inject
     constructor(
         private val api: PrayerTimesApi, // Keep for backward compatibility
-        private val mosqueClockApi: MosqueClockApi, // New MosqueClock API
         private val directScrapingService: DirectScrapingService, // Direct PDF scraping
         private val dao: PrayerTimesDao,
         private val settingsRepository: SettingsRepository,
@@ -49,7 +47,7 @@ class PrayerTimesRepository
 
         @Volatile private var cacheProviderKey: String? = null
 
-        // "MANUAL", "AL_ADHAN_API:Colombo", "MOSQUE_CLOCK_API:1", "DIRECT_SCRAPING:1"
+        // "MANUAL", "AL_ADHAN_API:Colombo:SHAFI", "ACJU_DIRECT:1"
         @Volatile private var isCurrentlyFetching: Boolean = false
 
         /**
@@ -81,7 +79,6 @@ class PrayerTimesRepository
                 PrayerServiceType.MANUAL -> "MANUAL"
                 PrayerServiceType.AL_ADHAN_API -> "AL_ADHAN_API:${settings.selectedRegion}:${settings.mazhab.name}"
                 PrayerServiceType.ACJU_DIRECT -> "ACJU_DIRECT:${settings.selectedZone}"
-                PrayerServiceType.MOSQUE_CLOCK_API -> "MOSQUE_CLOCK_API:${settings.selectedZone}"
             }
         }
 
@@ -212,57 +209,6 @@ class PrayerTimesRepository
                                 }
                             }
                         }
-                        PrayerServiceType.MOSQUE_CLOCK_API -> {
-                            Log.d(
-                                "PrayerTimesRepository",
-                                "🔄 Using MOSQUE CLOCK API for prayer times (Zone: ${settings.selectedZone})",
-                            )
-                            // Use MosqueClock backend API
-                            getTodayPrayerTimesByZone(settings.selectedZone).collect { result ->
-                                emit(result)
-                                // Cache successful results
-                                if (result is NetworkResult.Success) {
-                                    Log.d("PrayerTimesRepository", "💾 Caching MOSQUE_CLOCK_API data")
-                                    Log.d(
-                                        "PrayerTimesRepository",
-                                        "📋 Original API data: date='${result.data.date}', fajr='${result.data.fajrAzan}', dhuhr='${result.data.dhuhrAzan}'",
-                                    )
-
-                                    // FIX: Normalize date format and add provider context
-                                    val databaseId = generateDatabaseId(today, currentProviderKey)
-                                    val normalizedPrayerTimes =
-                                        result.data.copy(
-                                            id = databaseId,
-                                            date = today,
-                                            providerKey = currentProviderKey,
-                                        )
-                                    Log.d(
-                                        "PrayerTimesRepository",
-                                        "🔧 Normalized: '${result.data.date}' -> '$today', Provider: '$currentProviderKey', ID: '$databaseId'",
-                                    )
-
-                                    // Update repository cache for instant access
-                                    cachedPrayerTimes = normalizedPrayerTimes
-                                    cacheDate = today
-                                    cacheProviderKey = currentProviderKey
-                                    Log.d(
-                                        "PrayerTimesRepository",
-                                        "⚡ Repository cache updated - instant access enabled",
-                                    )
-
-                                    // Save API data to database for persistence across app restarts (provider-specific)
-                                    try {
-                                        dao.insertPrayerTimes(normalizedPrayerTimes)
-                                        Log.d(
-                                            "PrayerTimesRepository",
-                                            "💾 MOSQUE_CLOCK_API data saved to database with provider context",
-                                        )
-                                    } catch (e: Exception) {
-                                        Log.e("PrayerTimesRepository", "❌ Database save failed: ${e.message}", e)
-                                    }
-                                }
-                            }
-                        }
                         PrayerServiceType.AL_ADHAN_API -> {
                             // Use Al-Adhan API with selected region
                             getTodayPrayerTimesByRegion(settings.selectedRegion).collect { result ->
@@ -385,10 +331,6 @@ class PrayerTimesRepository
                     PrayerServiceType.ACJU_DIRECT -> {
                         // Use direct scraping for tomorrow
                         emitAll(getTomorrowPrayerTimesByDirectScraping(settings.selectedZone))
-                    }
-                    PrayerServiceType.MOSQUE_CLOCK_API -> {
-                        // Use MosqueClock API with selected zone for tomorrow
-                        emitAll(getPrayerTimesByZoneAndDate(settings.selectedZone, tomorrowDate))
                     }
                     PrayerServiceType.AL_ADHAN_API -> {
                         // Use Al-Adhan API with selected region for tomorrow
@@ -580,215 +522,32 @@ class PrayerTimesRepository
             dao.deleteOldPrayerTimes(thirtyDaysAgo)
         }
 
-        // New methods using direct scraping for Sri Lankan prayer times
-        fun getTodayPrayerTimesByDirectScraping(zone: Int): Flow<NetworkResult<PrayerTimes>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    Log.d("PrayerTimesRepository", "🔄 Attempting direct scraping for zone $zone")
-                    val prayerTimes = directScrapingService.getTodayPrayerTimes(zone, false)
-                    if (prayerTimes != null) {
-                        Log.d("PrayerTimesRepository", "✅ Direct scraping successful")
-                        emit(NetworkResult.Success(prayerTimes))
-                    } else {
-                        Log.w("PrayerTimesRepository", "⚠️ Direct scraping failed, falling back to backend API")
-                        // Fallback to backend API - emit with special flag
-                        getTodayPrayerTimesByZone(zone).collect { fallbackResult ->
-                            if (fallbackResult is NetworkResult.Success) {
-                                Log.d("PrayerTimesRepository", "✅ Fallback API successful, marking as backend data")
-                                // Create a copy with backend provider context for proper caching
-                                val backendData =
-                                    fallbackResult.data.copy(
-                                        providerKey = "MOSQUE_CLOCK_API:$zone",
-                                    )
-                                emit(NetworkResult.Success(backendData))
-                            } else {
-                                emit(fallbackResult)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("PrayerTimesRepository", "❌ Direct scraping error, falling back to backend API: ${e.message}")
-                    // Fallback to backend API - emit with special flag
-                    getTodayPrayerTimesByZone(zone).collect { fallbackResult ->
-                        if (fallbackResult is NetworkResult.Success) {
-                            Log.d("PrayerTimesRepository", "✅ Fallback API successful, marking as backend data")
-                            // Create a copy with backend provider context for proper caching
-                            val backendData =
-                                fallbackResult.data.copy(
-                                    providerKey = "MOSQUE_CLOCK_API:$zone",
-                                )
-                            emit(NetworkResult.Success(backendData))
-                        } else {
-                            emit(fallbackResult)
-                        }
-                    }
-                }
+        // ACJU failures are surfaced directly; no backend or provider substitution.
+        fun getTodayPrayerTimesByDirectScraping(zone: Int): Flow<NetworkResult<PrayerTimes>> = flow {
+            emit(NetworkResult.Loading())
+            try {
+                val times = directScrapingService.getTodayPrayerTimes(zone, false)
+                emit(if (times != null) NetworkResult.Success(times)
+                    else NetworkResult.Error("No ACJU prayer times available for today"))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emit(NetworkResult.Error("Unable to load ACJU prayer times: ${e.message}"))
             }
+        }
 
-        fun getTomorrowPrayerTimesByDirectScraping(zone: Int): Flow<NetworkResult<PrayerTimes>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    Log.d("PrayerTimesRepository", "🔄 Attempting direct scraping for tomorrow, zone $zone")
-                    val prayerTimes = directScrapingService.getTomorrowPrayerTimes(zone, false)
-                    if (prayerTimes != null) {
-                        Log.d("PrayerTimesRepository", "✅ Direct scraping successful for tomorrow")
-                        emit(NetworkResult.Success(prayerTimes))
-                    } else {
-                        Log.w(
-                            "PrayerTimesRepository",
-                            "⚠️ Direct scraping failed for tomorrow, falling back to backend API",
-                        )
-                        // Fallback to backend API
-                        val tomorrow =
-                            Clock.System
-                                .now()
-                                .plus(1, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                                .toLocalDateTime(TimeZone.currentSystemDefault())
-                                .date
-                        getPrayerTimesByZoneAndDate(zone, tomorrow.toString()).collect { fallbackResult ->
-                            if (fallbackResult is NetworkResult.Success) {
-                                Log.d(
-                                    "PrayerTimesRepository",
-                                    "✅ Fallback API successful for tomorrow, marking as backend data",
-                                )
-                                // Create a copy with backend provider context for proper caching
-                                val backendData =
-                                    fallbackResult.data.copy(
-                                        providerKey = "MOSQUE_CLOCK_API:$zone",
-                                    )
-                                emit(NetworkResult.Success(backendData))
-                            } else {
-                                emit(fallbackResult)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(
-                        "PrayerTimesRepository",
-                        "❌ Direct scraping error for tomorrow, falling back to backend API: ${e.message}",
-                    )
-                    // Fallback to backend API
-                    val tomorrow =
-                        Clock.System
-                            .now()
-                            .plus(1, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
-                            .date
-                    getPrayerTimesByZoneAndDate(zone, tomorrow.toString()).collect { fallbackResult ->
-                        if (fallbackResult is NetworkResult.Success) {
-                            Log.d(
-                                "PrayerTimesRepository",
-                                "✅ Fallback API successful for tomorrow, marking as backend data",
-                            )
-                            // Create a copy with backend provider context for proper caching
-                            val backendData =
-                                fallbackResult.data.copy(
-                                    providerKey = "MOSQUE_CLOCK_API:$zone",
-                                )
-                            emit(NetworkResult.Success(backendData))
-                        } else {
-                            emit(fallbackResult)
-                        }
-                    }
-                }
+        fun getTomorrowPrayerTimesByDirectScraping(zone: Int): Flow<NetworkResult<PrayerTimes>> = flow {
+            emit(NetworkResult.Loading())
+            try {
+                val times = directScrapingService.getTomorrowPrayerTimes(zone, false)
+                emit(if (times != null) NetworkResult.Success(times)
+                    else NetworkResult.Error("No ACJU prayer times available for tomorrow"))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emit(NetworkResult.Error("Unable to load ACJU prayer times: ${e.message}"))
             }
-
-        // New methods using MosqueClock API for Sri Lankan prayer times
-        fun getTodayPrayerTimesByZone(zone: Int): Flow<NetworkResult<PrayerTimes>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                val today =
-                    Clock.System
-                        .now()
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .date
-                        .toString()
-
-                // Check cache first
-                val cachedPrayerTimes = dao.getPrayerTimesByDate(today)
-                if (cachedPrayerTimes != null && cachedPrayerTimes.location?.contains("Zone $zone") == true) {
-                    emit(NetworkResult.Success(cachedPrayerTimes))
-                    return@flow
-                }
-
-                try {
-                    val response = mosqueClockApi.getTodayPrayerTimes(zone, false)
-                    if (response.isSuccessful && response.body() != null) {
-                        val backendData = response.body()!!
-                        val prayerTimes = backendData.toPrayerTimes()
-                        dao.insertPrayerTimes(prayerTimes)
-                        emit(NetworkResult.Success(prayerTimes))
-                    } else {
-                        emit(NetworkResult.Error("Failed to fetch prayer times", response.code()))
-                    }
-                } catch (e: Exception) {
-                    emit(NetworkResult.Error("Network error: ${e.message}"))
-                }
-            }
-
-        fun getPrayerTimesByZoneAndDate(
-            zone: Int,
-            date: String,
-        ): Flow<NetworkResult<PrayerTimes>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                // Check cache first
-                val cachedPrayerTimes = dao.getPrayerTimesByDate(date)
-                if (cachedPrayerTimes != null && cachedPrayerTimes.location?.contains("Zone $zone") == true) {
-                    emit(NetworkResult.Success(cachedPrayerTimes))
-                    return@flow
-                }
-
-                try {
-                    val response = mosqueClockApi.getPrayerTimesByZone(zone, date)
-                    if (response.isSuccessful && response.body() != null) {
-                        val mosqueDataList = response.body()?.data
-                        if (mosqueDataList != null && mosqueDataList.isNotEmpty()) {
-                            // Take the first prayer time entry (should be for the requested date)
-                            val prayerTimes = mosqueDataList.first().toPrayerTimes()
-                            dao.insertPrayerTimes(prayerTimes)
-                            emit(NetworkResult.Success(prayerTimes))
-                        } else {
-                            emit(NetworkResult.Error("No prayer times data available"))
-                        }
-                    } else {
-                        emit(NetworkResult.Error("Failed to fetch prayer times", response.code()))
-                    }
-                } catch (e: Exception) {
-                    emit(NetworkResult.Error("Network error: ${e.message}"))
-                }
-            }
-
-        fun getMonthPrayerTimes(
-            zone: Int,
-            year: Int,
-            month: Int,
-        ): Flow<NetworkResult<List<PrayerTimes>>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    // Convert month number to month name for backend API
-                    val monthName = getMonthName(month)
-                    val response = mosqueClockApi.getMonthPrayerTimes(zone, year, monthName)
-                    if (response.isSuccessful && response.body() != null) {
-                        // The backend returns a single response with a list of prayer times
-                        // We need to extract the prayer_times array from the metadata response
-                        // For now, let's handle this as an error since the API structure is complex
-                        emit(NetworkResult.Error("Month prayer times not implemented yet"))
-                    } else {
-                        emit(NetworkResult.Error("Failed to fetch month prayer times", response.code()))
-                    }
-                } catch (e: Exception) {
-                    emit(NetworkResult.Error("Network error: ${e.message}"))
-                }
-            }
+        }
 
         private fun convertAlAdhanToPrayerTimes(alAdhanData: AlAdhanData): PrayerTimes {
             val timings = alAdhanData.timings
@@ -881,7 +640,7 @@ class PrayerTimesRepository
 
         /**
          * Prefetch all remaining months of the year for offline use
-         * This is only applicable when using ACJU Direct scraping
+         * This is only applicable when using ACJU.
          */
         suspend fun prefetchRemainingYearPrayerTimes(zone: Int): DirectScrapingService.PrefetchResult {
             Log.d("PrayerTimesRepository", "🔄 Starting prefetch for zone $zone")

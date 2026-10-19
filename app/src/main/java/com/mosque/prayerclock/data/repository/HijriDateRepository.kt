@@ -5,7 +5,6 @@ import com.mosque.prayerclock.data.database.HijriDateDao
 import com.mosque.prayerclock.data.database.HijriDateEntity
 import com.mosque.prayerclock.data.model.AppSettings
 import com.mosque.prayerclock.data.model.HijriProvider
-import com.mosque.prayerclock.data.network.MosqueClockApi
 import com.mosque.prayerclock.data.network.NetworkResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -26,7 +25,6 @@ class HijriDateRepository
     @Inject
     constructor(
         private val settingsRepository: SettingsRepository,
-        private val mosqueClockApi: MosqueClockApi,
         private val prayerTimesApi: com.mosque.prayerclock.data.network.PrayerTimesApi,
         private val hijriDateDao: HijriDateDao,
         private val hijriDateScraper: com.mosque.prayerclock.data.scraping.HijriDateScraper,
@@ -47,13 +45,6 @@ class HijriDateRepository
             val todayString = today.toString()
 
             return when (settings.hijriProvider) {
-                HijriProvider.MOSQUE_CLOCK_API -> {
-                    getHijriDateWithCaching(
-                        provider = "MOSQUE_CLOCK_API",
-                        gregorianDate = todayString,
-                        settings = settings,
-                    )
-                }
                 HijriProvider.AL_ADHAN_API -> {
                     getHijriDateWithCaching(
                         provider = "AL_ADHAN_API",
@@ -120,7 +111,6 @@ class HijriDateRepository
 
             return when (provider) {
                 "ACJU_DIRECT" -> fetchFromAcjuDirectWithMonthEndLogic(gregorianDate, settings, calculatedDate)
-                "MOSQUE_CLOCK_API" -> fetchFromMosqueClockApi(gregorianDate, settings)
                 "AL_ADHAN_API" -> fetchFromAlAdhanApi(gregorianDate, settings, region!!)
                 else -> calculateCurrentHijriDate(settings)
             }
@@ -174,28 +164,6 @@ class HijriDateRepository
             return addDaysToHijriDate(baseHijriDate, daysDifference.toInt())
         }
 
-        private suspend fun fetchFromMosqueClockApi(
-            gregorianDate: String,
-            settings: AppSettings,
-        ): HijriDate {
-            return try {
-                val response = mosqueClockApi.getTodayBothCalendars()
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val hijriInfo = response.body()?.data?.hijriDate
-                    if (hijriInfo != null) {
-                        val hijriDate = HijriDate(hijriInfo.day, hijriInfo.month, hijriInfo.year)
-                        // Cache the API result
-                        cacheHijriDate("MOSQUE_CLOCK_API", gregorianDate, hijriDate, null, isCalculated = false)
-                        return hijriDate
-                    }
-                }
-                // Fallback to manual calculation
-                calculateCurrentHijriDate(settings)
-            } catch (e: Exception) {
-                Log.e("HijriDateRepository", "MosqueClock API error: ${e.message}")
-                calculateCurrentHijriDate(settings)
-            }
-        }
 
         private suspend fun fetchFromAlAdhanApi(
             gregorianDate: String,
@@ -585,66 +553,6 @@ class HijriDateRepository
                 "karachi", "lahore", "islamabad", "faisalabad" -> "Pakistan"
                 "male" -> "Maldives"
                 else -> "Sri Lanka" // Default fallback
-            }
-
-        fun getCurrentHijriDateFlow(): Flow<NetworkResult<HijriDate>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    val response = mosqueClockApi.getTodayBothCalendars()
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val hijriInfo = response.body()?.data?.hijriDate
-                        if (hijriInfo != null) {
-                            val hijriDate =
-                                HijriDate(
-                                    day = hijriInfo.day,
-                                    month = hijriInfo.month,
-                                    year = hijriInfo.year,
-                                )
-                            emit(NetworkResult.Success(hijriDate))
-                        } else {
-                            emit(NetworkResult.Error("No Hijri date data available"))
-                        }
-                    } else {
-                        val errorMessage = response.body()?.message ?: "Failed to fetch Hijri date"
-                        emit(NetworkResult.Error(errorMessage, response.code()))
-                    }
-                } catch (e: Exception) {
-                    emit(NetworkResult.Error("Network error: ${e.message}"))
-                }
-            }
-
-        fun getHijriDateForGregorian(
-            year: Int,
-            month: Int,
-            day: Int,
-        ): Flow<NetworkResult<HijriDate>> =
-            flow {
-                emit(NetworkResult.Loading())
-
-                try {
-                    val response = mosqueClockApi.getHijriDate(year, month, day)
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val hijriInfo = response.body()?.data
-                        if (hijriInfo != null) {
-                            val hijriDate =
-                                HijriDate(
-                                    day = hijriInfo.day,
-                                    month = hijriInfo.month,
-                                    year = hijriInfo.year,
-                                )
-                            emit(NetworkResult.Success(hijriDate))
-                        } else {
-                            emit(NetworkResult.Error("No Hijri date data available"))
-                        }
-                    } else {
-                        val errorMessage = response.body()?.message ?: "Failed to fetch Hijri date"
-                        emit(NetworkResult.Error(errorMessage, response.code()))
-                    }
-                } catch (e: Exception) {
-                    emit(NetworkResult.Error("Network error: ${e.message}"))
-                }
             }
 
         private fun calculateCurrentHijriDate(settings: AppSettings): HijriDate {

@@ -391,11 +391,16 @@ class DirectScrapingService
                 val text = pdfParser.extractTextFromPdf(pdfBytes)
                 Log.d(TAG, "✅ Extracted ${text.length} characters from PDF")
                 
-                val prayerTimesData = pdfParser.parsePrayerTimes(text)
+                val prayerTimesData = pdfParser.parsePrayerTimes(text, expectedMonth = month)
                 Log.d(TAG, "✅ Parsed prayer times data with ${prayerTimesData.prayerTimes.size} entries")
 
                 // Convert to PrayerTimes entities
-                val prayerTimesEntities = pdfParser.convertToPrayerTimesEntities(prayerTimesData, zone)
+                val prayerTimesEntities = pdfParser.convertToPrayerTimesEntities(prayerTimesData, zone).mapNotNull { entry ->
+                    // Published tables can retain an older year. Cache the requested year's
+                    // dates so the first fetch can find today, just like the MM-DD cache lookup.
+                    val date = "$year-${entry.date.substring(5)}"
+                    if (runCatching { LocalDate.parse(date) }.isSuccess) entry.copy(date = date) else null
+                }
                 Log.d(TAG, "✅ Converted to ${prayerTimesEntities.size} PrayerTimes entities")
 
                 if (prayerTimesEntities.isEmpty()) {
