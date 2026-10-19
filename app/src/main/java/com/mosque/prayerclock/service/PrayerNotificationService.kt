@@ -25,7 +25,6 @@ import com.mosque.prayerclock.data.model.PrayerType
 import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.repository.PrayerTimesRepository
 import com.mosque.prayerclock.data.repository.SettingsRepository
-import com.mosque.prayerclock.utils.TimeUtils
 import com.mosque.prayerclock.ui.notifications.PrayerTimetableNotification
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -357,44 +356,8 @@ class PrayerNotificationService : Service() {
     private suspend fun isApproachingAnyPrayerTime(
         currentDateTime: LocalDateTime,
         prayerTimes: PrayerTimes,
-    ): Boolean {
-        // Get settings to calculate iqamah times dynamically
-        val settings = getCachedSettings()
-
-        // Include BOTH azan and iqamah times
-        val allPrayerTimeStrings =
-            listOf(
-                // Azan times
-                prayerTimes.fajrAzan,
-                prayerTimes.dhuhrAzan,
-                prayerTimes.asrAzan,
-                prayerTimes.maghribAzan,
-                prayerTimes.ishaAzan,
-                // Iqamah times (calculated dynamically from settings)
-                TimeUtils.addMinutesToTime(prayerTimes.fajrAzan, settings.fajrIqamahGap),
-                TimeUtils.addMinutesToTime(prayerTimes.dhuhrAzan, settings.dhuhrIqamahGap),
-                TimeUtils.addMinutesToTime(prayerTimes.asrAzan, settings.asrIqamahGap),
-                TimeUtils.addMinutesToTime(prayerTimes.maghribAzan, settings.maghribIqamahGap),
-                TimeUtils.addMinutesToTime(prayerTimes.ishaAzan, settings.ishaIqamahGap),
-            )
-
-        return allPrayerTimeStrings.any { prayerTimeString ->
-            try {
-                val parts = prayerTimeString.split(":")
-                if (parts.size >= 2) {
-                    val prayerHour = parts[0].toInt()
-                    val prayerMinute = parts[1].toInt()
-                    val currentMinutes = currentDateTime.hour * 60 + currentDateTime.minute
-                    val prayerMinutes = prayerHour * 60 + prayerMinute
-                    val timeDiff = prayerMinutes - currentMinutes
-                    timeDiff in 0..COUNTDOWN_START_MINUTES
-                } else {
-                    false
-                }
-            } catch (e: Exception) {
-                false
-            }
-        }
+    ): Boolean = prayerSoundEvents(prayerTimes, getCachedSettings()).any {
+        it.secondsUntil(currentDateTime)?.let { seconds -> seconds in 0..(COUNTDOWN_START_MINUTES * 60) } == true
     }
 
     /**
@@ -437,189 +400,31 @@ class PrayerNotificationService : Service() {
     /**
      * Check if current time matches any prayer time and trigger sound
      */
-    private suspend fun checkPrayerTime(
+    private fun checkPrayerTime(
         currentDateTime: LocalDateTime,
         settings: AppSettings,
         prayerTimes: PrayerTimes,
     ) {
         if (!settings.soundEnabled) return
 
-        try {
-            // Calculate all iqamah times dynamically from settings
-            val fajrIqamah = TimeUtils.addMinutesToTime(prayerTimes.fajrAzan, settings.fajrIqamahGap)
-            val dhuhrIqamah = TimeUtils.addMinutesToTime(prayerTimes.dhuhrAzan, settings.dhuhrIqamahGap)
-            val asrIqamah = TimeUtils.addMinutesToTime(prayerTimes.asrAzan, settings.asrIqamahGap)
-            val maghribIqamah = TimeUtils.addMinutesToTime(prayerTimes.maghribAzan, settings.maghribIqamahGap)
-            val ishaIqamah = TimeUtils.addMinutesToTime(prayerTimes.ishaAzan, settings.ishaIqamahGap)
+        for (event in prayerSoundEvents(prayerTimes, settings)) {
+            val seconds = event.secondsUntil(currentDateTime) ?: continue
+            if (seconds in 1..60) acquireWakeLock()
+            if (!event.shouldPlay(currentDateTime, settings)) continue
 
-            // Check all azan times for 5-second countdown ticking
-            checkAndPlayCountdownTicking(
-                PrayerType.FAJR,
-                prayerTimes.fajrAzan,
-                currentDateTime,
-                settings,
-                "Azan",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.DHUHR,
-                prayerTimes.dhuhrAzan,
-                currentDateTime,
-                settings,
-                "Azan",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.ASR,
-                prayerTimes.asrAzan,
-                currentDateTime,
-                settings,
-                "Azan",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.MAGHRIB,
-                prayerTimes.maghribAzan,
-                currentDateTime,
-                settings,
-                "Azan",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.ISHA,
-                prayerTimes.ishaAzan,
-                currentDateTime,
-                settings,
-                "Azan",
-            )
-
-            // Check sunrise time for 5-second countdown ticking
-            checkAndPlayCountdownTicking(
-                PrayerType.SUNRISE,
-                prayerTimes.sunrise,
-                currentDateTime,
-                settings,
-                "Sunrise",
-            )
-
-            // Check all iqamah times for 5-second countdown ticking
-            // Iqamah times are calculated dynamically from settings
-            checkAndPlayCountdownTicking(
-                PrayerType.FAJR,
-                fajrIqamah,
-                currentDateTime,
-                settings,
-                "Iqamah",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.DHUHR,
-                dhuhrIqamah,
-                currentDateTime,
-                settings,
-                "Iqamah",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.ASR,
-                asrIqamah,
-                currentDateTime,
-                settings,
-                "Iqamah",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.MAGHRIB,
-                maghribIqamah,
-                currentDateTime,
-                settings,
-                "Iqamah",
-            )
-            checkAndPlayCountdownTicking(
-                PrayerType.ISHA,
-                ishaIqamah,
-                currentDateTime,
-                settings,
-                "Iqamah",
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking prayer times", e)
-        }
-    }
-
-    /**
-     * Check if we should play sound for prayer event (countdown ticking or immediate sound)
-     */
-    private fun checkAndPlayCountdownTicking(
-        prayerType: PrayerType,
-        prayerTime: String,
-        currentDateTime: LocalDateTime,
-        settings: AppSettings,
-        eventType: String,
-    ) {
-        if (!settings.soundEnabled || prayerTime.isBlank()) return
-
-        // Check if sound is enabled for this event type
-        val isAzan = eventType == "Azan" || eventType == "Sunrise"
-        val isIqamah = eventType == "Iqamah"
-
-        if (isAzan && !settings.azanSoundEnabled) return
-        if (isIqamah && !settings.iqamahSoundEnabled) return
-
-        try {
-            val timeParts = prayerTime.split(":")
-            if (timeParts.size != 2) return
-
-            val prayerHour = timeParts[0].toIntOrNull() ?: return
-            val prayerMinute = timeParts[1].toIntOrNull() ?: return
-
-            val currentTotalSeconds = currentDateTime.hour * 3600 + currentDateTime.minute * 60 + currentDateTime.second
-            val prayerTotalSeconds = prayerHour * 3600 + prayerMinute * 60
-            val secondsUntilPrayer = prayerTotalSeconds - currentTotalSeconds
-
-            // Handle day rollover
-            val actualSecondsUntilPrayer =
-                if (secondsUntilPrayer < 0) {
-                    secondsUntilPrayer + (24 * 3600)
-                } else {
-                    secondsUntilPrayer
-                }
-
-            // Get sound type for this event
-            val soundType =
-                if (isAzan) settings.azanSoundType else settings.iqamahSoundType
-
-            // Acquire WakeLock when approaching prayer time (60 seconds before)
-            if (actualSecondsUntilPrayer <= 60 && actualSecondsUntilPrayer > 0) {
-                acquireWakeLock()
+            val isAzan = event.type == PrayerSoundEventType.AZAN
+            val soundType = if (isAzan) settings.azanSoundType else settings.iqamahSoundType
+            Log.i(TAG, "Playing sound: ${event.prayer} ${event.type.label} at ${event.time}")
+            val soundPlayed = if (soundType == SoundType.COUNTDOWN_TICKING) {
+                soundManager.playCountdownTicking(5, event.prayer, settings)
+                true
+            } else if (isAzan) {
+                soundManager.playAzanSound(settings, event.prayer)
+            } else {
+                soundManager.playIqamahSound(settings, event.prayer)
             }
-
-            when (soundType) {
-                SoundType.COUNTDOWN_TICKING -> {
-                    // Play 5-second countdown ticking at exactly 5 seconds before
-                    if (actualSecondsUntilPrayer == 5) {
-                        Log.i(TAG, "Countdown ticking: $prayerType $eventType at $prayerTime")
-                        soundManager.playCountdownTicking(5, prayerType, settings)
-                        // Show notification with stop action
-                        showPrayerNotification(prayerType, eventType)
-                    }
-                }
-                SoundType.TRADITIONAL_BEEP, SoundType.CUSTOM -> {
-                    // Play sound at exact prayer time (0 seconds)
-                    if (actualSecondsUntilPrayer == 0) {
-                        Log.i(TAG, "Playing sound: $prayerType $eventType at $prayerTime")
-                        val soundPlayed =
-                            if (isAzan) {
-                                soundManager.playAzanSound(settings, prayerType)
-                            } else {
-                                soundManager.playIqamahSound(settings, prayerType)
-                            }
-                        
-                        // Show notification
-                        if (soundPlayed) {
-                            showPrayerNotification(prayerType, eventType)
-                        }
-                        
-                        // Release WakeLock after playing sound
-                        releaseWakeLock()
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in prayer time check", e)
+            if (soundPlayed) showPrayerNotification(event.prayer, event.type.label)
+            if (seconds == 0) releaseWakeLock()
         }
     }
 
@@ -686,6 +491,8 @@ class PrayerNotificationService : Service() {
                 .setSmallIcon(android.R.drawable.ic_dialog_info) // Use system icon
                 .setContentTitle(title)
                 .setContentText(content)
+                // SoundManager owns prayer audio; notification updates must stay silent.
+                .setSilent(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setAutoCancel(true)
