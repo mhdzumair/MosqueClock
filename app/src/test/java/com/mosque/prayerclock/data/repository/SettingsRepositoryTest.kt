@@ -2,6 +2,7 @@ package com.mosque.prayerclock.data.repository
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.mosque.prayerclock.data.cache.PrayerTimesCacheInvalidator
+import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.ui.components.screenfaces.ScreenFaceRegistry
 import java.nio.file.Files
 import javax.inject.Provider
@@ -15,6 +16,36 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsRepositoryTest {
+    @Test
+    fun `mazhab defaults to Shafi persists both choices and invalidates prayer cache`() = runBlocking {
+        val directory = Files.createTempDirectory("clock-mazhab").toFile()
+        val file = directory.resolve("settings.preferences_pb")
+        var job = Job()
+        var invalidations = 0
+        val invalidator = object : PrayerTimesCacheInvalidator {
+            override fun invalidatePrayerTimesCache() { invalidations++ }
+        }
+        fun repository() = SettingsRepository(
+            PreferenceDataStoreFactory.create(scope = CoroutineScope(Dispatchers.IO + job)) { file },
+            Provider<PrayerTimesCacheInvalidator> { invalidator },
+        )
+        try {
+            var repository = repository()
+            assertEquals(Mazhab.SHAFI, repository.getSettings().first().mazhab)
+            for (mazhab in listOf(Mazhab.HANAFI, Mazhab.SHAFI)) {
+                repository.updateMazhab(mazhab)
+                job.cancelAndJoin()
+                job = Job()
+                repository = repository()
+                assertEquals(mazhab, repository.getSettings().first().mazhab)
+            }
+            assertEquals(2, invalidations)
+        } finally {
+            job.cancelAndJoin()
+            directory.deleteRecursively()
+        }
+    }
+
     @Test
     fun `device default applies only when no face has been selected`() = runBlocking {
         for (defaultFace in listOf("mobile", "classic")) {

@@ -599,7 +599,8 @@ The app includes a custom FastAPI backend for enhanced features:
 - **Next Prayer**: Highlighted with countdown
 
 ### Settings Screen
-- **Prayer Service**: Choose between MosqueClock API, Al-Adhan API, or Manual
+- **Prayer Service**: Choose between ACJU Direct, MosqueClock API, Al-Adhan API, or Manual
+- **Mazhab (Asr time)**: Choose Shafi (default) or Hanafi under Prayer Service when using ACJU Direct or Al-Adhan. The selection applies to Asr azan, iqamah, next-prayer calculations, and alerts. ACJU caches both published Asr times for switching offline; older timetables without a Hanafi column show an unavailable-time message when Hanafi is selected. Manual and MosqueClock API times remain controlled by their configured source.
 - **Location**: Configure zones (MosqueClock) or regions (Al-Adhan)
 - **Manual Times**: Set custom prayer and Iqamah times
 - **Weather**: Enable/disable weather with provider selection

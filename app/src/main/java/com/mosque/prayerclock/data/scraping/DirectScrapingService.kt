@@ -312,6 +312,8 @@ class DirectScrapingService
                 fajrAzan = dailyPrayerTime.fajr,
                 dhuhrAzan = dailyPrayerTime.dhuhr,
                 asrAzan = dailyPrayerTime.asr,
+                asrShafiAzan = dailyPrayerTime.asr,
+                asrHanafiAzan = dailyPrayerTime.asrHanafi,
                 maghribAzan = dailyPrayerTime.maghrib,
                 ishaAzan = dailyPrayerTime.isha,
                 sunrise = dailyPrayerTime.sunrise,

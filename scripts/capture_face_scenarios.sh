@@ -74,6 +74,7 @@ capture() {
         --es face "$face" \
         --es scenario "$scenario" \
         --es language "$language" \
+        --es mazhab "${FACE_PREVIEW_MAZHAB:-shafi}" \
         --es theme "$theme" \
         --ez show24Hour "${FACE_PREVIEW_SHOW_24_HOUR:-false}" \
         --ez showSeconds "${FACE_PREVIEW_SHOW_SECONDS:-true}" \

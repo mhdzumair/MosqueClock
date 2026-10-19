@@ -47,6 +47,9 @@ fun MainScreen(
 
     LaunchedEffect(
         data.settings.prayerServiceType,
+        data.settings.mazhab,
+        data.settings.selectedZone,
+        data.settings.selectedRegion,
         data.settings.city,
         data.settings.country,
         data.settings.showWeather,

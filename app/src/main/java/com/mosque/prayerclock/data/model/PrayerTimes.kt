@@ -26,13 +26,25 @@ data class PrayerTimes(
     val sunrise: String,
     val hijriDate: String? = null,
     val location: String? = null,
+    val asrShafiAzan: String? = null,
+    val asrHanafiAzan: String? = null,
 ) {
+    /** Keep both published times so changing mazhab also works from the offline cache. */
+    fun forMazhab(mazhab: Mazhab): PrayerTimes {
+        val selected = when (mazhab) {
+            Mazhab.SHAFI -> asrShafiAzan
+            Mazhab.HANAFI -> asrHanafiAzan
+        }
+        return if (selected != null) copy(asrAzan = selected) else this
+    }
+
     /**
      * Calculate iqamah times dynamically based on settings
      * This ensures iqamah times always reflect current user preferences
      * Also handles special case for Jumma Night Bayan on Thursday nights
      */
     fun withIqamahTimes(settings: AppSettings): PrayerTimesWithIqamah {
+        val selected = forMazhab(settings.mazhab)
         // Calculate standard iqamah time for Isha
         val standardIshaIqamah = TimeUtils.addMinutesToTime(ishaAzan, settings.ishaIqamahGap)
         
@@ -45,10 +57,10 @@ data class PrayerTimes(
         }
         
         return PrayerTimesWithIqamah(
-            prayerTimes = this,
+            prayerTimes = selected,
             fajrIqamah = TimeUtils.addMinutesToTime(fajrAzan, settings.fajrIqamahGap),
             dhuhrIqamah = TimeUtils.addMinutesToTime(dhuhrAzan, settings.dhuhrIqamahGap),
-            asrIqamah = TimeUtils.addMinutesToTime(asrAzan, settings.asrIqamahGap),
+            asrIqamah = TimeUtils.addMinutesToTime(selected.asrAzan, settings.asrIqamahGap),
             maghribIqamah = TimeUtils.addMinutesToTime(maghribAzan, settings.maghribIqamahGap),
             ishaIqamah = ishaIqamah,
         )

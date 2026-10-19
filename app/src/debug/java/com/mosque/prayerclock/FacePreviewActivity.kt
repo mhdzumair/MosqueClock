@@ -1,5 +1,7 @@
 package com.mosque.prayerclock
 
+import com.mosque.prayerclock.data.model.Mazhab
+
 import android.os.Bundle
 import android.content.pm.ActivityInfo
 import android.view.View
@@ -71,6 +73,7 @@ class FacePreviewActivity : ComponentActivity() {
                         face.id,
                         scenario,
                         language,
+                        mazhab = if (intent.getStringExtra("mazhab") == "hanafi") Mazhab.HANAFI else Mazhab.SHAFI,
                         show24Hour = intent.getBooleanExtra("show24Hour", false),
                         showSeconds = intent.getBooleanExtra("showSeconds", true),
                         showWeather = intent.getBooleanExtra("showWeather", true),
@@ -94,6 +97,7 @@ private fun FacePreview(
     faceId: String,
     scenario: String,
     language: Language,
+    mazhab: Mazhab,
     show24Hour: Boolean,
     showSeconds: Boolean,
     showWeather: Boolean,
@@ -150,6 +154,7 @@ private fun FacePreview(
             settings =
                 AppSettings(
                     language = language,
+                    mazhab = mazhab,
                     mosqueName = mosqueName,
                     clockType = clockType,
                     showSeconds = showSeconds,
@@ -161,6 +166,11 @@ private fun FacePreview(
             clock = clock,
             mainState =
                 (ScreenDisplayData.PREVIEW.mainState as MainUiState.Success).copy(
+                    // Fixed debug fixtures make Shafi/Hanafi screenshot comparisons repeatable.
+                    // Production schedules use the selected provider's published Asr times.
+                    prayerTimes = (ScreenDisplayData.PREVIEW.mainState as MainUiState.Success).prayerTimes.prayerTimes
+                        .copy(asrShafiAzan = "15:30", asrHanafiAzan = "16:30")
+                        .withIqamahTimes(AppSettings(mazhab = mazhab)),
                     nextPrayer = when (scenario) {
                         "azan-hour", "iqamah-hour" -> PrayerType.DHUHR
                         "sunrise-hour", "ishraq-hour" -> PrayerType.SUNRISE

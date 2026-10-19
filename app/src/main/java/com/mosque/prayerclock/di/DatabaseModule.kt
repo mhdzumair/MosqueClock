@@ -37,7 +37,8 @@ object DatabaseModule {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "mosque_clock_database",
-            ).fallbackToDestructiveMigration() // Recreate DB on schema changes
+            ).addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
+            .fallbackToDestructiveMigration() // Recreate DB on other schema changes
             .build()
 
     @Provides

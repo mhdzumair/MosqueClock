@@ -4,6 +4,7 @@ import android.util.Log
 import com.mosque.prayerclock.data.cache.PrayerTimesCacheInvalidator
 import com.mosque.prayerclock.data.database.PrayerTimesDao
 import com.mosque.prayerclock.data.model.AppSettings
+import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.PrayerTimes
 import com.mosque.prayerclock.data.network.AlAdhanData
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -64,7 +66,7 @@ class PrayerTimesRepository
             val currentProviderKey = getCurrentProviderKey()
 
             return if (cacheDate == today && cacheProviderKey == currentProviderKey) {
-                cachedPrayerTimes
+                cachedPrayerTimes?.forMazhab(settingsRepository.getSettings().first().mazhab)
             } else {
                 null
             }
@@ -77,7 +79,7 @@ class PrayerTimesRepository
             val settings = settingsRepository.getSettings().first()
             return when (settings.prayerServiceType) {
                 PrayerServiceType.MANUAL -> "MANUAL"
-                PrayerServiceType.AL_ADHAN_API -> "AL_ADHAN_API:${settings.selectedRegion}"
+                PrayerServiceType.AL_ADHAN_API -> "AL_ADHAN_API:${settings.selectedRegion}:${settings.mazhab.name}"
                 PrayerServiceType.ACJU_DIRECT -> "ACJU_DIRECT:${settings.selectedZone}"
                 PrayerServiceType.MOSQUE_CLOCK_API -> "MOSQUE_CLOCK_API:${settings.selectedZone}"
             }
@@ -117,7 +119,7 @@ class PrayerTimesRepository
 
         // Main method that chooses service based on settings with intelligent caching
         fun getTodayPrayerTimesFromSettings(): Flow<NetworkResult<PrayerTimes>> =
-            flow {
+            flow<NetworkResult<PrayerTimes>> {
                 Log.d(
                     "PrayerTimesRepository",
                     "🚀 getTodayPrayerTimesFromSettings() called - checking repository cache",
@@ -339,16 +341,30 @@ class PrayerTimesRepository
                     // Clear fetching flag
                     isCurrentlyFetching = false
                     Log.d("PrayerTimesRepository", "Prayer times fetch completed - repository cache updated")
+                    Unit
                 } catch (e: Exception) {
                     Log.e("PrayerTimesRepository", "Error in getTodayPrayerTimesFromSettings", e)
                     isCurrentlyFetching = false // Clear flag on error
                     emit(NetworkResult.Error("Failed to get prayer times: ${e.message}"))
                 }
-            }
+            }.withSelectedMazhab()
+
+        private fun Flow<NetworkResult<PrayerTimes>>.withSelectedMazhab(): Flow<NetworkResult<PrayerTimes>> = map { result ->
+            if (result is NetworkResult.Success) {
+                val settings = settingsRepository.getSettings().first()
+                if (settings.prayerServiceType == PrayerServiceType.ACJU_DIRECT &&
+                    settings.mazhab == Mazhab.HANAFI && result.data.asrHanafiAzan == null
+                ) {
+                    NetworkResult.Error("Hanafi Asr is unavailable in this timetable. Try a newer ACJU timetable or select Shafi.")
+                } else {
+                    NetworkResult.Success(result.data.forMazhab(settings.mazhab))
+                }
+            } else result
+        }
 
         // Method to get tomorrow's prayer times based on settings
         fun getTomorrowPrayerTimesFromSettings(): Flow<NetworkResult<PrayerTimes>> =
-            flow {
+            flow<NetworkResult<PrayerTimes>> {
                 emit(NetworkResult.Loading())
 
                 val settings = settingsRepository.getSettings().first()
@@ -384,7 +400,7 @@ class PrayerTimesRepository
                         emit(NetworkResult.Success(manualPrayerTimes))
                     }
                 }
-            }
+            }.withSelectedMazhab()
 
         fun getTodayPrayerTimesByRegion(region: String): Flow<NetworkResult<PrayerTimes>> =
             flow {
@@ -397,18 +413,22 @@ class PrayerTimesRepository
                         .date
                         .toString()
 
-                val cachedPrayerTimes = dao.getPrayerTimesByDate(today)
-                if (cachedPrayerTimes != null && cachedPrayerTimes.location?.contains(region) == true) {
+                val mazhab = settingsRepository.getSettings().first().mazhab
+                val providerKey = "AL_ADHAN_API:$region:${mazhab.name}"
+                val cachedPrayerTimes = dao.getPrayerTimesByDateAndProvider(today, providerKey)
+                if (cachedPrayerTimes != null) {
                     emit(NetworkResult.Success(cachedPrayerTimes))
                     return@flow
                 }
 
                 try {
-                    val response = api.getPrayerTimesByCity(region, getCountryForRegion(region))
+                    val response = api.getPrayerTimesByCity(region, getCountryForRegion(region), school = mazhab.alAdhanSchool)
                     if (response.isSuccessful && response.body()?.code == 200) {
                         val alAdhanData = response.body()?.data
                         if (alAdhanData != null) {
-                            val prayerTimes = convertAlAdhanToPrayerTimes(alAdhanData)
+                            val prayerTimes = convertAlAdhanToPrayerTimes(alAdhanData).copy(
+                                id = generateDatabaseId(today, providerKey), date = today, providerKey = providerKey,
+                            )
                             dao.insertPrayerTimes(prayerTimes)
                             emit(NetworkResult.Success(prayerTimes))
                         } else {
@@ -441,8 +461,10 @@ class PrayerTimesRepository
                         .toString()
 
                 // Check cache first for tomorrow's date
-                val cachedPrayerTimes = dao.getPrayerTimesByDate(tomorrowDate)
-                if (cachedPrayerTimes != null && cachedPrayerTimes.location?.contains(region) == true) {
+                val mazhab = settingsRepository.getSettings().first().mazhab
+                val providerKey = "AL_ADHAN_API:$region:${mazhab.name}"
+                val cachedPrayerTimes = dao.getPrayerTimesByDateAndProvider(tomorrowDate, providerKey)
+                if (cachedPrayerTimes != null) {
                     emit(NetworkResult.Success(cachedPrayerTimes))
                     return@flow
                 }
@@ -459,11 +481,13 @@ class PrayerTimesRepository
                         '0',
                     )}-${tomorrowLocalDate.monthNumber.toString().padStart(2, '0')}-${tomorrowLocalDate.year}"
 
-                    val response = api.getPrayerTimesByCity(region, getCountryForRegion(region), tomorrowFormatted)
+                    val response = api.getPrayerTimesByCity(region, getCountryForRegion(region), tomorrowFormatted, school = mazhab.alAdhanSchool)
                     if (response.isSuccessful && response.body()?.code == 200) {
                         val alAdhanData = response.body()?.data
                         if (alAdhanData != null) {
-                            val prayerTimes = convertAlAdhanToPrayerTimes(alAdhanData)
+                            val prayerTimes = convertAlAdhanToPrayerTimes(alAdhanData).copy(
+                                id = generateDatabaseId(tomorrowDate, providerKey), date = tomorrowDate, providerKey = providerKey,
+                            )
                             dao.insertPrayerTimes(prayerTimes)
                             emit(NetworkResult.Success(prayerTimes))
                         } else {

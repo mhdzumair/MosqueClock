@@ -324,6 +324,8 @@ class MainViewModel
                     _weatherState.value = WeatherUiState.Error("Weather disabled")
                 }
                 isLoadingPrayerTimes = false
+                // A mazhab change during a fetch must not leave the previous school's times on screen.
+                if (currentSettings.mazhab != settingsRepository.getSettings().first().mazhab) loadPrayerTimes()
             }
         }
 

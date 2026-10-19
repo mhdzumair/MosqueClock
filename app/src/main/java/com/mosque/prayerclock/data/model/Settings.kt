@@ -37,6 +37,7 @@ data class AppSettings(
     val lastUpdatedGregorianDate: String = "2025-08-01", // Track when Hijri date was last set
     val prayerServiceType: PrayerServiceType = PrayerServiceType.ACJU_DIRECT,
     val selectedZone: Int = 1, // For MosqueClock backend zones
+    val mazhab: Mazhab = Mazhab.SHAFI,
     val selectedRegion: String = "Colombo", // For third-party prayer time services
     val soundEnabled: Boolean = true, // Enable/disable beep countdown sound (master toggle)
     val showPrayerTimesNotification: Boolean = false,
@@ -113,6 +114,11 @@ enum class FontSize {
     MEDIUM,
     LARGE,
     EXTRA_LARGE,
+}
+
+enum class Mazhab(val displayName: String, val alAdhanSchool: Int) {
+    SHAFI("Shafi", 0),
+    HANAFI("Hanafi", 1),
 }
 
 enum class PrayerServiceType(

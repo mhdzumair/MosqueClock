@@ -9,6 +9,7 @@ import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.HijriProvider
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
 import com.mosque.prayerclock.data.repository.HijriDateRepository
@@ -152,6 +153,10 @@ class SettingsViewModel
             viewModelScope.launch {
                 settingsRepository.updateSelectedZone(zone)
             }
+        }
+
+        fun updateMazhab(mazhab: Mazhab) {
+            viewModelScope.launch { settingsRepository.updateMazhab(mazhab) }
         }
 
         fun updateSelectedRegion(region: String) {

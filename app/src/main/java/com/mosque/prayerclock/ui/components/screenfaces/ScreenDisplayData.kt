@@ -434,6 +434,8 @@ private fun computeScreenValues(
 
 private fun mapErrorMessage(technicalMessage: String): String =
     when {
+        technicalMessage.startsWith("Hanafi Asr is unavailable") -> technicalMessage
+
         technicalMessage.contains("failed to connect", ignoreCase = true) ||
             technicalMessage.contains("connection refused", ignoreCase = true) ||
             technicalMessage.contains("timeout", ignoreCase = true) ||

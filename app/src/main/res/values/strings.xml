@@ -325,4 +325,8 @@
     <string name="ishraq_countdown_title">Ishraq Prayer countdown</string>
     <string name="ishraq_countdown_description">Show a countdown after sunrise, inline or fullscreen.</string>
     <string name="ishraq_offset_label">Minutes after sunrise</string>
+    <string name="mazhab_asr_label">Mazhab (Asr time)</string>
+    <string name="mazhab_asr_description">Choose the Asr time used for the timetable and prayer alerts.</string>
+    <string name="mazhab_shafi">Shafi (default)</string>
+    <string name="mazhab_hanafi">Hanafi</string>
 </resources>

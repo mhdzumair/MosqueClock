@@ -289,7 +289,7 @@ class PrayerNotificationService : Service() {
 
     private fun prayerSourceKey(settings: AppSettings): List<Any> = listOf(
         settings.prayerServiceType, settings.city, settings.country, settings.latitude, settings.longitude,
-        settings.selectedZone, settings.selectedRegion, settings.mosqueClockBackendUrl, settings.mosqueClockBackendApiKey,
+        settings.selectedZone, settings.selectedRegion, settings.mazhab, settings.mosqueClockBackendUrl, settings.mosqueClockBackendApiKey,
         settings.manualFajrAzan, settings.manualSunrise, settings.manualDhuhrAzan,
         settings.manualAsrAzan, settings.manualMaghribAzan, settings.manualIshaAzan,
     )

@@ -104,6 +104,7 @@ import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.Language
 import com.mosque.prayerclock.ui.components.AppPickerDialog
 import com.mosque.prayerclock.data.model.PrayerServiceType
+import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.data.model.PrayerZones
 import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
@@ -185,6 +186,8 @@ fun SettingsScreen(
                     PrayerServiceSettings(
                         selectedServiceType = settings.prayerServiceType,
                         selectedZone = settings.selectedZone,
+                        selectedMazhab = settings.mazhab,
+                        onMazhabChange = viewModel::updateMazhab,
                         selectedRegion = settings.selectedRegion,
                         backendUrl = settings.mosqueClockBackendUrl,
                         backendApiKey = settings.mosqueClockBackendApiKey,
@@ -556,6 +559,8 @@ private fun LanguageSetting(
 private fun PrayerServiceSettings(
     selectedServiceType: PrayerServiceType,
     selectedZone: Int,
+    selectedMazhab: Mazhab,
+    onMazhabChange: (Mazhab) -> Unit,
     selectedRegion: String,
     backendUrl: String,
     backendApiKey: String,
@@ -604,6 +609,27 @@ private fun PrayerServiceSettings(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Backend configuration for MosqueClock API
+            if (selectedServiceType == PrayerServiceType.ACJU_DIRECT || selectedServiceType == PrayerServiceType.AL_ADHAN_API) {
+                Text(
+                    text = stringResource(R.string.mazhab_asr_label),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.mazhab_asr_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+                Mazhab.values().forEach { mazhab ->
+                    SelectableSettingsRow(
+                        selected = selectedMazhab == mazhab,
+                        onClick = { onMazhabChange(mazhab) },
+                        text = stringResource(if (mazhab == Mazhab.SHAFI) R.string.mazhab_shafi else R.string.mazhab_hanafi),
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             if (selectedServiceType == PrayerServiceType.MOSQUE_CLOCK_API) {
                 Text(
                     text = "Backend Configuration",

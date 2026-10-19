@@ -240,4 +240,8 @@
     <string name="ishraq_countdown_title">இஷ்ராக் தொழுகை கவுண்ட்டவுன்</string>
     <string name="ishraq_countdown_description">சூரிய உதயத்திற்குப் பிறகு கவுண்ட்டவுனை வழக்கமான காட்சி அல்லது முழுத்திரையில் காட்டவும்.</string>
     <string name="ishraq_offset_label">சூரிய உதயத்திற்குப் பிறகு நிமிடங்கள்</string>
+    <string name="mazhab_asr_label">மத்ஹப் (அஸர் நேரம்)</string>
+    <string name="mazhab_asr_description">தொழுகை அட்டவணைக்கும் அறிவிப்புகளுக்கும் பயன்படுத்தும் அஸர் நேரத்தைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="mazhab_shafi">ஷாஃபிஈ (இயல்புநிலை)</string>
+    <string name="mazhab_hanafi">ஹனஃபி</string>
 </resources>

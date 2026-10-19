@@ -15,6 +15,7 @@ import com.mosque.prayerclock.data.model.ClockType
 import com.mosque.prayerclock.data.model.FontSize
 import com.mosque.prayerclock.data.model.HijriProvider
 import com.mosque.prayerclock.data.model.Language
+import com.mosque.prayerclock.data.model.Mazhab
 import com.mosque.prayerclock.data.model.PrayerServiceType
 import com.mosque.prayerclock.data.model.SoundType
 import com.mosque.prayerclock.data.model.WeatherProvider
@@ -69,6 +70,7 @@ class SettingsRepository
             val LAST_UPDATED_GREGORIAN_DATE = stringPreferencesKey("last_updated_gregorian_date")
             val PRAYER_SERVICE_TYPE = stringPreferencesKey("prayer_service_type")
             val SELECTED_ZONE = intPreferencesKey("selected_zone")
+            val MAZHAB = stringPreferencesKey("mazhab")
             val SELECTED_REGION = stringPreferencesKey("selected_region")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
             val SHOW_PRAYER_TIMES_NOTIFICATION = booleanPreferencesKey("show_prayer_times_notification")
@@ -178,6 +180,7 @@ class SettingsRepository
                         }
                             ?: PrayerServiceType.MANUAL,
                     selectedZone = preferences[PreferencesKeys.SELECTED_ZONE] ?: 1,
+                    mazhab = Mazhab.values().find { it.name == preferences[PreferencesKeys.MAZHAB] } ?: Mazhab.SHAFI,
                     selectedRegion = preferences[PreferencesKeys.SELECTED_REGION] ?: "Colombo",
                     soundEnabled = preferences[PreferencesKeys.SOUND_ENABLED] ?: true,
                     showPrayerTimesNotification = preferences[PreferencesKeys.SHOW_PRAYER_TIMES_NOTIFICATION] ?: false,
@@ -346,6 +349,11 @@ class SettingsRepository
         suspend fun updateSelectedZone(zone: Int) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.SELECTED_ZONE] = zone }
             // Invalidate prayer times cache when zone changes (affects cache key)
+            prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
+        }
+
+        suspend fun updateMazhab(mazhab: Mazhab) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.MAZHAB] = mazhab.name }
             prayerTimesCacheInvalidatorProvider.get().invalidatePrayerTimesCache()
         }
 

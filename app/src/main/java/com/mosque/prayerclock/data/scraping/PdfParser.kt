@@ -193,151 +193,8 @@ class PdfParser
             text: String,
             year: Int,
         ): List<DailyPrayerTime> {
-            val prayerTimes = mutableListOf<DailyPrayerTime>()
-
-            val monthNumMap =
-                mapOf(
-                    "Jan" to "01", "Feb" to "02", "Mar" to "03", "Apr" to "04",
-                    "May" to "05", "Jun" to "06", "Jul" to "07", "Aug" to "08",
-                    "Sep" to "09", "Oct" to "10", "Nov" to "11", "Dec" to "12",
-                )
-
-            // Day-Month patterns: "1-Apr" or "9-Dec"
-            val dayMonthPatterns =
-                listOf(
-                    // Pattern 1: Dhuhr is PM (12:xx PM)
-                    Regex(
-                        """(\d{1,2})-([A-Za-z]{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
-                        RegexOption.IGNORE_CASE,
-                    ),
-                    // Pattern 2: Dhuhr is AM (11:xx AM before noon)
-                    Regex(
-                        """(\d{1,2})-([A-Za-z]{3})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
-                        RegexOption.IGNORE_CASE,
-                    ),
-                    // Pattern 3: No AM/PM markers
-                    Regex(
-                        """(\d{1,2})-([A-Za-z]{3})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
-                    ),
-                )
-
-            // Month-Day patterns: "May-01" (format introduced from May 2026 onwards)
-            val monthDayPatterns =
-                listOf(
-                    // Pattern 4: Dhuhr is PM (12:xx PM)
-                    Regex(
-                        """([A-Za-z]{3})-(\d{1,2})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
-                        RegexOption.IGNORE_CASE,
-                    ),
-                    // Pattern 5: Dhuhr is AM (11:xx AM before noon)
-                    Regex(
-                        """([A-Za-z]{3})-(\d{1,2})\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*AM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM\s+(\d{1,2}:\d{2})\s*PM""",
-                        RegexOption.IGNORE_CASE,
-                    ),
-                    // Pattern 6: No AM/PM markers
-                    Regex(
-                        """([A-Za-z]{3})-(\d{1,2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})""",
-                    ),
-                )
-
-            // Collect normalized (dayNum, monthAbbr, fajr, sunrise, dhuhr, asr, maghrib, isha) tuples
-            data class RawEntry(val dayNum: String, val monthAbbr: String, val fajr: String, val sunrise: String, val dhuhr: String, val asr: String, val maghrib: String, val isha: String)
-
-            val rawEntries = mutableListOf<RawEntry>()
-            val seenDates = mutableSetOf<String>()
-            val matchedPatternNums = mutableListOf<Int>()
-
-            for ((index, pattern) in dayMonthPatterns.withIndex()) {
-                for (match in pattern.findAll(text)) {
-                    val (day, mon, fajr, sunrise, dhuhr, asr, maghrib, isha) = match.destructured
-                    val key = "$day-$mon"
-                    if (seenDates.add(key)) rawEntries.add(RawEntry(day, mon, fajr, sunrise, dhuhr, asr, maghrib, isha))
-                }
-                if (rawEntries.isNotEmpty()) matchedPatternNums.add(index + 1)
-            }
-
-            if (rawEntries.isEmpty()) {
-                for ((index, pattern) in monthDayPatterns.withIndex()) {
-                    for (match in pattern.findAll(text)) {
-                        val (mon, day, fajr, sunrise, dhuhr, asr, maghrib, isha) = match.destructured
-                        val key = "$day-$mon"
-                        if (seenDates.add(key)) rawEntries.add(RawEntry(day, mon, fajr, sunrise, dhuhr, asr, maghrib, isha))
-                    }
-                    if (rawEntries.isNotEmpty()) matchedPatternNums.add(index + 4)
-                }
-            }
-
-            if (rawEntries.isEmpty()) {
-                Log.w(TAG, "⚠️ No prayer time entries found in PDF text using any pattern")
-                val allDateMatches =
-                    Regex("""(\d{1,2})-([A-Za-z]{3})|([A-Za-z]{3})-(\d{1,2})""").findAll(text).toList()
-                if (allDateMatches.isNotEmpty()) {
-                    Log.d(TAG, "Found ${allDateMatches.size} date patterns but couldn't match complete prayer times")
-                    for (i in 0 until minOf(3, allDateMatches.size)) {
-                        val dm = allDateMatches[i]
-                        val startIdx = maxOf(0, dm.range.first - 20)
-                        val endIdx = minOf(text.length, dm.range.last + 200)
-                        Log.d(TAG, "Sample ${i + 1}: ${text.substring(startIdx, endIdx)}")
-                    }
-                }
-            } else {
-                Log.d(TAG, "✅ Matched patterns ${matchedPatternNums.joinToString(", ")} — ${rawEntries.size} unique entries")
-            }
-
-            for (entry in rawEntries) {
-                val fajr24 = convertTo24Hour(entry.fajr, "AM")
-                val sunrise24 = convertTo24Hour(entry.sunrise, "AM")
-                val dhuhr24 =
-                    if (entry.dhuhr.startsWith("11:")) convertTo24Hour(entry.dhuhr, "AM")
-                    else convertTo24Hour(entry.dhuhr, "PM")
-                val asr24 = convertTo24Hour(entry.asr, "PM")
-                val maghrib24 = convertTo24Hour(entry.maghrib, "PM")
-                val isha24 = convertTo24Hour(entry.isha, "PM")
-
-                val monthNum = monthNumMap[entry.monthAbbr.replaceFirstChar { it.titlecase() }] ?: "01"
-                val dateStr = "$year-$monthNum-${entry.dayNum.padStart(2, '0')}"
-
-                prayerTimes.add(
-                    DailyPrayerTime(
-                        date = dateStr,
-                        day = entry.dayNum.toInt(),
-                        fajr = fajr24,
-                        sunrise = sunrise24,
-                        dhuhr = dhuhr24,
-                        asr = asr24,
-                        maghrib = maghrib24,
-                        isha = isha24,
-                    ),
-                )
-            }
-
-            if (prayerTimes.isNotEmpty()) {
-                Log.d(TAG, "✅ Parsed ${prayerTimes.size} prayer times (${prayerTimes.first().date} to ${prayerTimes.last().date})")
-            } else {
-                Log.w(TAG, "⚠️ No prayer times were parsed from PDF")
-            }
-
-            return prayerTimes
+            return AcjuTimetableRows.parse(text, year)
         }
-
-        private fun convertTo24Hour(
-            time: String,
-            period: String,
-        ): String =
-            when {
-                period == "PM" && !time.startsWith("12") -> {
-                    val (hour, minute) = time.split(":")
-                    val hour24 = (hour.toInt() + 12).toString().padStart(2, '0')
-                    "$hour24:$minute"
-                }
-                period == "AM" && time.startsWith("12") -> {
-                    "00:${time.split(":")[1]}"
-                }
-                else -> {
-                    val parts = time.split(":")
-                    "${parts[0].padStart(2, '0')}:${parts[1]}"
-                }
-            }
 
         /**
          * Convert parsed prayer times data to PrayerTimes entities for database storage
@@ -369,6 +226,8 @@ class PdfParser
                     sunrise = dailyTime.sunrise,
                     dhuhrAzan = dailyTime.dhuhr,
                     asrAzan = dailyTime.asr,
+                    asrShafiAzan = dailyTime.asr,
+                    asrHanafiAzan = dailyTime.asrHanafi,
                     maghribAzan = dailyTime.maghrib,
                     ishaAzan = dailyTime.isha,
                     hijriDate = null, // Will be populated separately if needed
@@ -442,10 +301,10 @@ data class DailyPrayerTime(
     val asr: String,
     val maghrib: String,
     val isha: String,
+    val asrHanafi: String? = null,
 )
 
 class PdfParsingException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
-
